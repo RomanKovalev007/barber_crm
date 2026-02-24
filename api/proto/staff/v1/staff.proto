@@ -1,0 +1,127 @@
+syntax = "proto3";
+package staff.v1;
+
+option go_package = "github.com/RomanKovalev007/barber_crm/api/proto/staff/v1;staffv1";
+
+import "google/protobuf/empty.proto";
+
+service StaffService {
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+  rpc GetBarber(GetBarberRequest) returns (BarberResponse);
+  rpc ListBarbers(ListBarbersRequest) returns (ListBarbersResponse);
+  rpc GetSchedule(GetScheduleRequest) returns (GetScheduleResponse);
+  rpc AddSchedule(AddScheduleRequest) returns (ScheduleDay);
+  rpc ListServices(ListServicesRequest) returns (ListServicesResponse);
+  rpc CreateService(CreateServiceRequest) returns (ServiceResponse);
+  rpc UpdateService(UpdateServiceRequest) returns (ServiceResponse);
+  rpc DeleteService(DeleteServiceRequest) returns (google.protobuf.Empty);
+}
+
+// ─── Auth ───
+
+message LoginRequest {
+  string login = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int32 expires_in = 3;
+  BarberResponse barber = 4;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int32 expires_in = 3;
+}
+
+// ─── Barber ───
+
+message GetBarberRequest {
+  string id = 1;
+}
+
+message BarberResponse {
+  string id = 1;
+  string name = 2;
+  string photo_url = 3;
+  string specialization = 4;
+  double rating = 5;
+  repeated ServiceResponse services = 6;
+}
+
+message ListBarbersRequest {}
+
+message ListBarbersResponse {
+  repeated BarberResponse barbers = 1;
+}
+
+// ─── Schedule ───
+
+message ScheduleDay {
+  string barber_id = 1;
+  string date = 2;
+  string start_time = 3;
+  string end_time = 4;
+}
+
+message AddScheduleRequest {
+  string barber_id = 1;
+  string date = 2;
+  string start_time = 3;
+  string end_time = 4;
+}
+
+message GetScheduleRequest {
+  string barber_id = 1;
+  string week = 2; // ISO week: "2026-W08"
+}
+
+message GetScheduleResponse {
+  string week = 1;
+  repeated ScheduleDay days = 2;
+}
+
+// ─── Services ───
+
+message ListServicesRequest {
+  string barber_id = 1;
+  bool include_inactive = 2;
+}
+
+message ListServicesResponse {
+  repeated ServiceResponse services = 1;
+}
+
+message CreateServiceRequest {
+  string barber_id = 1;
+  string name = 2;
+  int32 price = 3;
+}
+
+message UpdateServiceRequest {
+  string id = 1;
+  string barber_id = 2;
+  string name = 3;
+  int32 price = 4;
+  bool is_active = 5;
+}
+
+message DeleteServiceRequest {
+  string id = 1;
+  string barber_id = 2;
+}
+
+message ServiceResponse {
+  string id = 1;
+  string name = 2;
+  int32 price = 3;
+  bool is_active = 4;
+}
