@@ -66,10 +66,11 @@ message ListBarbersResponse {
 // ─── Schedule ───
 
 message ScheduleDay {
-  string barber_id = 1;
-  string date = 2;
-  string start_time = 3;
-  string end_time = 4;
+  string id = 1;
+  string barber_id = 2;
+  string date = 3;
+  string start_time = 4;
+  string end_time = 5;
 }
 
 message AddScheduleRequest {

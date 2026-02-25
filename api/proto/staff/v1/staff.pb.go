@@ -456,10 +456,11 @@ func (x *ListBarbersResponse) GetBarbers() []*BarberResponse {
 
 type ScheduleDay struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	BarberId      string                 `protobuf:"bytes,1,opt,name=barber_id,json=barberId,proto3" json:"barber_id,omitempty"`
-	Date          string                 `protobuf:"bytes,2,opt,name=date,proto3" json:"date,omitempty"`
-	StartTime     string                 `protobuf:"bytes,3,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
-	EndTime       string                 `protobuf:"bytes,4,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	BarberId      string                 `protobuf:"bytes,2,opt,name=barber_id,json=barberId,proto3" json:"barber_id,omitempty"`
+	Date          string                 `protobuf:"bytes,3,opt,name=date,proto3" json:"date,omitempty"`
+	StartTime     string                 `protobuf:"bytes,4,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	EndTime       string                 `protobuf:"bytes,5,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -492,6 +493,13 @@ func (x *ScheduleDay) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ScheduleDay.ProtoReflect.Descriptor instead.
 func (*ScheduleDay) Descriptor() ([]byte, []int) {
 	return file_staff_v1_staff_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ScheduleDay) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
 }
 
 func (x *ScheduleDay) GetBarberId() string {
@@ -1078,13 +1086,14 @@ const file_staff_v1_staff_proto_rawDesc = "" +
 	"\bservices\x18\x06 \x03(\v2\x19.staff.v1.ServiceResponseR\bservices\"\x14\n" +
 	"\x12ListBarbersRequest\"I\n" +
 	"\x13ListBarbersResponse\x122\n" +
-	"\abarbers\x18\x01 \x03(\v2\x18.staff.v1.BarberResponseR\abarbers\"x\n" +
-	"\vScheduleDay\x12\x1b\n" +
-	"\tbarber_id\x18\x01 \x01(\tR\bbarberId\x12\x12\n" +
-	"\x04date\x18\x02 \x01(\tR\x04date\x12\x1d\n" +
+	"\abarbers\x18\x01 \x03(\v2\x18.staff.v1.BarberResponseR\abarbers\"\x88\x01\n" +
+	"\vScheduleDay\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
+	"\tbarber_id\x18\x02 \x01(\tR\bbarberId\x12\x12\n" +
+	"\x04date\x18\x03 \x01(\tR\x04date\x12\x1d\n" +
 	"\n" +
-	"start_time\x18\x03 \x01(\tR\tstartTime\x12\x19\n" +
-	"\bend_time\x18\x04 \x01(\tR\aendTime\"\x7f\n" +
+	"start_time\x18\x04 \x01(\tR\tstartTime\x12\x19\n" +
+	"\bend_time\x18\x05 \x01(\tR\aendTime\"\x7f\n" +
 	"\x12AddScheduleRequest\x12\x1b\n" +
 	"\tbarber_id\x18\x01 \x01(\tR\bbarberId\x12\x12\n" +
 	"\x04date\x18\x02 \x01(\tR\x04date\x12\x1d\n" +
