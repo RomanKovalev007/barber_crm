@@ -1,0 +1,31 @@
+package model
+
+import "time"
+
+type Barber struct {
+	ID             string
+	Name           string
+	Login          string
+	PasswordHash   string
+	IsActive       bool
+	Services       []Service
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
+type Service struct {
+	ID          string
+	BarberID    string
+	Name        string
+	Price       int
+	IsActive    bool
+	//DurationMin int
+}
+
+type ScheduleDay struct {
+	ID         string
+	BarberID   string
+	Date       string
+	StartTime  string
+	EndTime    string
+}
