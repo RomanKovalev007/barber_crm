@@ -4,7 +4,7 @@
 // 	protoc        v3.21.12
 // source: booking.proto
 
-package proto
+package bookingv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -444,7 +444,7 @@ func (x *SlotsRequest) GetDate() *timestamppb.Timestamp {
 
 type Slot struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        SlotStatus             `protobuf:"varint,1,opt,name=status,proto3,enum=booking.SlotStatus" json:"status,omitempty"`
+	Status        SlotStatus             `protobuf:"varint,1,opt,name=status,proto3,enum=booking.v1.SlotStatus" json:"status,omitempty"`
 	TimeStart     *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=time_start,json=timeStart,proto3" json:"time_start,omitempty"`
 	TimeEnd       *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=time_end,json=timeEnd,proto3" json:"time_end,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -574,7 +574,8 @@ var File_booking_proto protoreflect.FileDescriptor
 
 const file_booking_proto_rawDesc = "" +
 	"\n" +
-	"\rbooking.proto\x12\abooking\x1a\x1fgoogle/protobuf/timestamp.proto\"\x8f\x02\n" +
+	"\rbooking.proto\x12\n" +
+	"booking.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x8f\x02\n" +
 	"\x14CreateBookingRequest\x12\x1f\n" +
 	"\vclient_name\x18\x01 \x01(\tR\n" +
 	"clientName\x12\x1b\n" +
@@ -594,9 +595,9 @@ const file_booking_proto_rawDesc = "" +
 	"\x04date\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\x04date\x129\n" +
 	"\n" +
 	"time_start\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\ttimeStart\x125\n" +
-	"\btime_end\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\atimeEnd\"=\n" +
-	"\x0fBookingResponse\x12*\n" +
-	"\abooking\x18\x01 \x01(\v2\x10.booking.BookingR\abooking\"1\n" +
+	"\btime_end\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\atimeEnd\"@\n" +
+	"\x0fBookingResponse\x12-\n" +
+	"\abooking\x18\x01 \x01(\v2\x13.booking.v1.BookingR\abooking\"1\n" +
 	"\x10BookingIdRequest\x12\x1d\n" +
 	"\n" +
 	"booking_id\x18\x01 \x01(\tR\tbookingId\"P\n" +
@@ -607,32 +608,32 @@ const file_booking_proto_rawDesc = "" +
 	"clientName\"[\n" +
 	"\fSlotsRequest\x12\x1b\n" +
 	"\tbarber_id\x18\x01 \x01(\tR\bbarberId\x12.\n" +
-	"\x04date\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x04date\"\xa5\x01\n" +
-	"\x04Slot\x12+\n" +
-	"\x06status\x18\x01 \x01(\x0e2\x13.booking.SlotStatusR\x06status\x129\n" +
+	"\x04date\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x04date\"\xa8\x01\n" +
+	"\x04Slot\x12.\n" +
+	"\x06status\x18\x01 \x01(\x0e2\x16.booking.v1.SlotStatusR\x06status\x129\n" +
 	"\n" +
 	"time_start\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\ttimeStart\x125\n" +
-	"\btime_end\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\atimeEnd\"\x9d\x01\n" +
+	"\btime_end\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\atimeEnd\"\xa0\x01\n" +
 	"\rSlotsResponse\x12\x1b\n" +
 	"\tbarber_id\x18\x01 \x01(\tR\bbarberId\x12.\n" +
-	"\x04date\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x04date\x12#\n" +
-	"\x05slots\x18\x03 \x03(\v2\r.booking.SlotR\x05slots\x12\x1a\n" +
+	"\x04date\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x04date\x12&\n" +
+	"\x05slots\x18\x03 \x03(\v2\x10.booking.v1.SlotR\x05slots\x12\x1a\n" +
 	"\bpriority\x18\x04 \x01(\x05R\bpriority*P\n" +
 	"\n" +
 	"SlotStatus\x12\x10\n" +
 	"\fSLOT_UNKNOWN\x10\x00\x12\r\n" +
 	"\tSLOT_FREE\x10\x01\x12\x0f\n" +
 	"\vSLOT_BOOKED\x10\x02\x12\x10\n" +
-	"\fSLOT_BLOCKED\x10\x032\x96\x03\n" +
-	"\x0eBookingService\x12H\n" +
-	"\rCreateBooking\x12\x1d.booking.CreateBookingRequest\x1a\x18.booking.BookingResponse\x12A\n" +
+	"\fSLOT_BLOCKED\x10\x032\xba\x03\n" +
+	"\x0eBookingService\x12N\n" +
+	"\rCreateBooking\x12 .booking.v1.CreateBookingRequest\x1a\x1b.booking.v1.BookingResponse\x12G\n" +
 	"\n" +
-	"GetBooking\x12\x19.booking.BookingIdRequest\x1a\x18.booking.BookingResponse\x12;\n" +
-	"\rUpdateBooking\x12\x10.booking.Booking\x1a\x18.booking.BookingResponse\x12C\n" +
-	"\rDeleteBooking\x12\x19.booking.BookingIdRequest\x1a\x17.booking.DeleteResponse\x12;\n" +
+	"GetBooking\x12\x1c.booking.v1.BookingIdRequest\x1a\x1b.booking.v1.BookingResponse\x12A\n" +
+	"\rUpdateBooking\x12\x13.booking.v1.Booking\x1a\x1b.booking.v1.BookingResponse\x12I\n" +
+	"\rDeleteBooking\x12\x1c.booking.v1.BookingIdRequest\x1a\x1a.booking.v1.DeleteResponse\x12A\n" +
 	"\n" +
-	"GetWorkDay\x12\x15.booking.SlotsRequest\x1a\x16.booking.SlotsResponse\x128\n" +
-	"\aGetFree\x12\x15.booking.SlotsRequest\x1a\x16.booking.SlotsResponseB\x0fZ\r./proto;protob\x06proto3"
+	"GetWorkDay\x12\x18.booking.v1.SlotsRequest\x1a\x19.booking.v1.SlotsResponse\x12>\n" +
+	"\aGetFree\x12\x18.booking.v1.SlotsRequest\x1a\x19.booking.v1.SlotsResponseBFZDgithub.com/RomanKovalev007/barber_crm/api/proto/booking/v1;bookingv1b\x06proto3"
 
 var (
 	file_booking_proto_rawDescOnce sync.Once
@@ -649,43 +650,43 @@ func file_booking_proto_rawDescGZIP() []byte {
 var file_booking_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_booking_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_booking_proto_goTypes = []any{
-	(SlotStatus)(0),               // 0: booking.SlotStatus
-	(*CreateBookingRequest)(nil),  // 1: booking.CreateBookingRequest
-	(*Booking)(nil),               // 2: booking.Booking
-	(*BookingResponse)(nil),       // 3: booking.BookingResponse
-	(*BookingIdRequest)(nil),      // 4: booking.BookingIdRequest
-	(*DeleteResponse)(nil),        // 5: booking.DeleteResponse
-	(*SlotsRequest)(nil),          // 6: booking.SlotsRequest
-	(*Slot)(nil),                  // 7: booking.Slot
-	(*SlotsResponse)(nil),         // 8: booking.SlotsResponse
+	(SlotStatus)(0),               // 0: booking.v1.SlotStatus
+	(*CreateBookingRequest)(nil),  // 1: booking.v1.CreateBookingRequest
+	(*Booking)(nil),               // 2: booking.v1.Booking
+	(*BookingResponse)(nil),       // 3: booking.v1.BookingResponse
+	(*BookingIdRequest)(nil),      // 4: booking.v1.BookingIdRequest
+	(*DeleteResponse)(nil),        // 5: booking.v1.DeleteResponse
+	(*SlotsRequest)(nil),          // 6: booking.v1.SlotsRequest
+	(*Slot)(nil),                  // 7: booking.v1.Slot
+	(*SlotsResponse)(nil),         // 8: booking.v1.SlotsResponse
 	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
 }
 var file_booking_proto_depIdxs = []int32{
-	9,  // 0: booking.CreateBookingRequest.date:type_name -> google.protobuf.Timestamp
-	9,  // 1: booking.CreateBookingRequest.time_start:type_name -> google.protobuf.Timestamp
-	9,  // 2: booking.CreateBookingRequest.time_end:type_name -> google.protobuf.Timestamp
-	9,  // 3: booking.Booking.date:type_name -> google.protobuf.Timestamp
-	9,  // 4: booking.Booking.time_start:type_name -> google.protobuf.Timestamp
-	9,  // 5: booking.Booking.time_end:type_name -> google.protobuf.Timestamp
-	2,  // 6: booking.BookingResponse.booking:type_name -> booking.Booking
-	9,  // 7: booking.SlotsRequest.date:type_name -> google.protobuf.Timestamp
-	0,  // 8: booking.Slot.status:type_name -> booking.SlotStatus
-	9,  // 9: booking.Slot.time_start:type_name -> google.protobuf.Timestamp
-	9,  // 10: booking.Slot.time_end:type_name -> google.protobuf.Timestamp
-	9,  // 11: booking.SlotsResponse.date:type_name -> google.protobuf.Timestamp
-	7,  // 12: booking.SlotsResponse.slots:type_name -> booking.Slot
-	1,  // 13: booking.BookingService.CreateBooking:input_type -> booking.CreateBookingRequest
-	4,  // 14: booking.BookingService.GetBooking:input_type -> booking.BookingIdRequest
-	2,  // 15: booking.BookingService.UpdateBooking:input_type -> booking.Booking
-	4,  // 16: booking.BookingService.DeleteBooking:input_type -> booking.BookingIdRequest
-	6,  // 17: booking.BookingService.GetWorkDay:input_type -> booking.SlotsRequest
-	6,  // 18: booking.BookingService.GetFree:input_type -> booking.SlotsRequest
-	3,  // 19: booking.BookingService.CreateBooking:output_type -> booking.BookingResponse
-	3,  // 20: booking.BookingService.GetBooking:output_type -> booking.BookingResponse
-	3,  // 21: booking.BookingService.UpdateBooking:output_type -> booking.BookingResponse
-	5,  // 22: booking.BookingService.DeleteBooking:output_type -> booking.DeleteResponse
-	8,  // 23: booking.BookingService.GetWorkDay:output_type -> booking.SlotsResponse
-	8,  // 24: booking.BookingService.GetFree:output_type -> booking.SlotsResponse
+	9,  // 0: booking.v1.CreateBookingRequest.date:type_name -> google.protobuf.Timestamp
+	9,  // 1: booking.v1.CreateBookingRequest.time_start:type_name -> google.protobuf.Timestamp
+	9,  // 2: booking.v1.CreateBookingRequest.time_end:type_name -> google.protobuf.Timestamp
+	9,  // 3: booking.v1.Booking.date:type_name -> google.protobuf.Timestamp
+	9,  // 4: booking.v1.Booking.time_start:type_name -> google.protobuf.Timestamp
+	9,  // 5: booking.v1.Booking.time_end:type_name -> google.protobuf.Timestamp
+	2,  // 6: booking.v1.BookingResponse.booking:type_name -> booking.v1.Booking
+	9,  // 7: booking.v1.SlotsRequest.date:type_name -> google.protobuf.Timestamp
+	0,  // 8: booking.v1.Slot.status:type_name -> booking.v1.SlotStatus
+	9,  // 9: booking.v1.Slot.time_start:type_name -> google.protobuf.Timestamp
+	9,  // 10: booking.v1.Slot.time_end:type_name -> google.protobuf.Timestamp
+	9,  // 11: booking.v1.SlotsResponse.date:type_name -> google.protobuf.Timestamp
+	7,  // 12: booking.v1.SlotsResponse.slots:type_name -> booking.v1.Slot
+	1,  // 13: booking.v1.BookingService.CreateBooking:input_type -> booking.v1.CreateBookingRequest
+	4,  // 14: booking.v1.BookingService.GetBooking:input_type -> booking.v1.BookingIdRequest
+	2,  // 15: booking.v1.BookingService.UpdateBooking:input_type -> booking.v1.Booking
+	4,  // 16: booking.v1.BookingService.DeleteBooking:input_type -> booking.v1.BookingIdRequest
+	6,  // 17: booking.v1.BookingService.GetWorkDay:input_type -> booking.v1.SlotsRequest
+	6,  // 18: booking.v1.BookingService.GetFree:input_type -> booking.v1.SlotsRequest
+	3,  // 19: booking.v1.BookingService.CreateBooking:output_type -> booking.v1.BookingResponse
+	3,  // 20: booking.v1.BookingService.GetBooking:output_type -> booking.v1.BookingResponse
+	3,  // 21: booking.v1.BookingService.UpdateBooking:output_type -> booking.v1.BookingResponse
+	5,  // 22: booking.v1.BookingService.DeleteBooking:output_type -> booking.v1.DeleteResponse
+	8,  // 23: booking.v1.BookingService.GetWorkDay:output_type -> booking.v1.SlotsResponse
+	8,  // 24: booking.v1.BookingService.GetFree:output_type -> booking.v1.SlotsResponse
 	19, // [19:25] is the sub-list for method output_type
 	13, // [13:19] is the sub-list for method input_type
 	13, // [13:13] is the sub-list for extension type_name
