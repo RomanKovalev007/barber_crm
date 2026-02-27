@@ -11,7 +11,7 @@ require (
 
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
-	github.com/RomanKovalev007/barber_crm/api v0.0.2
+	github.com/RomanKovalev007/barber_crm/api v0.0.3
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/ilyakaznacheev/cleanenv v1.5.0 // indirect

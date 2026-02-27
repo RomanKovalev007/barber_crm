@@ -10,9 +10,9 @@ type BookingRPC interface {
 }
 
 type bookingServer struct {
-	pb.UnimplementedBookingServer
+	pb.UnimplementedBookingServiceServer
 }
 
-func NewServer(service services.BookingIntr) BookingRPC {
+func NewServer(service services.BookingIntr) *bookingServer {
 	return &bookingServer{}
 }

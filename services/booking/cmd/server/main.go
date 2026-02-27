@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	pb "github.com/RomanKovalev007/barber_crm/api/proto/booking/v1"
 	"github.com/RomanKovalev007/barber_crm/pkg/config"
 	"github.com/RomanKovalev007/barber_crm/pkg/logger"
 	"github.com/RomanKovalev007/barber_crm/pkg/postgres"
@@ -49,7 +50,7 @@ func main() {
 	srv := bookingrpc.NewServer(bookingService)
 
 	grpcServer := grpc.NewServer()
-	pb.RegisterStaffServiceServer(grpcServer, srv)
+	pb.RegisterBookingServiceServer(grpcServer, srv)
 	healthSrv := health.NewServer()
 	grpc_health_v1.RegisterHealthServer(grpcServer, healthSrv)
 	healthSrv.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)

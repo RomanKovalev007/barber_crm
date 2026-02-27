@@ -1,7 +1,7 @@
 github.com/BurntSushi/toml v1.2.1 h1:9F2/+DoOYIOksmaJFPw1tGFy1eDnIJXg+UHjuD8lTak=
 github.com/BurntSushi/toml v1.2.1/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
-github.com/RomanKovalev007/barber_crm/api v0.0.2 h1:l7nA6Dy9i+uLLlK+ZKKYYcFkvcIe0N+3RLE/MEd9hss=
-github.com/RomanKovalev007/barber_crm/api v0.0.2/go.mod h1:KCyOEkDh3N7qN1c4qeD5/F7lzaAaWnNA0DsgH9jSCmw=
+github.com/RomanKovalev007/barber_crm/api v0.0.3 h1:iXLe3Xm+O0cbboD3w62FpH5Cv1USXm78Y8+rBUrg80g=
+github.com/RomanKovalev007/barber_crm/api v0.0.3/go.mod h1:KCyOEkDh3N7qN1c4qeD5/F7lzaAaWnNA0DsgH9jSCmw=
 github.com/RomanKovalev007/barber_crm/pkg v0.0.2 h1:/29SA/FEHPaiBWy1YdedP0exTNFtz2SeuPBUUTkMKBY=
 github.com/RomanKovalev007/barber_crm/pkg v0.0.2/go.mod h1:j/T5a/hUHYK311hD97gcCcaigc8kw9bTZcsXQcw8h4o=
 github.com/bsm/ginkgo/v2 v2.12.0 h1:Ny8MWAHyOepLGlLKYmXG4IEkioBysk6GpaRTLC8zwWs=
@@ -84,8 +84,6 @@ google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 h1:
 google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217/go.mod h1:7i2o+ce6H/6BluujYR+kqX3GKH+dChPTQU19wjRPiGk=
 google.golang.org/grpc v1.79.1 h1:zGhSi45ODB9/p3VAawt9a+O/MULLl9dpizzNNpq7flY=
 google.golang.org/grpc v1.79.1/go.mod h1:KmT0Kjez+0dde/v2j9vzwoAScgEPx/Bw1CYChhHLrHQ=
-google.golang.org/protobuf v1.36.10 h1:AYd7cD/uASjIL6Q9LiTjz8JLcrh/88q5UObnmY3aOOE=
-google.golang.org/protobuf v1.36.10/go.mod h1:HTf+CrKn2C3g5S8VImy6tdcUvCska2kB7j23XfzDpco=
 google.golang.org/protobuf v1.36.11 h1:fV6ZwhNocDyBLK0dj+fg8ektcVegBBuEolpbTQyBNVE=
 google.golang.org/protobuf v1.36.11/go.mod h1:HTf+CrKn2C3g5S8VImy6tdcUvCska2kB7j23XfzDpco=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
