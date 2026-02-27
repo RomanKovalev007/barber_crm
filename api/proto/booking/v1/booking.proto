@@ -4,7 +4,7 @@ import "google/protobuf/timestamp.proto";
 
 package booking.v1;
 
-option go_package = "./proto;proto";
+option go_package = "github.com/RomanKovalev007/barber_crm/api/proto/booking/v1;bookingv1";
 
 service BookingService {
     rpc CreateBooking(CreateBookingRequest) returns (BookingResponse);
