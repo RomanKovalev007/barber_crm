@@ -21,3 +21,15 @@ type RedisConfig struct {
 	RedisPassword string `env:"REDIS_PASSWORD" env-default:""`
 	RedisTtlMinute int `env:"REDIS_TTL_MINUTE" env-default:"43200"`
 }
+
+type ClickHouseConfig struct {
+	Host     string `env:"CLICKHOUSE_HOST"     env-default:"localhost"`
+	Port     string `env:"CLICKHOUSE_PORT"     env-default:"9000"`
+	Database string `env:"CLICKHOUSE_DATABASE" env-default:"analytics"`
+	Username string `env:"CLICKHOUSE_USERNAME" env-default:"default"`
+	Password string `env:"CLICKHOUSE_PASSWORD" env-default:""`
+}
+
+type KafkaConfig struct {
+	Brokers string `env:"KAFKA_BROKERS" env-default:"localhost:9092"`
+}

@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package booking.v1;
+
+option go_package = "github.com/RomanKovalev007/barber_crm/api/proto/booking/v1;bookingv1";
+
+service BookingService {
+    rpc CreateBooking(CreateBookingRequest) returns (BookingResponse);
+    rpc GetBooking(BookingIdRequest) returns (BookingResponse);
+    rpc UpdateBooking(Booking) returns (BookingResponse);
+    rpc DeleteBooking(BookingIdRequest) returns (DeleteResponse);
+    rpc GetWorkDay(SlotsRequest) returns (SlotsResponse);
+    rpc GetFree(SlotsRequest) returns (SlotsResponse);
+}
+
+message CreateBookingRequest {
+    string client_name = 1;
+    string barber_id = 2;
+    int32 serv_id = 3;
+    google.protobuf.Timestamp date = 4;
+    google.protobuf.Timestamp time_start = 5;
+    google.protobuf.Timestamp time_end = 6;
+}
+
+message Booking {
+    string booking_id = 1;
+    string client_name = 2;
+    string barber_id = 3;
+    int32 serv_id = 4;
+    google.protobuf.Timestamp date = 5;
+    google.protobuf.Timestamp time_start = 6;
+    google.protobuf.Timestamp time_end = 7;
+}
+
+message BookingResponse {
+    Booking booking = 1;
+}
+
+message BookingIdRequest {
+    string booking_id = 1;
+}
+
+message DeleteResponse {
+    string booking_id = 1;
+    string client_name = 2;
+}
+
+message SlotsRequest {
+    string barber_id = 1;
+    google.protobuf.Timestamp date = 2;
+}
+
+enum SlotStatus {
+    SLOT_UNKNOWN = 0;
+    SLOT_FREE = 1;
+    SLOT_BOOKED = 2;
+    SLOT_BLOCKED = 3;
+}
+
+message Slot {
+    SlotStatus status = 1;
+    google.protobuf.Timestamp time_start = 2;
+    google.protobuf.Timestamp time_end = 3;
+}
+
+message SlotsResponse {
+    string barber_id = 1;
+    google.protobuf.Timestamp date = 2;
+    repeated Slot slots = 3;
+    int32 priority = 4;
+}
