@@ -1,7 +1,7 @@
 package bookingrpc
 
 import (
-	pb "github.com/RomanKovalev007/barber_crm/api/proto/bookingv1"
+	pb "github.com/RomanKovalev007/barber_crm/api/proto"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/services"
 )
 
