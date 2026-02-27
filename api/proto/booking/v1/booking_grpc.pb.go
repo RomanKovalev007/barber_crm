@@ -4,7 +4,7 @@
 // - protoc             v3.21.12
 // source: booking.proto
 
-package proto
+package bookingv1
 
 import (
 	context "context"
@@ -19,12 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	BookingService_CreateBooking_FullMethodName = "/booking.BookingService/CreateBooking"
-	BookingService_GetBooking_FullMethodName    = "/booking.BookingService/GetBooking"
-	BookingService_UpdateBooking_FullMethodName = "/booking.BookingService/UpdateBooking"
-	BookingService_DeleteBooking_FullMethodName = "/booking.BookingService/DeleteBooking"
-	BookingService_GetWorkDay_FullMethodName    = "/booking.BookingService/GetWorkDay"
-	BookingService_GetFree_FullMethodName       = "/booking.BookingService/GetFree"
+	BookingService_CreateBooking_FullMethodName = "/booking.v1.BookingService/CreateBooking"
+	BookingService_GetBooking_FullMethodName    = "/booking.v1.BookingService/GetBooking"
+	BookingService_UpdateBooking_FullMethodName = "/booking.v1.BookingService/UpdateBooking"
+	BookingService_DeleteBooking_FullMethodName = "/booking.v1.BookingService/DeleteBooking"
+	BookingService_GetWorkDay_FullMethodName    = "/booking.v1.BookingService/GetWorkDay"
+	BookingService_GetFree_FullMethodName       = "/booking.v1.BookingService/GetFree"
 )
 
 // BookingServiceClient is the client API for BookingService service.
@@ -278,7 +278,7 @@ func _BookingService_GetFree_Handler(srv interface{}, ctx context.Context, dec f
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var BookingService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "booking.BookingService",
+	ServiceName: "booking.v1.BookingService",
 	HandlerType: (*BookingServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
