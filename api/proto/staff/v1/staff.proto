@@ -4,6 +4,7 @@ package staff.v1;
 option go_package = "github.com/RomanKovalev007/barber_crm/api/proto/staff/v1;staffv1";
 
 import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
 
 service StaffService {
   rpc Login(LoginRequest) returns (LoginResponse);
@@ -125,4 +126,24 @@ message ServiceResponse {
   string name = 2;
   int32 price = 3;
   bool is_active = 4;
+}
+
+
+// Kafka Events
+
+// ScheduleEvent отправляется при добавлении или удалении рабочего дня барбера.
+message ScheduleEvent {
+  string                    schedule_id = 1;
+  string                    barber_id   = 2;
+  string                    date        = 3; // YYYY-MM-DD
+  string                    start_time  = 4; // HH:MM
+  string                    end_time    = 5; // HH:MM
+  ScheduleEventType         event_type  = 6;
+  google.protobuf.Timestamp occurred_at = 7;
+}
+
+enum ScheduleEventType {
+  SCHEDULE_EVENT_UNSPECIFIED = 0;
+  SCHEDULE_EVENT_ADDED       = 1;
+  SCHEDULE_EVENT_DELETED     = 2;
 }

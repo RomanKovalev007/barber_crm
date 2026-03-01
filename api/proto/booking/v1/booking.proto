@@ -71,3 +71,28 @@ message SlotsResponse {
     repeated Slot slots = 3;
     int32 priority = 4;
 }
+
+
+// Kafka Events
+
+message BookingEvent {
+  string                    booking_id   = 1;
+  string                    barber_id    = 2;
+  string                    client_phone = 3;
+  string                    client_name  = 4;
+  string                    service_id   = 5;
+  string                    service_name = 6;
+  int32                     price        = 7; // цена на момент записи (руб.)
+  google.protobuf.Timestamp start_time   = 8;
+  google.protobuf.Timestamp end_time     = 9;
+  BookingStatus             status       = 10;
+  google.protobuf.Timestamp occurred_at  = 11;
+}
+
+enum BookingStatus {
+  BOOKING_STATUS_UNSPECIFIED = 0;
+  BOOKING_STATUS_PENDING     = 1;
+  BOOKING_STATUS_COMPLETED   = 2;
+  BOOKING_STATUS_CANCELLED   = 3;
+  BOOKING_STATUS_NO_SHOW     = 4;
+}
