@@ -2,10 +2,12 @@ package repo
 
 import "github.com/jackc/pgx/v5/pgxpool"
 
-type Repo struct {
-
+type BookingRepo struct {
+	pool *pgxpool.Pool
 }
 
-func New(pool *pgxpool.Pool) *Repo {
-	return &Repo{}
+func New(pool *pgxpool.Pool) *BookingRepo {
+	return &BookingRepo{
+		pool: pool,
+	}
 }
