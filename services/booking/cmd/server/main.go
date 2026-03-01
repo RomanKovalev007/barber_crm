@@ -22,8 +22,8 @@ import (
 )
 
 func main() {
-	log := logger.New("staff")
-	cfg, err := config.ParseStaffConfig()
+	log := logger.New("booking")
+	cfg, err := config.ParseBookingConfig()
 	if err != nil{
 		log.Error("failed to connect to read config", "error", err)
 		os.Exit(1)	
@@ -62,16 +62,16 @@ func main() {
 	}
 
 	go func() {
-		log.Info("staff service started", slog.String("port", cfg.GRPCPort))
+		log.Info("booking service started", slog.String("port", cfg.GRPCPort))
 		if err := grpcServer.Serve(lis); err != nil {
 			log.Error("grpc server failed", "error", err)
 		}
 	}()
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	quiet := make(chan os.Signal, 1)
+	signal.Notify(quiet, syscall.SIGINT, syscall.SIGTERM)
+	<-quiet
 
-	log.Info("shutting down staff service")
+	log.Info("shutting down booking service")
 	grpcServer.GracefulStop()
 }

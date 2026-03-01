@@ -3,7 +3,7 @@ module github.com/RomanKovalev007/barber_crm/services/booking
 go 1.24.3
 
 require (
-	github.com/RomanKovalev007/barber_crm/pkg v0.0.2
+	github.com/RomanKovalev007/barber_crm/pkg v0.0.3
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/redis/go-redis/v9 v9.18.0
 	google.golang.org/grpc v1.79.1
@@ -11,7 +11,7 @@ require (
 
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
-	github.com/RomanKovalev007/barber_crm/api v0.0.3
+	github.com/RomanKovalev007/barber_crm/api v0.0.4
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/ilyakaznacheev/cleanenv v1.5.0 // indirect
