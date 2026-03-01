@@ -7,10 +7,11 @@ import (
 )
 
 type BookingConfig struct {
-	GRPCPort    string `env:"GRPC_PORT" env-default:":50051"`
-	JWTSecret   string `env:"JWT_SECRET" env-default:"jwt-secret"`
-	DbCfg PostgresConfig
-	RedisCfg RedisConfig
+	GRPCPort      string `env:"GRPC_PORT" env-default:":50051"`
+	JWTSecret     string `env:"JWT_SECRET" env-default:"jwt-secret"`
+	StaffGRPCAddr string `env:"STAFF_GRPC_ADDR" env-default:"staff:50051"`
+	DbCfg         PostgresConfig
+	RedisCfg      RedisConfig
 }
 
 func ParseBookingConfig() (*BookingConfig, error) {
