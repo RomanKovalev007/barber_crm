@@ -16,6 +16,7 @@ import (
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/bookingrpc"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/repo"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/services"
+	"github.com/RomanKovalev007/barber_crm/services/booking/internal/staffclient"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -24,9 +25,9 @@ import (
 func main() {
 	log := logger.New("booking")
 	cfg, err := config.ParseBookingConfig()
-	if err != nil{
-		log.Error("failed to connect to read config", "error", err)
-		os.Exit(1)	
+	if err != nil {
+		log.Error("failed to read config", "error", err)
+		os.Exit(1)
 	}
 
 	ctx := context.Background()
@@ -45,8 +46,15 @@ func main() {
 	}
 	defer redisClient.Close()
 
-	repo := repo.New(pool)
-	bookingService := services.New(repo, redisClient, ttl, cfg.JWTSecret, log)
+	staffClient, err := staffclient.New(cfg.StaffGRPCAddr)
+	if err != nil {
+		log.Error("failed to connect to staff service", "error", err)
+		os.Exit(1)
+	}
+	defer staffClient.Close()
+
+	bookingRepo := repo.New(pool)
+	bookingService := services.New(bookingRepo, redisClient, ttl, cfg.JWTSecret, log, staffClient)
 	srv := bookingrpc.NewServer(bookingService)
 
 	grpcServer := grpc.NewServer()
