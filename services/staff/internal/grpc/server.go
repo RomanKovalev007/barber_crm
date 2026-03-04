@@ -2,12 +2,14 @@ package grpc
 
 import (
 	"context"
+	"errors"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	pb "github.com/RomanKovalev007/barber_crm/api/proto/staff/v1"
+	"github.com/RomanKovalev007/barber_crm/services/staff/internal/apperr"
 	"github.com/RomanKovalev007/barber_crm/services/staff/internal/model"
 )
 
@@ -36,12 +38,20 @@ func NewServer(svc staffService) *Server {
 	return &Server{svc: svc}
 }
 
+func toGRPCError(err error) error {
+	var e *apperr.AppError
+	if errors.As(err, &e) {
+		return status.Error(e.GRPCCode(), e.Message)
+	}
+	return status.Error(codes.Internal, "internal error")
+}
+
 // barbers
 
 func (s *Server) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
 	barber, accessToken, refreshToken, err := s.svc.Login(ctx, req.Login, req.Password)
 	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
+		return nil, toGRPCError(err)
 	}
 	return &pb.LoginResponse{
 		AccessToken:  accessToken,
@@ -53,7 +63,7 @@ func (s *Server) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResp
 
 func (s *Server) Logout(ctx context.Context, req *pb.LogoutRequest) (*emptypb.Empty, error) {
 	if err := s.svc.Logout(ctx, req.RefreshToken); err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
+		return nil, toGRPCError(err)
 	}
 	return &emptypb.Empty{}, nil
 }
@@ -61,7 +71,7 @@ func (s *Server) Logout(ctx context.Context, req *pb.LogoutRequest) (*emptypb.Em
 func (s *Server) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
 	access, refresh, err := s.svc.RefreshToken(ctx, req.RefreshToken)
 	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
+		return nil, toGRPCError(err)
 	}
 	return &pb.RefreshTokenResponse{AccessToken: access, RefreshToken: refresh, ExpiresIn: 3600}, nil
 }
@@ -69,7 +79,7 @@ func (s *Server) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) 
 func (s *Server) GetBarber(ctx context.Context, req *pb.GetBarberRequest) (*pb.BarberResponse, error) {
 	barber, err := s.svc.GetBarber(ctx, req.Id)
 	if err != nil {
-		return nil, status.Error(codes.NotFound, err.Error())
+		return nil, toGRPCError(err)
 	}
 	return barberToProto(barber), nil
 }
@@ -77,10 +87,10 @@ func (s *Server) GetBarber(ctx context.Context, req *pb.GetBarberRequest) (*pb.B
 func (s *Server) ListBarbers(ctx context.Context, _ *pb.ListBarbersRequest) (*pb.ListBarbersResponse, error) {
 	barbers, err := s.svc.ListBarbers(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toGRPCError(err)
 	}
 	var pbBarbers []*pb.BarberResponse
-	for _,b := range barbers {
+	for _, b := range barbers {
 		pbBarbers = append(pbBarbers, barberToProto(&b))
 	}
 	return &pb.ListBarbersResponse{Barbers: pbBarbers}, nil
@@ -91,7 +101,7 @@ func (s *Server) ListBarbers(ctx context.Context, _ *pb.ListBarbersRequest) (*pb
 func (s *Server) GetSchedule(ctx context.Context, req *pb.GetScheduleRequest) (*pb.GetScheduleResponse, error) {
 	days, err := s.svc.GetSchedule(ctx, req.BarberId, req.Week)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toGRPCError(err)
 	}
 	var pbDays []*pb.ScheduleDay
 	for _, d := range days {
@@ -102,17 +112,15 @@ func (s *Server) GetSchedule(ctx context.Context, req *pb.GetScheduleRequest) (*
 
 func (s *Server) AddSchedule(ctx context.Context, req *pb.AddScheduleRequest) (*pb.ScheduleDay, error) {
 	day := &model.ScheduleDay{
-		BarberID: req.BarberId,
-		Date: req.Date, 
-		StartTime: req.StartTime, 
-		EndTime: req.EndTime,
+		BarberID:  req.BarberId,
+		Date:      req.Date,
+		StartTime: req.StartTime,
+		EndTime:   req.EndTime,
 	}
-
 	result, err := s.svc.AddSchedule(ctx, req.BarberId, day)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toGRPCError(err)
 	}
-
 	return scheduleToProto(result), nil
 }
 
@@ -121,7 +129,7 @@ func (s *Server) AddSchedule(ctx context.Context, req *pb.AddScheduleRequest) (*
 func (s *Server) ListServices(ctx context.Context, req *pb.ListServicesRequest) (*pb.ListServicesResponse, error) {
 	services, err := s.svc.ListServices(ctx, req.BarberId, req.IncludeInactive)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toGRPCError(err)
 	}
 	var pbServices []*pb.ServiceResponse
 	for _, svc := range services {
@@ -133,38 +141,38 @@ func (s *Server) ListServices(ctx context.Context, req *pb.ListServicesRequest) 
 func (s *Server) CreateService(ctx context.Context, req *pb.CreateServiceRequest) (*pb.ServiceResponse, error) {
 	svc := &model.Service{
 		BarberID: req.BarberId,
-		Name: req.Name,
-		Price: int(req.Price),
+		Name:     req.Name,
+		Price:    int(req.Price),
 		IsActive: true,
 	}
 	if err := s.svc.CreateService(ctx, svc); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toGRPCError(err)
 	}
 	return serviceToProto(svc), nil
 }
 
 func (s *Server) UpdateService(ctx context.Context, req *pb.UpdateServiceRequest) (*pb.ServiceResponse, error) {
 	svc := &model.Service{
-		ID: req.Id,
-		BarberID: req.BarberId, 
-		Name: req.Name, 
-		Price: int(req.Price),
+		ID:       req.Id,
+		BarberID: req.BarberId,
+		Name:     req.Name,
+		Price:    int(req.Price),
 		IsActive: req.IsActive,
 	}
 	if err := s.svc.UpdateService(ctx, svc); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toGRPCError(err)
 	}
 	return serviceToProto(svc), nil
 }
 
 func (s *Server) DeleteService(ctx context.Context, req *pb.DeleteServiceRequest) (*emptypb.Empty, error) {
 	if err := s.svc.DeleteService(ctx, req.Id, req.BarberId); err != nil {
-		return nil, status.Error(codes.NotFound, err.Error())
+		return nil, toGRPCError(err)
 	}
 	return &emptypb.Empty{}, nil
 }
 
-// help functions
+// helpers
 
 func barberToProto(b *model.Barber) *pb.BarberResponse {
 	var services []*pb.ServiceResponse
@@ -172,27 +180,27 @@ func barberToProto(b *model.Barber) *pb.BarberResponse {
 		services = append(services, serviceToProto(&b.Services[i]))
 	}
 	return &pb.BarberResponse{
-		Id: b.ID, 
-		Name: b.Name,
+		Id:       b.ID,
+		Name:     b.Name,
 		Services: services,
 	}
 }
 
 func serviceToProto(s *model.Service) *pb.ServiceResponse {
 	return &pb.ServiceResponse{
-		Id: s.ID,
-		Name: s.Name, 
-		Price: int32(s.Price),
+		Id:       s.ID,
+		Name:     s.Name,
+		Price:    int32(s.Price),
 		IsActive: s.IsActive,
 	}
 }
 
 func scheduleToProto(s *model.ScheduleDay) *pb.ScheduleDay {
 	return &pb.ScheduleDay{
-		Id: s.ID,
-		BarberId: s.BarberID,
-		Date: s.Date,
+		Id:        s.ID,
+		BarberId:  s.BarberID,
+		Date:      s.Date,
 		StartTime: s.StartTime,
-		EndTime: s.EndTime,
+		EndTime:   s.EndTime,
 	}
 }
