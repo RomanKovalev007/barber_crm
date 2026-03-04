@@ -81,6 +81,14 @@ func (s *Service) Login(ctx context.Context, login, password string) (*model.Bar
 	return barber, accessToken, refreshToken, nil
 }
 
+func (s *Service) Logout(ctx context.Context, refreshToken string) error {
+	claims, err := auth.ValidateToken(refreshToken, s.jwtSecret)
+	if err != nil {
+		return fmt.Errorf("invalid refresh token")
+	}
+	return s.redisdb.Del(ctx, "session:"+claims.BarberID).Err()
+}
+
 func (s *Service) RefreshToken(ctx context.Context, refreshTokenStr string) (string, string, error) {
 	claims, err := auth.ValidateToken(refreshTokenStr, s.jwtSecret)
 	if err != nil {

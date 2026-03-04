@@ -2,11 +2,14 @@ module github.com/RomanKovalev007/barber_crm/services/staff
 
 go 1.24.3
 
+replace github.com/RomanKovalev007/barber_crm/api => ../../api
+
 require (
-	github.com/RomanKovalev007/barber_crm/api v0.0.2
-	github.com/RomanKovalev007/barber_crm/pkg v0.0.2
+	github.com/RomanKovalev007/barber_crm/api v0.0.4
+	github.com/RomanKovalev007/barber_crm/pkg v0.0.4
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/redis/go-redis/v9 v9.18.0
+	github.com/segmentio/kafka-go v0.4.50
 	golang.org/x/crypto v0.48.0
 	google.golang.org/grpc v1.79.1
 	google.golang.org/protobuf v1.36.11
@@ -24,7 +27,6 @@ require (
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
-	github.com/segmentio/kafka-go v0.4.50 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect

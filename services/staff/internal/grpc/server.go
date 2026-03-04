@@ -11,8 +11,9 @@ import (
 	"github.com/RomanKovalev007/barber_crm/services/staff/internal/model"
 )
 
-type staffService interface{
+type staffService interface {
 	Login(ctx context.Context, login string, password string) (*model.Barber, string, string, error)
+	Logout(ctx context.Context, refreshToken string) error
 	RefreshToken(ctx context.Context, refreshTokenStr string) (string, string, error)
 	GetBarber(ctx context.Context, id string) (*model.Barber, error)
 	ListBarbers(ctx context.Context) ([]model.Barber, error)
@@ -48,6 +49,13 @@ func (s *Server) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResp
 		ExpiresIn:    3600,
 		Barber:       barberToProto(barber),
 	}, nil
+}
+
+func (s *Server) Logout(ctx context.Context, req *pb.LogoutRequest) (*emptypb.Empty, error) {
+	if err := s.svc.Logout(ctx, req.RefreshToken); err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+	return &emptypb.Empty{}, nil
 }
 
 func (s *Server) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
