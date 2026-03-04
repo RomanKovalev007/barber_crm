@@ -10,10 +10,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/RomanKovalev007/barber_crm/pkg/auth"
+	"github.com/RomanKovalev007/barber_crm/services/staff/internal/kafka"
 	"github.com/RomanKovalev007/barber_crm/services/staff/internal/model"
 )
 
-type staffRepo interface{
+type staffRepo interface {
 	GetBarber(ctx context.Context, id string) (*model.Barber, error)
 	GetBarberByLogin(ctx context.Context, login string) (*model.Barber, error)
 	ListBarbers(ctx context.Context) ([]model.Barber, error)
@@ -27,21 +28,27 @@ type staffRepo interface{
 	ListServices(ctx context.Context, barberID string, includeInactive bool) ([]model.Service, error)
 }
 
+type eventProducer interface {
+	Publish(ctx context.Context, topic, key string, payload any) error
+}
+
 type Service struct {
 	repo      staffRepo
-	redisdb       *redis.Client
-	ttl int
+	redisdb   *redis.Client
+	producer  eventProducer
+	ttl       int
 	jwtSecret string
 	logger    *slog.Logger
 }
 
-func New(repo staffRepo, redisdb *redis.Client, ttl int, jwtSecret string, logger *slog.Logger) *Service {
+func New(repo staffRepo, redisdb *redis.Client, producer eventProducer, ttl int, jwtSecret string, logger *slog.Logger) *Service {
 	return &Service{
-		repo: repo, 
-		redisdb: redisdb, 
-		ttl: ttl,
-		jwtSecret: jwtSecret, 
-		logger: logger,
+		repo:      repo,
+		redisdb:   redisdb,
+		producer:  producer,
+		ttl:       ttl,
+		jwtSecret: jwtSecret,
+		logger:    logger,
 	}
 }
 
@@ -116,42 +123,60 @@ func (s *Service) ListBarbers(ctx context.Context) ([]model.Barber, error) {
 // services
 
 func (s *Service) CreateService(ctx context.Context, svc *model.Service) error {
-	if svc.BarberID == ""{
+	if svc.BarberID == "" {
 		return fmt.Errorf("barber id can not be empty")
 	}
-	if len(svc.Name) < 2{
+	if len(svc.Name) < 2 {
 		return fmt.Errorf("name length can be >= 2")
 	}
-	if svc.Price < 0{
+	if svc.Price < 0 {
 		return fmt.Errorf("price can not be negative")
-	} 
-	return s.repo.CreateService(ctx, svc)
+	}
+	if err := s.repo.CreateService(ctx, svc); err != nil {
+		return err
+	}
+	if err := s.producer.Publish(ctx, kafka.TopicServiceCreated, svc.BarberID, svc); err != nil {
+		s.logger.Warn("failed to publish service.created event", "error", err)
+	}
+	return nil
 }
 
 func (s *Service) UpdateService(ctx context.Context, svc *model.Service) error {
-	if svc.ID == ""{
+	if svc.ID == "" {
 		return fmt.Errorf("id is empty")
 	}
-	if svc.BarberID == ""{
+	if svc.BarberID == "" {
 		return fmt.Errorf("barber_id is empty")
 	}
-	if len(svc.Name) < 2{
+	if len(svc.Name) < 2 {
 		return fmt.Errorf("name length can be >= 2")
 	}
-	if svc.Price < 0{
+	if svc.Price < 0 {
 		return fmt.Errorf("price can not be negative")
 	}
-	return s.repo.UpdateService(ctx, svc)
+	if err := s.repo.UpdateService(ctx, svc); err != nil {
+		return err
+	}
+	if err := s.producer.Publish(ctx, kafka.TopicServiceUpdated, svc.ID, svc); err != nil {
+		s.logger.Warn("failed to publish service.updated event", "error", err)
+	}
+	return nil
 }
 
 func (s *Service) DeleteService(ctx context.Context, id, barberID string) error {
-	if id == ""{
+	if id == "" {
 		return fmt.Errorf("service_id is empty")
 	}
-	if barberID == ""{
+	if barberID == "" {
 		return fmt.Errorf("barber_id is empty")
 	}
-	return s.repo.DeleteService(ctx, id, barberID)
+	if err := s.repo.DeleteService(ctx, id, barberID); err != nil {
+		return err
+	}
+	if err := s.producer.Publish(ctx, kafka.TopicServiceDeleted, id, map[string]string{"id": id, "barber_id": barberID}); err != nil {
+		s.logger.Warn("failed to publish service.deleted event", "error", err)
+	}
+	return nil
 }
 
 func (s *Service) ListServices(ctx context.Context, barberID string, includeInactive bool) ([]model.Service, error) {
@@ -176,17 +201,24 @@ func (s *Service) GetSchedule(ctx context.Context, barberID, week string) ([]mod
 }
 
 func (s *Service) AddSchedule(ctx context.Context, barberID string, day *model.ScheduleDay) (*model.ScheduleDay, error) {
-	if barberID == ""{
+	if barberID == "" {
 		return nil, fmt.Errorf("barber_id is empty")
 	}
-	if day.Date == ""{
+	if day.Date == "" {
 		return nil, fmt.Errorf("date is empty")
 	}
-	if day.StartTime == ""{
+	if day.StartTime == "" {
 		return nil, fmt.Errorf("start_time is empty")
 	}
-	if day.EndTime == ""{
+	if day.EndTime == "" {
 		return nil, fmt.Errorf("end_time is empty")
 	}
-	return s.repo.AddSchedule(ctx, barberID, day)
+	result, err := s.repo.AddSchedule(ctx, barberID, day)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.producer.Publish(ctx, kafka.TopicScheduleAdded, barberID, result); err != nil {
+		s.logger.Warn("failed to publish schedule.added event", "error", err)
+	}
+	return result, nil
 }

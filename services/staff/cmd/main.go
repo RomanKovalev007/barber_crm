@@ -8,17 +8,18 @@ import (
 	"os/signal"
 	"syscall"
 
+	pb "github.com/RomanKovalev007/barber_crm/api/proto/staff/v1"
+	"github.com/RomanKovalev007/barber_crm/pkg/config"
+	"github.com/RomanKovalev007/barber_crm/pkg/logger"
+	"github.com/RomanKovalev007/barber_crm/pkg/postgres"
+	"github.com/RomanKovalev007/barber_crm/pkg/redis"
+	staffgrpc "github.com/RomanKovalev007/barber_crm/services/staff/internal/grpc"
+	"github.com/RomanKovalev007/barber_crm/services/staff/internal/kafka"
+	"github.com/RomanKovalev007/barber_crm/services/staff/internal/repository"
+	"github.com/RomanKovalev007/barber_crm/services/staff/internal/service"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
-	pb "github.com/RomanKovalev007/barber_crm/api/proto/staff/v1"
-	"github.com/RomanKovalev007/barber_crm/pkg/logger"
-	"github.com/RomanKovalev007/barber_crm/pkg/config"
-	"github.com/RomanKovalev007/barber_crm/pkg/redis"
-	"github.com/RomanKovalev007/barber_crm/pkg/postgres"
-	staffgrpc "github.com/RomanKovalev007/barber_crm/services/staff/internal/grpc"
-	"github.com/RomanKovalev007/barber_crm/services/staff/internal/repository"
-	"github.com/RomanKovalev007/barber_crm/services/staff/internal/service"
 )
 
 func main() {
@@ -45,8 +46,11 @@ func main() {
 	}
 	defer rdb.Close()
 
+	producer := kafka.NewProducer(cfg.KafkaCfg.Brokers)
+	defer producer.Close()
+
 	repo := repository.New(pool)
-	svc := service.New(repo, rdb, ttl, cfg.JWTSecret, log)
+	svc := service.New(repo, rdb, producer, ttl, cfg.JWTSecret, log)
 	srv := staffgrpc.NewServer(svc)
 
 	grpcServer := grpc.NewServer()
