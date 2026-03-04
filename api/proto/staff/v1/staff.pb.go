@@ -192,6 +192,50 @@ func (x *LoginResponse) GetBarber() *BarberResponse {
 	return nil
 }
 
+type LogoutRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RefreshToken  string                 `protobuf:"bytes,1,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LogoutRequest) Reset() {
+	*x = LogoutRequest{}
+	mi := &file_staff_v1_staff_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LogoutRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LogoutRequest) ProtoMessage() {}
+
+func (x *LogoutRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_staff_v1_staff_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LogoutRequest.ProtoReflect.Descriptor instead.
+func (*LogoutRequest) Descriptor() ([]byte, []int) {
+	return file_staff_v1_staff_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *LogoutRequest) GetRefreshToken() string {
+	if x != nil {
+		return x.RefreshToken
+	}
+	return ""
+}
+
 type RefreshTokenRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RefreshToken  string                 `protobuf:"bytes,1,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
@@ -201,7 +245,7 @@ type RefreshTokenRequest struct {
 
 func (x *RefreshTokenRequest) Reset() {
 	*x = RefreshTokenRequest{}
-	mi := &file_staff_v1_staff_proto_msgTypes[2]
+	mi := &file_staff_v1_staff_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -213,7 +257,7 @@ func (x *RefreshTokenRequest) String() string {
 func (*RefreshTokenRequest) ProtoMessage() {}
 
 func (x *RefreshTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_staff_v1_staff_proto_msgTypes[2]
+	mi := &file_staff_v1_staff_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -226,7 +270,7 @@ func (x *RefreshTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshTokenRequest.ProtoReflect.Descriptor instead.
 func (*RefreshTokenRequest) Descriptor() ([]byte, []int) {
-	return file_staff_v1_staff_proto_rawDescGZIP(), []int{2}
+	return file_staff_v1_staff_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *RefreshTokenRequest) GetRefreshToken() string {
@@ -247,7 +291,7 @@ type RefreshTokenResponse struct {
 
 func (x *RefreshTokenResponse) Reset() {
 	*x = RefreshTokenResponse{}
-	mi := &file_staff_v1_staff_proto_msgTypes[3]
+	mi := &file_staff_v1_staff_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -259,7 +303,7 @@ func (x *RefreshTokenResponse) String() string {
 func (*RefreshTokenResponse) ProtoMessage() {}
 
 func (x *RefreshTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_staff_v1_staff_proto_msgTypes[3]
+	mi := &file_staff_v1_staff_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -272,7 +316,7 @@ func (x *RefreshTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshTokenResponse.ProtoReflect.Descriptor instead.
 func (*RefreshTokenResponse) Descriptor() ([]byte, []int) {
-	return file_staff_v1_staff_proto_rawDescGZIP(), []int{3}
+	return file_staff_v1_staff_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *RefreshTokenResponse) GetAccessToken() string {
@@ -305,7 +349,7 @@ type GetBarberRequest struct {
 
 func (x *GetBarberRequest) Reset() {
 	*x = GetBarberRequest{}
-	mi := &file_staff_v1_staff_proto_msgTypes[4]
+	mi := &file_staff_v1_staff_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -317,7 +361,7 @@ func (x *GetBarberRequest) String() string {
 func (*GetBarberRequest) ProtoMessage() {}
 
 func (x *GetBarberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_staff_v1_staff_proto_msgTypes[4]
+	mi := &file_staff_v1_staff_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -330,7 +374,7 @@ func (x *GetBarberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetBarberRequest.ProtoReflect.Descriptor instead.
 func (*GetBarberRequest) Descriptor() ([]byte, []int) {
-	return file_staff_v1_staff_proto_rawDescGZIP(), []int{4}
+	return file_staff_v1_staff_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetBarberRequest) GetId() string {
@@ -354,7 +398,7 @@ type BarberResponse struct {
 
 func (x *BarberResponse) Reset() {
 	*x = BarberResponse{}
-	mi := &file_staff_v1_staff_proto_msgTypes[5]
+	mi := &file_staff_v1_staff_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -366,7 +410,7 @@ func (x *BarberResponse) String() string {
 func (*BarberResponse) ProtoMessage() {}
 
 func (x *BarberResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_staff_v1_staff_proto_msgTypes[5]
+	mi := &file_staff_v1_staff_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -379,7 +423,7 @@ func (x *BarberResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BarberResponse.ProtoReflect.Descriptor instead.
 func (*BarberResponse) Descriptor() ([]byte, []int) {
-	return file_staff_v1_staff_proto_rawDescGZIP(), []int{5}
+	return file_staff_v1_staff_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *BarberResponse) GetId() string {
@@ -432,7 +476,7 @@ type ListBarbersRequest struct {
 
 func (x *ListBarbersRequest) Reset() {
 	*x = ListBarbersRequest{}
-	mi := &file_staff_v1_staff_proto_msgTypes[6]
+	mi := &file_staff_v1_staff_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -444,7 +488,7 @@ func (x *ListBarbersRequest) String() string {
 func (*ListBarbersRequest) ProtoMessage() {}
 
 func (x *ListBarbersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_staff_v1_staff_proto_msgTypes[6]
+	mi := &file_staff_v1_staff_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -457,7 +501,7 @@ func (x *ListBarbersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListBarbersRequest.ProtoReflect.Descriptor instead.
 func (*ListBarbersRequest) Descriptor() ([]byte, []int) {
-	return file_staff_v1_staff_proto_rawDescGZIP(), []int{6}
+	return file_staff_v1_staff_proto_rawDescGZIP(), []int{7}
 }
 
 type ListBarbersResponse struct {
@@ -469,7 +513,7 @@ type ListBarbersResponse struct {
 
 func (x *ListBarbersResponse) Reset() {
 	*x = ListBarbersResponse{}
-	mi := &file_staff_v1_staff_proto_msgTypes[7]
+	mi := &file_staff_v1_staff_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -481,7 +525,7 @@ func (x *ListBarbersResponse) String() string {
 func (*ListBarbersResponse) ProtoMessage() {}
 
 func (x *ListBarbersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_staff_v1_staff_proto_msgTypes[7]
+	mi := &file_staff_v1_staff_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -494,7 +538,7 @@ func (x *ListBarbersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListBarbersResponse.ProtoReflect.Descriptor instead.
 func (*ListBarbersResponse) Descriptor() ([]byte, []int) {
-	return file_staff_v1_staff_proto_rawDescGZIP(), []int{7}
+	return file_staff_v1_staff_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ListBarbersResponse) GetBarbers() []*BarberResponse {
@@ -517,7 +561,7 @@ type ScheduleDay struct {
 
 func (x *ScheduleDay) Reset() {
 	*x = ScheduleDay{}
-	mi := &file_staff_v1_staff_proto_msgTypes[8]
+	mi := &file_staff_v1_staff_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -529,7 +573,7 @@ func (x *ScheduleDay) String() string {
 func (*ScheduleDay) ProtoMessage() {}
 
 func (x *ScheduleDay) ProtoReflect() protoreflect.Message {
-	mi := &file_staff_v1_staff_proto_msgTypes[8]
+	mi := &file_staff_v1_staff_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -542,7 +586,7 @@ func (x *ScheduleDay) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScheduleDay.ProtoReflect.Descriptor instead.
 func (*ScheduleDay) Descriptor() ([]byte, []int) {
-	return file_staff_v1_staff_proto_rawDescGZIP(), []int{8}
+	return file_staff_v1_staff_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ScheduleDay) GetId() string {
@@ -592,7 +636,7 @@ type AddScheduleRequest struct {
 
 func (x *AddScheduleRequest) Reset() {
 	*x = AddScheduleRequest{}
-	mi := &file_staff_v1_staff_proto_msgTypes[9]
+	mi := &file_staff_v1_staff_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -604,7 +648,7 @@ func (x *AddScheduleRequest) String() string {
 func (*AddScheduleRequest) ProtoMessage() {}
 
 func (x *AddScheduleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_staff_v1_staff_proto_msgTypes[9]
+	mi := &file_staff_v1_staff_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -617,7 +661,7 @@ func (x *AddScheduleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddScheduleRequest.ProtoReflect.Descriptor instead.
 func (*AddScheduleRequest) Descriptor() ([]byte, []int) {
-	return file_staff_v1_staff_proto_rawDescGZIP(), []int{9}
+	return file_staff_v1_staff_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *AddScheduleRequest) GetBarberId() string {
@@ -658,7 +702,7 @@ type GetScheduleRequest struct {
 
 func (x *GetScheduleRequest) Reset() {
 	*x = GetScheduleRequest{}
-	mi := &file_staff_v1_staff_proto_msgTypes[10]
+	mi := &file_staff_v1_staff_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -670,7 +714,7 @@ func (x *GetScheduleRequest) String() string {
 func (*GetScheduleRequest) ProtoMessage() {}
 
 func (x *GetScheduleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_staff_v1_staff_proto_msgTypes[10]
+	mi := &file_staff_v1_staff_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -683,7 +727,7 @@ func (x *GetScheduleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetScheduleRequest.ProtoReflect.Descriptor instead.
 func (*GetScheduleRequest) Descriptor() ([]byte, []int) {
-	return file_staff_v1_staff_proto_rawDescGZIP(), []int{10}
+	return file_staff_v1_staff_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetScheduleRequest) GetBarberId() string {
@@ -710,7 +754,7 @@ type GetScheduleResponse struct {
 
 func (x *GetScheduleResponse) Reset() {
 	*x = GetScheduleResponse{}
-	mi := &file_staff_v1_staff_proto_msgTypes[11]
+	mi := &file_staff_v1_staff_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -722,7 +766,7 @@ func (x *GetScheduleResponse) String() string {
 func (*GetScheduleResponse) ProtoMessage() {}
 
 func (x *GetScheduleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_staff_v1_staff_proto_msgTypes[11]
+	mi := &file_staff_v1_staff_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -735,7 +779,7 @@ func (x *GetScheduleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetScheduleResponse.ProtoReflect.Descriptor instead.
 func (*GetScheduleResponse) Descriptor() ([]byte, []int) {
-	return file_staff_v1_staff_proto_rawDescGZIP(), []int{11}
+	return file_staff_v1_staff_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GetScheduleResponse) GetWeek() string {
@@ -762,7 +806,7 @@ type ListServicesRequest struct {
 
 func (x *ListServicesRequest) Reset() {
 	*x = ListServicesRequest{}
-	mi := &file_staff_v1_staff_proto_msgTypes[12]
+	mi := &file_staff_v1_staff_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -774,7 +818,7 @@ func (x *ListServicesRequest) String() string {
 func (*ListServicesRequest) ProtoMessage() {}
 
 func (x *ListServicesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_staff_v1_staff_proto_msgTypes[12]
+	mi := &file_staff_v1_staff_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -787,7 +831,7 @@ func (x *ListServicesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListServicesRequest.ProtoReflect.Descriptor instead.
 func (*ListServicesRequest) Descriptor() ([]byte, []int) {
-	return file_staff_v1_staff_proto_rawDescGZIP(), []int{12}
+	return file_staff_v1_staff_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ListServicesRequest) GetBarberId() string {
@@ -813,7 +857,7 @@ type ListServicesResponse struct {
 
 func (x *ListServicesResponse) Reset() {
 	*x = ListServicesResponse{}
-	mi := &file_staff_v1_staff_proto_msgTypes[13]
+	mi := &file_staff_v1_staff_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -825,7 +869,7 @@ func (x *ListServicesResponse) String() string {
 func (*ListServicesResponse) ProtoMessage() {}
 
 func (x *ListServicesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_staff_v1_staff_proto_msgTypes[13]
+	mi := &file_staff_v1_staff_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -838,7 +882,7 @@ func (x *ListServicesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListServicesResponse.ProtoReflect.Descriptor instead.
 func (*ListServicesResponse) Descriptor() ([]byte, []int) {
-	return file_staff_v1_staff_proto_rawDescGZIP(), []int{13}
+	return file_staff_v1_staff_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ListServicesResponse) GetServices() []*ServiceResponse {
@@ -859,7 +903,7 @@ type CreateServiceRequest struct {
 
 func (x *CreateServiceRequest) Reset() {
 	*x = CreateServiceRequest{}
-	mi := &file_staff_v1_staff_proto_msgTypes[14]
+	mi := &file_staff_v1_staff_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -871,7 +915,7 @@ func (x *CreateServiceRequest) String() string {
 func (*CreateServiceRequest) ProtoMessage() {}
 
 func (x *CreateServiceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_staff_v1_staff_proto_msgTypes[14]
+	mi := &file_staff_v1_staff_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -884,7 +928,7 @@ func (x *CreateServiceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateServiceRequest.ProtoReflect.Descriptor instead.
 func (*CreateServiceRequest) Descriptor() ([]byte, []int) {
-	return file_staff_v1_staff_proto_rawDescGZIP(), []int{14}
+	return file_staff_v1_staff_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *CreateServiceRequest) GetBarberId() string {
@@ -921,7 +965,7 @@ type UpdateServiceRequest struct {
 
 func (x *UpdateServiceRequest) Reset() {
 	*x = UpdateServiceRequest{}
-	mi := &file_staff_v1_staff_proto_msgTypes[15]
+	mi := &file_staff_v1_staff_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -933,7 +977,7 @@ func (x *UpdateServiceRequest) String() string {
 func (*UpdateServiceRequest) ProtoMessage() {}
 
 func (x *UpdateServiceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_staff_v1_staff_proto_msgTypes[15]
+	mi := &file_staff_v1_staff_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -946,7 +990,7 @@ func (x *UpdateServiceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateServiceRequest.ProtoReflect.Descriptor instead.
 func (*UpdateServiceRequest) Descriptor() ([]byte, []int) {
-	return file_staff_v1_staff_proto_rawDescGZIP(), []int{15}
+	return file_staff_v1_staff_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *UpdateServiceRequest) GetId() string {
@@ -994,7 +1038,7 @@ type DeleteServiceRequest struct {
 
 func (x *DeleteServiceRequest) Reset() {
 	*x = DeleteServiceRequest{}
-	mi := &file_staff_v1_staff_proto_msgTypes[16]
+	mi := &file_staff_v1_staff_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1006,7 +1050,7 @@ func (x *DeleteServiceRequest) String() string {
 func (*DeleteServiceRequest) ProtoMessage() {}
 
 func (x *DeleteServiceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_staff_v1_staff_proto_msgTypes[16]
+	mi := &file_staff_v1_staff_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1019,7 +1063,7 @@ func (x *DeleteServiceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteServiceRequest.ProtoReflect.Descriptor instead.
 func (*DeleteServiceRequest) Descriptor() ([]byte, []int) {
-	return file_staff_v1_staff_proto_rawDescGZIP(), []int{16}
+	return file_staff_v1_staff_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *DeleteServiceRequest) GetId() string {
@@ -1048,7 +1092,7 @@ type ServiceResponse struct {
 
 func (x *ServiceResponse) Reset() {
 	*x = ServiceResponse{}
-	mi := &file_staff_v1_staff_proto_msgTypes[17]
+	mi := &file_staff_v1_staff_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1060,7 +1104,7 @@ func (x *ServiceResponse) String() string {
 func (*ServiceResponse) ProtoMessage() {}
 
 func (x *ServiceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_staff_v1_staff_proto_msgTypes[17]
+	mi := &file_staff_v1_staff_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1073,7 +1117,7 @@ func (x *ServiceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServiceResponse.ProtoReflect.Descriptor instead.
 func (*ServiceResponse) Descriptor() ([]byte, []int) {
-	return file_staff_v1_staff_proto_rawDescGZIP(), []int{17}
+	return file_staff_v1_staff_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ServiceResponse) GetId() string {
@@ -1120,7 +1164,7 @@ type ScheduleEvent struct {
 
 func (x *ScheduleEvent) Reset() {
 	*x = ScheduleEvent{}
-	mi := &file_staff_v1_staff_proto_msgTypes[18]
+	mi := &file_staff_v1_staff_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1132,7 +1176,7 @@ func (x *ScheduleEvent) String() string {
 func (*ScheduleEvent) ProtoMessage() {}
 
 func (x *ScheduleEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_staff_v1_staff_proto_msgTypes[18]
+	mi := &file_staff_v1_staff_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1145,7 +1189,7 @@ func (x *ScheduleEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScheduleEvent.ProtoReflect.Descriptor instead.
 func (*ScheduleEvent) Descriptor() ([]byte, []int) {
-	return file_staff_v1_staff_proto_rawDescGZIP(), []int{18}
+	return file_staff_v1_staff_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ScheduleEvent) GetScheduleId() string {
@@ -1210,7 +1254,9 @@ const file_staff_v1_staff_proto_rawDesc = "" +
 	"\rrefresh_token\x18\x02 \x01(\tR\frefreshToken\x12\x1d\n" +
 	"\n" +
 	"expires_in\x18\x03 \x01(\x05R\texpiresIn\x120\n" +
-	"\x06barber\x18\x04 \x01(\v2\x18.staff.v1.BarberResponseR\x06barber\":\n" +
+	"\x06barber\x18\x04 \x01(\v2\x18.staff.v1.BarberResponseR\x06barber\"4\n" +
+	"\rLogoutRequest\x12#\n" +
+	"\rrefresh_token\x18\x01 \x01(\tR\frefreshToken\":\n" +
 	"\x13RefreshTokenRequest\x12#\n" +
 	"\rrefresh_token\x18\x01 \x01(\tR\frefreshToken\"}\n" +
 	"\x14RefreshTokenResponse\x12!\n" +
@@ -1287,9 +1333,10 @@ const file_staff_v1_staff_proto_rawDesc = "" +
 	"\x11ScheduleEventType\x12\x1e\n" +
 	"\x1aSCHEDULE_EVENT_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14SCHEDULE_EVENT_ADDED\x10\x01\x12\x1a\n" +
-	"\x16SCHEDULE_EVENT_DELETED\x10\x022\xe6\x05\n" +
+	"\x16SCHEDULE_EVENT_DELETED\x10\x022\xa1\x06\n" +
 	"\fStaffService\x128\n" +
-	"\x05Login\x12\x16.staff.v1.LoginRequest\x1a\x17.staff.v1.LoginResponse\x12M\n" +
+	"\x05Login\x12\x16.staff.v1.LoginRequest\x1a\x17.staff.v1.LoginResponse\x129\n" +
+	"\x06Logout\x12\x17.staff.v1.LogoutRequest\x1a\x16.google.protobuf.Empty\x12M\n" +
 	"\fRefreshToken\x12\x1d.staff.v1.RefreshTokenRequest\x1a\x1e.staff.v1.RefreshTokenResponse\x12A\n" +
 	"\tGetBarber\x12\x1a.staff.v1.GetBarberRequest\x1a\x18.staff.v1.BarberResponse\x12J\n" +
 	"\vListBarbers\x12\x1c.staff.v1.ListBarbersRequest\x1a\x1d.staff.v1.ListBarbersResponse\x12J\n" +
@@ -1313,61 +1360,64 @@ func file_staff_v1_staff_proto_rawDescGZIP() []byte {
 }
 
 var file_staff_v1_staff_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_staff_v1_staff_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_staff_v1_staff_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_staff_v1_staff_proto_goTypes = []any{
 	(ScheduleEventType)(0),        // 0: staff.v1.ScheduleEventType
 	(*LoginRequest)(nil),          // 1: staff.v1.LoginRequest
 	(*LoginResponse)(nil),         // 2: staff.v1.LoginResponse
-	(*RefreshTokenRequest)(nil),   // 3: staff.v1.RefreshTokenRequest
-	(*RefreshTokenResponse)(nil),  // 4: staff.v1.RefreshTokenResponse
-	(*GetBarberRequest)(nil),      // 5: staff.v1.GetBarberRequest
-	(*BarberResponse)(nil),        // 6: staff.v1.BarberResponse
-	(*ListBarbersRequest)(nil),    // 7: staff.v1.ListBarbersRequest
-	(*ListBarbersResponse)(nil),   // 8: staff.v1.ListBarbersResponse
-	(*ScheduleDay)(nil),           // 9: staff.v1.ScheduleDay
-	(*AddScheduleRequest)(nil),    // 10: staff.v1.AddScheduleRequest
-	(*GetScheduleRequest)(nil),    // 11: staff.v1.GetScheduleRequest
-	(*GetScheduleResponse)(nil),   // 12: staff.v1.GetScheduleResponse
-	(*ListServicesRequest)(nil),   // 13: staff.v1.ListServicesRequest
-	(*ListServicesResponse)(nil),  // 14: staff.v1.ListServicesResponse
-	(*CreateServiceRequest)(nil),  // 15: staff.v1.CreateServiceRequest
-	(*UpdateServiceRequest)(nil),  // 16: staff.v1.UpdateServiceRequest
-	(*DeleteServiceRequest)(nil),  // 17: staff.v1.DeleteServiceRequest
-	(*ServiceResponse)(nil),       // 18: staff.v1.ServiceResponse
-	(*ScheduleEvent)(nil),         // 19: staff.v1.ScheduleEvent
-	(*timestamppb.Timestamp)(nil), // 20: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),         // 21: google.protobuf.Empty
+	(*LogoutRequest)(nil),         // 3: staff.v1.LogoutRequest
+	(*RefreshTokenRequest)(nil),   // 4: staff.v1.RefreshTokenRequest
+	(*RefreshTokenResponse)(nil),  // 5: staff.v1.RefreshTokenResponse
+	(*GetBarberRequest)(nil),      // 6: staff.v1.GetBarberRequest
+	(*BarberResponse)(nil),        // 7: staff.v1.BarberResponse
+	(*ListBarbersRequest)(nil),    // 8: staff.v1.ListBarbersRequest
+	(*ListBarbersResponse)(nil),   // 9: staff.v1.ListBarbersResponse
+	(*ScheduleDay)(nil),           // 10: staff.v1.ScheduleDay
+	(*AddScheduleRequest)(nil),    // 11: staff.v1.AddScheduleRequest
+	(*GetScheduleRequest)(nil),    // 12: staff.v1.GetScheduleRequest
+	(*GetScheduleResponse)(nil),   // 13: staff.v1.GetScheduleResponse
+	(*ListServicesRequest)(nil),   // 14: staff.v1.ListServicesRequest
+	(*ListServicesResponse)(nil),  // 15: staff.v1.ListServicesResponse
+	(*CreateServiceRequest)(nil),  // 16: staff.v1.CreateServiceRequest
+	(*UpdateServiceRequest)(nil),  // 17: staff.v1.UpdateServiceRequest
+	(*DeleteServiceRequest)(nil),  // 18: staff.v1.DeleteServiceRequest
+	(*ServiceResponse)(nil),       // 19: staff.v1.ServiceResponse
+	(*ScheduleEvent)(nil),         // 20: staff.v1.ScheduleEvent
+	(*timestamppb.Timestamp)(nil), // 21: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),         // 22: google.protobuf.Empty
 }
 var file_staff_v1_staff_proto_depIdxs = []int32{
-	6,  // 0: staff.v1.LoginResponse.barber:type_name -> staff.v1.BarberResponse
-	18, // 1: staff.v1.BarberResponse.services:type_name -> staff.v1.ServiceResponse
-	6,  // 2: staff.v1.ListBarbersResponse.barbers:type_name -> staff.v1.BarberResponse
-	9,  // 3: staff.v1.GetScheduleResponse.days:type_name -> staff.v1.ScheduleDay
-	18, // 4: staff.v1.ListServicesResponse.services:type_name -> staff.v1.ServiceResponse
+	7,  // 0: staff.v1.LoginResponse.barber:type_name -> staff.v1.BarberResponse
+	19, // 1: staff.v1.BarberResponse.services:type_name -> staff.v1.ServiceResponse
+	7,  // 2: staff.v1.ListBarbersResponse.barbers:type_name -> staff.v1.BarberResponse
+	10, // 3: staff.v1.GetScheduleResponse.days:type_name -> staff.v1.ScheduleDay
+	19, // 4: staff.v1.ListServicesResponse.services:type_name -> staff.v1.ServiceResponse
 	0,  // 5: staff.v1.ScheduleEvent.event_type:type_name -> staff.v1.ScheduleEventType
-	20, // 6: staff.v1.ScheduleEvent.occurred_at:type_name -> google.protobuf.Timestamp
+	21, // 6: staff.v1.ScheduleEvent.occurred_at:type_name -> google.protobuf.Timestamp
 	1,  // 7: staff.v1.StaffService.Login:input_type -> staff.v1.LoginRequest
-	3,  // 8: staff.v1.StaffService.RefreshToken:input_type -> staff.v1.RefreshTokenRequest
-	5,  // 9: staff.v1.StaffService.GetBarber:input_type -> staff.v1.GetBarberRequest
-	7,  // 10: staff.v1.StaffService.ListBarbers:input_type -> staff.v1.ListBarbersRequest
-	11, // 11: staff.v1.StaffService.GetSchedule:input_type -> staff.v1.GetScheduleRequest
-	10, // 12: staff.v1.StaffService.AddSchedule:input_type -> staff.v1.AddScheduleRequest
-	13, // 13: staff.v1.StaffService.ListServices:input_type -> staff.v1.ListServicesRequest
-	15, // 14: staff.v1.StaffService.CreateService:input_type -> staff.v1.CreateServiceRequest
-	16, // 15: staff.v1.StaffService.UpdateService:input_type -> staff.v1.UpdateServiceRequest
-	17, // 16: staff.v1.StaffService.DeleteService:input_type -> staff.v1.DeleteServiceRequest
-	2,  // 17: staff.v1.StaffService.Login:output_type -> staff.v1.LoginResponse
-	4,  // 18: staff.v1.StaffService.RefreshToken:output_type -> staff.v1.RefreshTokenResponse
-	6,  // 19: staff.v1.StaffService.GetBarber:output_type -> staff.v1.BarberResponse
-	8,  // 20: staff.v1.StaffService.ListBarbers:output_type -> staff.v1.ListBarbersResponse
-	12, // 21: staff.v1.StaffService.GetSchedule:output_type -> staff.v1.GetScheduleResponse
-	9,  // 22: staff.v1.StaffService.AddSchedule:output_type -> staff.v1.ScheduleDay
-	14, // 23: staff.v1.StaffService.ListServices:output_type -> staff.v1.ListServicesResponse
-	18, // 24: staff.v1.StaffService.CreateService:output_type -> staff.v1.ServiceResponse
-	18, // 25: staff.v1.StaffService.UpdateService:output_type -> staff.v1.ServiceResponse
-	21, // 26: staff.v1.StaffService.DeleteService:output_type -> google.protobuf.Empty
-	17, // [17:27] is the sub-list for method output_type
-	7,  // [7:17] is the sub-list for method input_type
+	3,  // 8: staff.v1.StaffService.Logout:input_type -> staff.v1.LogoutRequest
+	4,  // 9: staff.v1.StaffService.RefreshToken:input_type -> staff.v1.RefreshTokenRequest
+	6,  // 10: staff.v1.StaffService.GetBarber:input_type -> staff.v1.GetBarberRequest
+	8,  // 11: staff.v1.StaffService.ListBarbers:input_type -> staff.v1.ListBarbersRequest
+	12, // 12: staff.v1.StaffService.GetSchedule:input_type -> staff.v1.GetScheduleRequest
+	11, // 13: staff.v1.StaffService.AddSchedule:input_type -> staff.v1.AddScheduleRequest
+	14, // 14: staff.v1.StaffService.ListServices:input_type -> staff.v1.ListServicesRequest
+	16, // 15: staff.v1.StaffService.CreateService:input_type -> staff.v1.CreateServiceRequest
+	17, // 16: staff.v1.StaffService.UpdateService:input_type -> staff.v1.UpdateServiceRequest
+	18, // 17: staff.v1.StaffService.DeleteService:input_type -> staff.v1.DeleteServiceRequest
+	2,  // 18: staff.v1.StaffService.Login:output_type -> staff.v1.LoginResponse
+	22, // 19: staff.v1.StaffService.Logout:output_type -> google.protobuf.Empty
+	5,  // 20: staff.v1.StaffService.RefreshToken:output_type -> staff.v1.RefreshTokenResponse
+	7,  // 21: staff.v1.StaffService.GetBarber:output_type -> staff.v1.BarberResponse
+	9,  // 22: staff.v1.StaffService.ListBarbers:output_type -> staff.v1.ListBarbersResponse
+	13, // 23: staff.v1.StaffService.GetSchedule:output_type -> staff.v1.GetScheduleResponse
+	10, // 24: staff.v1.StaffService.AddSchedule:output_type -> staff.v1.ScheduleDay
+	15, // 25: staff.v1.StaffService.ListServices:output_type -> staff.v1.ListServicesResponse
+	19, // 26: staff.v1.StaffService.CreateService:output_type -> staff.v1.ServiceResponse
+	19, // 27: staff.v1.StaffService.UpdateService:output_type -> staff.v1.ServiceResponse
+	22, // 28: staff.v1.StaffService.DeleteService:output_type -> google.protobuf.Empty
+	18, // [18:29] is the sub-list for method output_type
+	7,  // [7:18] is the sub-list for method input_type
 	7,  // [7:7] is the sub-list for extension type_name
 	7,  // [7:7] is the sub-list for extension extendee
 	0,  // [0:7] is the sub-list for field type_name
@@ -1384,7 +1434,7 @@ func file_staff_v1_staff_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_staff_v1_staff_proto_rawDesc), len(file_staff_v1_staff_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   19,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

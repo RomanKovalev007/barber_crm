@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	StaffService_Login_FullMethodName         = "/staff.v1.StaffService/Login"
+	StaffService_Logout_FullMethodName        = "/staff.v1.StaffService/Logout"
 	StaffService_RefreshToken_FullMethodName  = "/staff.v1.StaffService/RefreshToken"
 	StaffService_GetBarber_FullMethodName     = "/staff.v1.StaffService/GetBarber"
 	StaffService_ListBarbers_FullMethodName   = "/staff.v1.StaffService/ListBarbers"
@@ -37,6 +38,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type StaffServiceClient interface {
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
+	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	RefreshToken(ctx context.Context, in *RefreshTokenRequest, opts ...grpc.CallOption) (*RefreshTokenResponse, error)
 	GetBarber(ctx context.Context, in *GetBarberRequest, opts ...grpc.CallOption) (*BarberResponse, error)
 	ListBarbers(ctx context.Context, in *ListBarbersRequest, opts ...grpc.CallOption) (*ListBarbersResponse, error)
@@ -60,6 +62,16 @@ func (c *staffServiceClient) Login(ctx context.Context, in *LoginRequest, opts .
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LoginResponse)
 	err := c.cc.Invoke(ctx, StaffService_Login_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *staffServiceClient) Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, StaffService_Logout_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -161,6 +173,7 @@ func (c *staffServiceClient) DeleteService(ctx context.Context, in *DeleteServic
 // for forward compatibility.
 type StaffServiceServer interface {
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
+	Logout(context.Context, *LogoutRequest) (*emptypb.Empty, error)
 	RefreshToken(context.Context, *RefreshTokenRequest) (*RefreshTokenResponse, error)
 	GetBarber(context.Context, *GetBarberRequest) (*BarberResponse, error)
 	ListBarbers(context.Context, *ListBarbersRequest) (*ListBarbersResponse, error)
@@ -182,6 +195,9 @@ type UnimplementedStaffServiceServer struct{}
 
 func (UnimplementedStaffServiceServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Login not implemented")
+}
+func (UnimplementedStaffServiceServer) Logout(context.Context, *LogoutRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method Logout not implemented")
 }
 func (UnimplementedStaffServiceServer) RefreshToken(context.Context, *RefreshTokenRequest) (*RefreshTokenResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RefreshToken not implemented")
@@ -245,6 +261,24 @@ func _StaffService_Login_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(StaffServiceServer).Login(ctx, req.(*LoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StaffService_Logout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LogoutRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StaffServiceServer).Logout(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StaffService_Logout_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StaffServiceServer).Logout(ctx, req.(*LogoutRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -421,6 +455,10 @@ var StaffService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Login",
 			Handler:    _StaffService_Login_Handler,
+		},
+		{
+			MethodName: "Logout",
+			Handler:    _StaffService_Logout_Handler,
 		},
 		{
 			MethodName: "RefreshToken",

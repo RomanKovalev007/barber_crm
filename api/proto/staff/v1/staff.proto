@@ -8,6 +8,7 @@ import "google/protobuf/timestamp.proto";
 
 service StaffService {
   rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Logout(LogoutRequest) returns (google.protobuf.Empty);
   rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
   rpc GetBarber(GetBarberRequest) returns (BarberResponse);
   rpc ListBarbers(ListBarbersRequest) returns (ListBarbersResponse);
@@ -31,6 +32,10 @@ message LoginResponse {
   string refresh_token = 2;
   int32 expires_in = 3;
   BarberResponse barber = 4;
+}
+
+message LogoutRequest {
+  string refresh_token = 1;
 }
 
 message RefreshTokenRequest {
