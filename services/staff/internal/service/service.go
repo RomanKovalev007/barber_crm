@@ -57,68 +57,86 @@ func New(repo staffRepo, redisdb *redis.Client, producer eventProducer, ttl int,
 func (s *Service) Login(ctx context.Context, login, password string) (*model.Barber, string, string, error) {
 	barber, err := s.repo.GetBarberByLogin(ctx, login)
 	if err != nil {
+		s.logger.Warn("login failed: barber not found", "login", login)
 		return nil, "", "", fmt.Errorf("invalid credentials")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(barber.PasswordHash), []byte(password)); err != nil {
+		s.logger.Warn("login failed: wrong password", "login", login)
 		return nil, "", "", fmt.Errorf("invalid credentials")
 	}
 
 	accessToken, err := auth.GenerateAccessToken(barber.ID, s.jwtSecret)
 	if err != nil {
+		s.logger.Error("failed to generate access token", "barber_id", barber.ID, "error", err)
 		return nil, "", "", fmt.Errorf("generate access token: %w", err)
 	}
 
 	refreshToken, err := auth.GenerateRefreshToken(barber.ID, s.jwtSecret)
 	if err != nil {
+		s.logger.Error("failed to generate refresh token", "barber_id", barber.ID, "error", err)
 		return nil, "", "", fmt.Errorf("generate refresh token: %w", err)
 	}
 
 	if err := s.redisdb.Set(ctx, "session:"+barber.ID, refreshToken, time.Duration(s.ttl)*time.Minute).Err(); err != nil {
+		s.logger.Error("failed to save session", "barber_id", barber.ID, "error", err)
 		return nil, "", "", fmt.Errorf("save session: %w", err)
 	}
 
+	s.logger.Info("barber logged in", "barber_id", barber.ID)
 	return barber, accessToken, refreshToken, nil
 }
 
 func (s *Service) Logout(ctx context.Context, refreshToken string) error {
 	claims, err := auth.ValidateToken(refreshToken, s.jwtSecret)
 	if err != nil {
+		s.logger.Warn("logout failed: invalid refresh token")
 		return fmt.Errorf("invalid refresh token")
 	}
-	return s.redisdb.Del(ctx, "session:"+claims.BarberID).Err()
+	if err := s.redisdb.Del(ctx, "session:"+claims.BarberID).Err(); err != nil {
+		s.logger.Error("failed to delete session", "barber_id", claims.BarberID, "error", err)
+		return err
+	}
+	s.logger.Info("barber logged out", "barber_id", claims.BarberID)
+	return nil
 }
 
 func (s *Service) RefreshToken(ctx context.Context, refreshTokenStr string) (string, string, error) {
 	claims, err := auth.ValidateToken(refreshTokenStr, s.jwtSecret)
 	if err != nil {
+		s.logger.Warn("refresh token failed: invalid token")
 		return "", "", fmt.Errorf("invalid refresh token")
 	}
 
 	stored, err := s.redisdb.Get(ctx, "session:"+claims.BarberID).Result()
 	if err != nil || stored != refreshTokenStr {
+		s.logger.Warn("refresh token failed: session mismatch or not found", "barber_id", claims.BarberID)
 		return "", "", fmt.Errorf("invalid refresh token")
 	}
 
 	accessToken, err := auth.GenerateAccessToken(claims.BarberID, s.jwtSecret)
 	if err != nil {
+		s.logger.Error("failed to generate access token", "barber_id", claims.BarberID, "error", err)
 		return "", "", err
 	}
 
 	newRefresh, err := auth.GenerateRefreshToken(claims.BarberID, s.jwtSecret)
 	if err != nil {
+		s.logger.Error("failed to generate refresh token", "barber_id", claims.BarberID, "error", err)
 		return "", "", err
 	}
 
 	if err := s.redisdb.Set(ctx, "session:"+claims.BarberID, newRefresh, time.Duration(s.ttl)*time.Minute).Err(); err != nil {
+		s.logger.Error("failed to save session", "barber_id", claims.BarberID, "error", err)
 		return "", "", fmt.Errorf("save session: %w", err)
 	}
 
+	s.logger.Info("token refreshed", "barber_id", claims.BarberID)
 	return accessToken, newRefresh, nil
 }
 
 func (s *Service) GetBarber(ctx context.Context, id string) (*model.Barber, error) {
-	if id == ""{
+	if id == "" {
 		return nil, fmt.Errorf("barber_id is empty")
 	}
 	return s.repo.GetBarber(ctx, id)
@@ -141,8 +159,10 @@ func (s *Service) CreateService(ctx context.Context, svc *model.Service) error {
 		return fmt.Errorf("price can not be negative")
 	}
 	if err := s.repo.CreateService(ctx, svc); err != nil {
+		s.logger.Error("failed to create service", "barber_id", svc.BarberID, "error", err)
 		return err
 	}
+	s.logger.Info("service created", "service_id", svc.ID, "barber_id", svc.BarberID)
 	if err := s.producer.Publish(ctx, kafka.TopicServiceCreated, svc.BarberID, svc); err != nil {
 		s.logger.Warn("failed to publish service.created event", "error", err)
 	}
@@ -163,8 +183,10 @@ func (s *Service) UpdateService(ctx context.Context, svc *model.Service) error {
 		return fmt.Errorf("price can not be negative")
 	}
 	if err := s.repo.UpdateService(ctx, svc); err != nil {
+		s.logger.Error("failed to update service", "service_id", svc.ID, "error", err)
 		return err
 	}
+	s.logger.Info("service updated", "service_id", svc.ID, "barber_id", svc.BarberID)
 	if err := s.producer.Publish(ctx, kafka.TopicServiceUpdated, svc.ID, svc); err != nil {
 		s.logger.Warn("failed to publish service.updated event", "error", err)
 	}
@@ -179,8 +201,10 @@ func (s *Service) DeleteService(ctx context.Context, id, barberID string) error 
 		return fmt.Errorf("barber_id is empty")
 	}
 	if err := s.repo.DeleteService(ctx, id, barberID); err != nil {
+		s.logger.Error("failed to delete service", "service_id", id, "error", err)
 		return err
 	}
+	s.logger.Info("service deleted", "service_id", id, "barber_id", barberID)
 	if err := s.producer.Publish(ctx, kafka.TopicServiceDeleted, id, map[string]string{"id": id, "barber_id": barberID}); err != nil {
 		s.logger.Warn("failed to publish service.deleted event", "error", err)
 	}
@@ -188,23 +212,21 @@ func (s *Service) DeleteService(ctx context.Context, id, barberID string) error 
 }
 
 func (s *Service) ListServices(ctx context.Context, barberID string, includeInactive bool) ([]model.Service, error) {
-	if barberID == ""{
+	if barberID == "" {
 		return nil, fmt.Errorf("barber_id is empty")
 	}
 	return s.repo.ListServices(ctx, barberID, includeInactive)
 }
 
-//schedule
+// schedule
 
 func (s *Service) GetSchedule(ctx context.Context, barberID, week string) ([]model.ScheduleDay, error) {
-	if barberID == ""{
+	if barberID == "" {
 		return nil, fmt.Errorf("barber_id is empty")
 	}
-
-	if week == ""{
+	if week == "" {
 		return nil, fmt.Errorf("week is empty")
 	}
-
 	return s.repo.GetSchedule(ctx, barberID, week)
 }
 
@@ -223,8 +245,10 @@ func (s *Service) AddSchedule(ctx context.Context, barberID string, day *model.S
 	}
 	result, err := s.repo.AddSchedule(ctx, barberID, day)
 	if err != nil {
+		s.logger.Error("failed to add schedule", "barber_id", barberID, "date", day.Date, "error", err)
 		return nil, err
 	}
+	s.logger.Info("schedule added", "barber_id", barberID, "date", day.Date)
 	if err := s.producer.Publish(ctx, kafka.TopicScheduleAdded, barberID, result); err != nil {
 		s.logger.Warn("failed to publish schedule.added event", "error", err)
 	}
