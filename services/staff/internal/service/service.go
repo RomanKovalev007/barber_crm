@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/RomanKovalev007/barber_crm/pkg/auth"
@@ -13,6 +12,13 @@ import (
 	"github.com/RomanKovalev007/barber_crm/services/staff/internal/kafka"
 	"github.com/RomanKovalev007/barber_crm/services/staff/internal/model"
 )
+
+type redisStore interface {
+	Set(ctx context.Context, key string, value any, ttl time.Duration) error
+	Get(ctx context.Context, key string) (string, error)
+	Del(ctx context.Context, key string) error
+}
+
 
 type staffRepo interface {
 	GetBarber(ctx context.Context, id string) (*model.Barber, error)
@@ -34,17 +40,17 @@ type eventProducer interface {
 
 type Service struct {
 	repo      staffRepo
-	redisdb   *redis.Client
+	redis  redisStore
 	producer  eventProducer
 	ttl       int
 	jwtSecret string
 	logger    *slog.Logger
 }
 
-func New(repo staffRepo, redisdb *redis.Client, producer eventProducer, ttl int, jwtSecret string, logger *slog.Logger) *Service {
+func New(repo staffRepo, redis redisStore, producer eventProducer, ttl int, jwtSecret string, logger *slog.Logger) *Service {
 	return &Service{
 		repo:      repo,
-		redisdb:   redisdb,
+		redis:  redis,
 		producer:  producer,
 		ttl:       ttl,
 		jwtSecret: jwtSecret,
@@ -78,7 +84,7 @@ func (s *Service) Login(ctx context.Context, login, password string) (*model.Bar
 		return nil, "", "", apperr.Internal("failed to generate refresh token")
 	}
 
-	if err := s.redisdb.Set(ctx, "session:"+barber.ID, refreshToken, time.Duration(s.ttl)*time.Minute).Err(); err != nil {
+	if err := s.redis.Set(ctx, "session:"+barber.ID, refreshToken, time.Duration(s.ttl)*time.Minute); err != nil {
 		s.logger.Error("failed to save session", "barber_id", barber.ID, "error", err)
 		return nil, "", "", apperr.Internal("failed to save session")
 	}
@@ -93,7 +99,7 @@ func (s *Service) Logout(ctx context.Context, refreshToken string) error {
 		s.logger.Warn("logout failed: invalid refresh token")
 		return apperr.Unauthenticated("invalid refresh token")
 	}
-	if err := s.redisdb.Del(ctx, "session:"+claims.BarberID).Err(); err != nil {
+	if err := s.redis.Del(ctx, "session:"+claims.BarberID); err != nil {
 		s.logger.Error("failed to delete session", "barber_id", claims.BarberID, "error", err)
 		return apperr.Internal("failed to delete session")
 	}
@@ -108,7 +114,7 @@ func (s *Service) RefreshToken(ctx context.Context, refreshTokenStr string) (str
 		return "", "", apperr.Unauthenticated("invalid refresh token")
 	}
 
-	stored, err := s.redisdb.Get(ctx, "session:"+claims.BarberID).Result()
+	stored, err := s.redis.Get(ctx, "session:"+claims.BarberID)
 	if err != nil || stored != refreshTokenStr {
 		s.logger.Warn("refresh token failed: session mismatch or not found", "barber_id", claims.BarberID)
 		return "", "", apperr.Unauthenticated("invalid refresh token")
@@ -126,7 +132,7 @@ func (s *Service) RefreshToken(ctx context.Context, refreshTokenStr string) (str
 		return "", "", apperr.Internal("failed to generate refresh token")
 	}
 
-	if err := s.redisdb.Set(ctx, "session:"+claims.BarberID, newRefresh, time.Duration(s.ttl)*time.Minute).Err(); err != nil {
+	if err := s.redis.Set(ctx, "session:"+claims.BarberID, newRefresh, time.Duration(s.ttl)*time.Minute); err != nil {
 		s.logger.Error("failed to save session", "barber_id", claims.BarberID, "error", err)
 		return "", "", apperr.Internal("failed to save session")
 	}

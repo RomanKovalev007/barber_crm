@@ -50,7 +50,7 @@ func main() {
 	defer producer.Close()
 
 	repo := repository.New(pool)
-	svc := service.New(repo, rdb, producer, ttl, cfg.JWTSecret, log)
+	svc := service.New(repo, repository.NewRedisStore(rdb), producer, ttl, cfg.JWTSecret, log)
 	srv := staffgrpc.NewServer(svc)
 
 	grpcServer := grpc.NewServer()
