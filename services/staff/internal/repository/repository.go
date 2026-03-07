@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -9,6 +10,8 @@ import (
 
 	"github.com/RomanKovalev007/barber_crm/services/staff/internal/model"
 )
+
+var ErrNotFound = errors.New("not found")
 
 type Repository struct {
 	db *pgxpool.Pool
@@ -55,25 +58,42 @@ func (r *Repository) GetBarber(ctx context.Context, id string) (*model.Barber, e
 
 func (r *Repository) ListBarbers(ctx context.Context) ([]model.Barber, error) {
 	rows, err := r.db.Query(ctx,
-		`SELECT id, name
-		 FROM barbers WHERE is_active = true ORDER BY name`)
+		`SELECT b.id, b.name,
+		        s.id, s.barber_id, s.name, s.price, s.is_active
+		 FROM barbers b
+		 LEFT JOIN services s ON s.barber_id = b.id AND s.is_active = true
+		 WHERE b.is_active = true
+		 ORDER BY b.name, s.name`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
 	var barbers []model.Barber
+	index := map[string]int{}
 	for rows.Next() {
-		var b model.Barber
-		if err := rows.Scan(&b.ID, &b.Name); err != nil {
+		var bID, bName string
+		var sID, sBarberID, sName *string
+		var sPrice *int
+		var sIsActive *bool
+		if err := rows.Scan(&bID, &bName, &sID, &sBarberID, &sName, &sPrice, &sIsActive); err != nil {
 			return nil, err
 		}
-		services, err := r.ListServices(ctx, b.ID, false)
-		if err != nil {
-			return nil, err
+		i, seen := index[bID]
+		if !seen {
+			barbers = append(barbers, model.Barber{ID: bID, Name: bName})
+			i = len(barbers) - 1
+			index[bID] = i
 		}
-		b.Services = services
-		barbers = append(barbers, b)
+		if sID != nil {
+			barbers[i].Services = append(barbers[i].Services, model.Service{
+				ID:       *sID,
+				BarberID: *sBarberID,
+				Name:     *sName,
+				Price:    *sPrice,
+				IsActive: *sIsActive,
+			})
+		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -117,11 +137,17 @@ func (r *Repository) CreateService(ctx context.Context, s *model.Service) error 
 }
 
 func (r *Repository) UpdateService(ctx context.Context, s *model.Service) error {
-	_, err := r.db.Exec(ctx,
+	tag, err := r.db.Exec(ctx,
 		`UPDATE services SET name=$1, price=$2, is_active=$3
 		 WHERE id=$4 AND barber_id=$5`,
 		s.Name, s.Price, s.IsActive, s.ID, s.BarberID)
-	return err
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 func (r *Repository) DeleteService(ctx context.Context, id, barberID string) error {
@@ -131,7 +157,7 @@ func (r *Repository) DeleteService(ctx context.Context, id, barberID string) err
 		return err
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("service not found")
+		return ErrNotFound
 	}
 	return nil
 }

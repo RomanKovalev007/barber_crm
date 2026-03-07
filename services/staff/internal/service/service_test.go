@@ -528,6 +528,23 @@ func TestUpdateService_RepoError(t *testing.T) {
 	repo.AssertExpectations(t)
 }
 
+func TestUpdateService_NotFound(t *testing.T) {
+	ctx := context.Background()
+	s := &model.Service{ID: "svc-1", BarberID: "b1", Name: "Haircut", Price: 100}
+
+	repo := new(MockRepo)
+	repo.On("UpdateService", ctx, s).Return(errors.New("service not found"))
+
+	svc := newTestService(repo, new(MockSessionStore), new(MockProducer))
+
+	err := svc.UpdateService(ctx, s)
+
+	var appErr *apperr.AppError
+	require.ErrorAs(t, err, &appErr)
+	assert.Equal(t, apperr.CodeInternal, appErr.Code)
+	repo.AssertExpectations(t)
+}
+
 // ---------- DeleteService ----------
 
 func TestDeleteService_Success(t *testing.T) {
@@ -659,15 +676,16 @@ func TestGetSchedule_EmptyBarberID(t *testing.T) {
 	assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code)
 }
 
-func TestGetSchedule_EmptyWeek(t *testing.T) {
+func TestGetSchedule_InvalidWeekFormat(t *testing.T) {
 	ctx := context.Background()
 	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
 
-	_, err := svc.GetSchedule(ctx, "b1", "")
-
-	var appErr *apperr.AppError
-	require.ErrorAs(t, err, &appErr)
-	assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code)
+	for _, bad := range []string{"", "2026", "W10", "2026-10", "2026-W00", "2026-W54", "2026-w10"} {
+		_, err := svc.GetSchedule(ctx, "b1", bad)
+		var appErr *apperr.AppError
+		require.ErrorAs(t, err, &appErr, "input: %q", bad)
+		assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code, "input: %q", bad)
+	}
 }
 
 func TestGetSchedule_RepoError(t *testing.T) {

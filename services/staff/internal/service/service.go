@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"errors"
 	"log/slog"
+	"regexp"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -11,7 +13,10 @@ import (
 	"github.com/RomanKovalev007/barber_crm/services/staff/internal/apperr"
 	"github.com/RomanKovalev007/barber_crm/services/staff/internal/kafka"
 	"github.com/RomanKovalev007/barber_crm/services/staff/internal/model"
+	"github.com/RomanKovalev007/barber_crm/services/staff/internal/repository"
 )
+
+var weekPattern = regexp.MustCompile(`^\d{4}-W(0[1-9]|[1-4]\d|5[0-3])$`)
 
 type redisStore interface {
 	Set(ctx context.Context, key string, value any, ttl time.Duration) error
@@ -197,6 +202,9 @@ func (s *Service) UpdateService(ctx context.Context, svc *model.Service) error {
 		return apperr.InvalidArgument("price can not be negative")
 	}
 	if err := s.repo.UpdateService(ctx, svc); err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return apperr.NotFound("service not found")
+		}
 		s.logger.Error("failed to update service", "service_id", svc.ID, "error", err)
 		return apperr.Internal("failed to update service")
 	}
@@ -242,8 +250,8 @@ func (s *Service) GetSchedule(ctx context.Context, barberID, week string) ([]mod
 	if barberID == "" {
 		return nil, apperr.InvalidArgument("barber_id is empty")
 	}
-	if week == "" {
-		return nil, apperr.InvalidArgument("week is empty")
+	if !weekPattern.MatchString(week) {
+		return nil, apperr.InvalidArgument("week must be in format YYYY-Www (e.g. 2026-W10)")
 	}
 	days, err := s.repo.GetSchedule(ctx, barberID, week)
 	if err != nil {
