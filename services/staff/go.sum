@@ -1,7 +1,7 @@
 github.com/BurntSushi/toml v1.2.1 h1:9F2/+DoOYIOksmaJFPw1tGFy1eDnIJXg+UHjuD8lTak=
 github.com/BurntSushi/toml v1.2.1/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
-github.com/RomanKovalev007/barber_crm/api v0.0.5 h1:PckJjxNpN0vmwGVwz9NM9ND7dW1w277b/2//dcbtRKQ=
-github.com/RomanKovalev007/barber_crm/api v0.0.5/go.mod h1:KCyOEkDh3N7qN1c4qeD5/F7lzaAaWnNA0DsgH9jSCmw=
+github.com/RomanKovalev007/barber_crm/api v0.0.6 h1:wsa/5lCwlnb45cDclx9ulzkjvE4w08LNxgNfYzc6nb8=
+github.com/RomanKovalev007/barber_crm/api v0.0.6/go.mod h1:KCyOEkDh3N7qN1c4qeD5/F7lzaAaWnNA0DsgH9jSCmw=
 github.com/RomanKovalev007/barber_crm/pkg v0.0.4 h1:QjXCP45MVne5K3na1CzDpcB7abCSDPZw5FiXV3hf+wA=
 github.com/RomanKovalev007/barber_crm/pkg v0.0.4/go.mod h1:j/T5a/hUHYK311hD97gcCcaigc8kw9bTZcsXQcw8h4o=
 github.com/bsm/ginkgo/v2 v2.12.0 h1:Ny8MWAHyOepLGlLKYmXG4IEkioBysk6GpaRTLC8zwWs=

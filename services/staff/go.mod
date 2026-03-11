@@ -3,7 +3,7 @@ module github.com/RomanKovalev007/barber_crm/services/staff
 go 1.24.3
 
 require (
-	github.com/RomanKovalev007/barber_crm/api v0.0.5
+	github.com/RomanKovalev007/barber_crm/api v0.0.6
 	github.com/RomanKovalev007/barber_crm/pkg v0.0.4
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/redis/go-redis/v9 v9.18.0
