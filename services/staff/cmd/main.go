@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"runtime/debug"
 	"syscall"
+	"time"
 
 	pb "github.com/RomanKovalev007/barber_crm/api/proto/staff/v1"
 	"github.com/RomanKovalev007/barber_crm/pkg/config"
@@ -52,6 +53,11 @@ func main() {
 	producer := kafka.NewProducer(cfg.KafkaCfg.Brokers)
 	defer producer.Close()
 
+	if err := producer.Ping(ctx); err != nil {
+		log.Error("failed to connect to kafka", "error", err)
+		os.Exit(1)
+	}
+
 	repo := repository.New(pool)
 	svc := service.New(repo, repository.NewRedisStore(rdb), producer, ttl, cfg.JWTSecret, log)
 	srv := staffgrpc.NewServer(svc)
@@ -90,5 +96,20 @@ func main() {
 	<-quit
 
 	log.Info("shutting down staff service")
-	grpcServer.GracefulStop()
+
+	stopped := make(chan struct{})
+	go func() {
+		grpcServer.GracefulStop()
+		close(stopped)
+	}()
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+	defer cancel()
+	select {
+	case <-stopped:
+		log.Info("graceful shutdown complete")
+	case <-shutdownCtx.Done():
+		log.Warn("graceful shutdown timed out, forcing stop")
+		grpcServer.Stop()
+	}
 }

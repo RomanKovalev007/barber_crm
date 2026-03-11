@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/segmentio/kafka-go"
@@ -39,6 +40,16 @@ func (p *Producer) Publish(ctx context.Context, topic, key string, payload any) 
 		Key:   []byte(key),
 		Value: data,
 	})
+}
+
+func (p *Producer) Ping(ctx context.Context) error {
+	addr := p.writer.Addr.String()
+	conn, err := kafka.DialContext(ctx, "tcp", addr)
+	if err != nil {
+		return fmt.Errorf("kafka ping failed: %w", err)
+	}
+	conn.Close()
+	return nil
 }
 
 func (p *Producer) Close() error {

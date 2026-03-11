@@ -68,6 +68,10 @@ func New(repo staffRepo, redis redisStore, producer eventProducer, ttl int, jwtS
 // barbers
 
 func (s *Service) Login(ctx context.Context, login, password string) (*model.Barber, string, string, error) {
+	if len(password) > 72 {
+		return nil, "", "", apperr.InvalidArgument("password too long")
+	}
+
 	barber, err := s.repo.GetBarberByLogin(ctx, login)
 	if err != nil {
 		s.logger.Warn("login failed: barber not found", "login", login)

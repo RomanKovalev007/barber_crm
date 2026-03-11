@@ -155,6 +155,17 @@ func TestLogin_WrongPassword(t *testing.T) {
 	assert.Equal(t, apperr.CodeUnauthenticated, appErr.Code)
 }
 
+func TestLogin_PasswordTooLong(t *testing.T) {
+	ctx := context.Background()
+	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
+
+	_, _, _, err := svc.Login(ctx, "ivan", string(make([]byte, 73)))
+
+	var appErr *apperr.AppError
+	require.ErrorAs(t, err, &appErr)
+	assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code)
+}
+
 func TestLogin_SessionStoreError(t *testing.T) {
 	ctx := context.Background()
 	password := "secret"
