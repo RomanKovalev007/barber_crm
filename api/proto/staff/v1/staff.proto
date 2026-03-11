@@ -57,10 +57,7 @@ message GetBarberRequest {
 message BarberResponse {
   string id = 1;
   string name = 2;
-  string photo_url = 3;
-  string specialization = 4;
-  double rating = 5;
-  repeated ServiceResponse services = 6;
+  repeated ServiceResponse services = 3;
 }
 
 message ListBarbersRequest {}
@@ -71,12 +68,19 @@ message ListBarbersResponse {
 
 // ─── Schedule ───
 
+enum PartOfDay {
+  PART_OF_DAY_UNSPECIFIED = 0;
+  PART_OF_DAY_AM = 1;
+  PART_OF_DAY_PM = 2;
+}
+
 message ScheduleDay {
   string id = 1;
   string barber_id = 2;
   string date = 3;
   string start_time = 4;
   string end_time = 5;
+  PartOfDay part_of_day = 6;
 }
 
 message AddScheduleRequest {
@@ -84,6 +88,7 @@ message AddScheduleRequest {
   string date = 2;
   string start_time = 3;
   string end_time = 4;
+  PartOfDay part_of_day = 5;
 }
 
 message GetScheduleRequest {

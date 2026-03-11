@@ -23,6 +23,55 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type PartOfDay int32
+
+const (
+	PartOfDay_PART_OF_DAY_UNSPECIFIED PartOfDay = 0
+	PartOfDay_PART_OF_DAY_AM          PartOfDay = 1
+	PartOfDay_PART_OF_DAY_PM          PartOfDay = 2
+)
+
+// Enum value maps for PartOfDay.
+var (
+	PartOfDay_name = map[int32]string{
+		0: "PART_OF_DAY_UNSPECIFIED",
+		1: "PART_OF_DAY_AM",
+		2: "PART_OF_DAY_PM",
+	}
+	PartOfDay_value = map[string]int32{
+		"PART_OF_DAY_UNSPECIFIED": 0,
+		"PART_OF_DAY_AM":          1,
+		"PART_OF_DAY_PM":          2,
+	}
+)
+
+func (x PartOfDay) Enum() *PartOfDay {
+	p := new(PartOfDay)
+	*p = x
+	return p
+}
+
+func (x PartOfDay) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PartOfDay) Descriptor() protoreflect.EnumDescriptor {
+	return file_staff_v1_staff_proto_enumTypes[0].Descriptor()
+}
+
+func (PartOfDay) Type() protoreflect.EnumType {
+	return &file_staff_v1_staff_proto_enumTypes[0]
+}
+
+func (x PartOfDay) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PartOfDay.Descriptor instead.
+func (PartOfDay) EnumDescriptor() ([]byte, []int) {
+	return file_staff_v1_staff_proto_rawDescGZIP(), []int{0}
+}
+
 type ScheduleEventType int32
 
 const (
@@ -56,11 +105,11 @@ func (x ScheduleEventType) String() string {
 }
 
 func (ScheduleEventType) Descriptor() protoreflect.EnumDescriptor {
-	return file_staff_v1_staff_proto_enumTypes[0].Descriptor()
+	return file_staff_v1_staff_proto_enumTypes[1].Descriptor()
 }
 
 func (ScheduleEventType) Type() protoreflect.EnumType {
-	return &file_staff_v1_staff_proto_enumTypes[0]
+	return &file_staff_v1_staff_proto_enumTypes[1]
 }
 
 func (x ScheduleEventType) Number() protoreflect.EnumNumber {
@@ -69,7 +118,7 @@ func (x ScheduleEventType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ScheduleEventType.Descriptor instead.
 func (ScheduleEventType) EnumDescriptor() ([]byte, []int) {
-	return file_staff_v1_staff_proto_rawDescGZIP(), []int{0}
+	return file_staff_v1_staff_proto_rawDescGZIP(), []int{1}
 }
 
 type LoginRequest struct {
@@ -385,15 +434,12 @@ func (x *GetBarberRequest) GetId() string {
 }
 
 type BarberResponse struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name           string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	PhotoUrl       string                 `protobuf:"bytes,3,opt,name=photo_url,json=photoUrl,proto3" json:"photo_url,omitempty"`
-	Specialization string                 `protobuf:"bytes,4,opt,name=specialization,proto3" json:"specialization,omitempty"`
-	Rating         float64                `protobuf:"fixed64,5,opt,name=rating,proto3" json:"rating,omitempty"`
-	Services       []*ServiceResponse     `protobuf:"bytes,6,rep,name=services,proto3" json:"services,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Services      []*ServiceResponse     `protobuf:"bytes,3,rep,name=services,proto3" json:"services,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *BarberResponse) Reset() {
@@ -438,27 +484,6 @@ func (x *BarberResponse) GetName() string {
 		return x.Name
 	}
 	return ""
-}
-
-func (x *BarberResponse) GetPhotoUrl() string {
-	if x != nil {
-		return x.PhotoUrl
-	}
-	return ""
-}
-
-func (x *BarberResponse) GetSpecialization() string {
-	if x != nil {
-		return x.Specialization
-	}
-	return ""
-}
-
-func (x *BarberResponse) GetRating() float64 {
-	if x != nil {
-		return x.Rating
-	}
-	return 0
 }
 
 func (x *BarberResponse) GetServices() []*ServiceResponse {
@@ -555,6 +580,7 @@ type ScheduleDay struct {
 	Date          string                 `protobuf:"bytes,3,opt,name=date,proto3" json:"date,omitempty"`
 	StartTime     string                 `protobuf:"bytes,4,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
 	EndTime       string                 `protobuf:"bytes,5,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	PartOfDay     PartOfDay              `protobuf:"varint,6,opt,name=part_of_day,json=partOfDay,proto3,enum=staff.v1.PartOfDay" json:"part_of_day,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -624,12 +650,20 @@ func (x *ScheduleDay) GetEndTime() string {
 	return ""
 }
 
+func (x *ScheduleDay) GetPartOfDay() PartOfDay {
+	if x != nil {
+		return x.PartOfDay
+	}
+	return PartOfDay_PART_OF_DAY_UNSPECIFIED
+}
+
 type AddScheduleRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	BarberId      string                 `protobuf:"bytes,1,opt,name=barber_id,json=barberId,proto3" json:"barber_id,omitempty"`
 	Date          string                 `protobuf:"bytes,2,opt,name=date,proto3" json:"date,omitempty"`
 	StartTime     string                 `protobuf:"bytes,3,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
 	EndTime       string                 `protobuf:"bytes,4,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	PartOfDay     PartOfDay              `protobuf:"varint,5,opt,name=part_of_day,json=partOfDay,proto3,enum=staff.v1.PartOfDay" json:"part_of_day,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -690,6 +724,13 @@ func (x *AddScheduleRequest) GetEndTime() string {
 		return x.EndTime
 	}
 	return ""
+}
+
+func (x *AddScheduleRequest) GetPartOfDay() PartOfDay {
+	if x != nil {
+		return x.PartOfDay
+	}
+	return PartOfDay_PART_OF_DAY_UNSPECIFIED
 }
 
 type GetScheduleRequest struct {
@@ -1265,30 +1306,29 @@ const file_staff_v1_staff_proto_rawDesc = "" +
 	"\n" +
 	"expires_in\x18\x03 \x01(\x05R\texpiresIn\"\"\n" +
 	"\x10GetBarberRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\xc8\x01\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"k\n" +
 	"\x0eBarberResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1b\n" +
-	"\tphoto_url\x18\x03 \x01(\tR\bphotoUrl\x12&\n" +
-	"\x0especialization\x18\x04 \x01(\tR\x0especialization\x12\x16\n" +
-	"\x06rating\x18\x05 \x01(\x01R\x06rating\x125\n" +
-	"\bservices\x18\x06 \x03(\v2\x19.staff.v1.ServiceResponseR\bservices\"\x14\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x125\n" +
+	"\bservices\x18\x03 \x03(\v2\x19.staff.v1.ServiceResponseR\bservices\"\x14\n" +
 	"\x12ListBarbersRequest\"I\n" +
 	"\x13ListBarbersResponse\x122\n" +
-	"\abarbers\x18\x01 \x03(\v2\x18.staff.v1.BarberResponseR\abarbers\"\x88\x01\n" +
+	"\abarbers\x18\x01 \x03(\v2\x18.staff.v1.BarberResponseR\abarbers\"\xbd\x01\n" +
 	"\vScheduleDay\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\tbarber_id\x18\x02 \x01(\tR\bbarberId\x12\x12\n" +
 	"\x04date\x18\x03 \x01(\tR\x04date\x12\x1d\n" +
 	"\n" +
 	"start_time\x18\x04 \x01(\tR\tstartTime\x12\x19\n" +
-	"\bend_time\x18\x05 \x01(\tR\aendTime\"\x7f\n" +
+	"\bend_time\x18\x05 \x01(\tR\aendTime\x123\n" +
+	"\vpart_of_day\x18\x06 \x01(\x0e2\x13.staff.v1.PartOfDayR\tpartOfDay\"\xb4\x01\n" +
 	"\x12AddScheduleRequest\x12\x1b\n" +
 	"\tbarber_id\x18\x01 \x01(\tR\bbarberId\x12\x12\n" +
 	"\x04date\x18\x02 \x01(\tR\x04date\x12\x1d\n" +
 	"\n" +
 	"start_time\x18\x03 \x01(\tR\tstartTime\x12\x19\n" +
-	"\bend_time\x18\x04 \x01(\tR\aendTime\"E\n" +
+	"\bend_time\x18\x04 \x01(\tR\aendTime\x123\n" +
+	"\vpart_of_day\x18\x05 \x01(\x0e2\x13.staff.v1.PartOfDayR\tpartOfDay\"E\n" +
 	"\x12GetScheduleRequest\x12\x1b\n" +
 	"\tbarber_id\x18\x01 \x01(\tR\bbarberId\x12\x12\n" +
 	"\x04week\x18\x02 \x01(\tR\x04week\"T\n" +
@@ -1329,7 +1369,11 @@ const file_staff_v1_staff_proto_rawDesc = "" +
 	"\n" +
 	"event_type\x18\x06 \x01(\x0e2\x1b.staff.v1.ScheduleEventTypeR\teventType\x12;\n" +
 	"\voccurred_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"occurredAt*i\n" +
+	"occurredAt*P\n" +
+	"\tPartOfDay\x12\x1b\n" +
+	"\x17PART_OF_DAY_UNSPECIFIED\x10\x00\x12\x12\n" +
+	"\x0ePART_OF_DAY_AM\x10\x01\x12\x12\n" +
+	"\x0ePART_OF_DAY_PM\x10\x02*i\n" +
 	"\x11ScheduleEventType\x12\x1e\n" +
 	"\x1aSCHEDULE_EVENT_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14SCHEDULE_EVENT_ADDED\x10\x01\x12\x1a\n" +
@@ -1359,68 +1403,71 @@ func file_staff_v1_staff_proto_rawDescGZIP() []byte {
 	return file_staff_v1_staff_proto_rawDescData
 }
 
-var file_staff_v1_staff_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_staff_v1_staff_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_staff_v1_staff_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_staff_v1_staff_proto_goTypes = []any{
-	(ScheduleEventType)(0),        // 0: staff.v1.ScheduleEventType
-	(*LoginRequest)(nil),          // 1: staff.v1.LoginRequest
-	(*LoginResponse)(nil),         // 2: staff.v1.LoginResponse
-	(*LogoutRequest)(nil),         // 3: staff.v1.LogoutRequest
-	(*RefreshTokenRequest)(nil),   // 4: staff.v1.RefreshTokenRequest
-	(*RefreshTokenResponse)(nil),  // 5: staff.v1.RefreshTokenResponse
-	(*GetBarberRequest)(nil),      // 6: staff.v1.GetBarberRequest
-	(*BarberResponse)(nil),        // 7: staff.v1.BarberResponse
-	(*ListBarbersRequest)(nil),    // 8: staff.v1.ListBarbersRequest
-	(*ListBarbersResponse)(nil),   // 9: staff.v1.ListBarbersResponse
-	(*ScheduleDay)(nil),           // 10: staff.v1.ScheduleDay
-	(*AddScheduleRequest)(nil),    // 11: staff.v1.AddScheduleRequest
-	(*GetScheduleRequest)(nil),    // 12: staff.v1.GetScheduleRequest
-	(*GetScheduleResponse)(nil),   // 13: staff.v1.GetScheduleResponse
-	(*ListServicesRequest)(nil),   // 14: staff.v1.ListServicesRequest
-	(*ListServicesResponse)(nil),  // 15: staff.v1.ListServicesResponse
-	(*CreateServiceRequest)(nil),  // 16: staff.v1.CreateServiceRequest
-	(*UpdateServiceRequest)(nil),  // 17: staff.v1.UpdateServiceRequest
-	(*DeleteServiceRequest)(nil),  // 18: staff.v1.DeleteServiceRequest
-	(*ServiceResponse)(nil),       // 19: staff.v1.ServiceResponse
-	(*ScheduleEvent)(nil),         // 20: staff.v1.ScheduleEvent
-	(*timestamppb.Timestamp)(nil), // 21: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),         // 22: google.protobuf.Empty
+	(PartOfDay)(0),                // 0: staff.v1.PartOfDay
+	(ScheduleEventType)(0),        // 1: staff.v1.ScheduleEventType
+	(*LoginRequest)(nil),          // 2: staff.v1.LoginRequest
+	(*LoginResponse)(nil),         // 3: staff.v1.LoginResponse
+	(*LogoutRequest)(nil),         // 4: staff.v1.LogoutRequest
+	(*RefreshTokenRequest)(nil),   // 5: staff.v1.RefreshTokenRequest
+	(*RefreshTokenResponse)(nil),  // 6: staff.v1.RefreshTokenResponse
+	(*GetBarberRequest)(nil),      // 7: staff.v1.GetBarberRequest
+	(*BarberResponse)(nil),        // 8: staff.v1.BarberResponse
+	(*ListBarbersRequest)(nil),    // 9: staff.v1.ListBarbersRequest
+	(*ListBarbersResponse)(nil),   // 10: staff.v1.ListBarbersResponse
+	(*ScheduleDay)(nil),           // 11: staff.v1.ScheduleDay
+	(*AddScheduleRequest)(nil),    // 12: staff.v1.AddScheduleRequest
+	(*GetScheduleRequest)(nil),    // 13: staff.v1.GetScheduleRequest
+	(*GetScheduleResponse)(nil),   // 14: staff.v1.GetScheduleResponse
+	(*ListServicesRequest)(nil),   // 15: staff.v1.ListServicesRequest
+	(*ListServicesResponse)(nil),  // 16: staff.v1.ListServicesResponse
+	(*CreateServiceRequest)(nil),  // 17: staff.v1.CreateServiceRequest
+	(*UpdateServiceRequest)(nil),  // 18: staff.v1.UpdateServiceRequest
+	(*DeleteServiceRequest)(nil),  // 19: staff.v1.DeleteServiceRequest
+	(*ServiceResponse)(nil),       // 20: staff.v1.ServiceResponse
+	(*ScheduleEvent)(nil),         // 21: staff.v1.ScheduleEvent
+	(*timestamppb.Timestamp)(nil), // 22: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),         // 23: google.protobuf.Empty
 }
 var file_staff_v1_staff_proto_depIdxs = []int32{
-	7,  // 0: staff.v1.LoginResponse.barber:type_name -> staff.v1.BarberResponse
-	19, // 1: staff.v1.BarberResponse.services:type_name -> staff.v1.ServiceResponse
-	7,  // 2: staff.v1.ListBarbersResponse.barbers:type_name -> staff.v1.BarberResponse
-	10, // 3: staff.v1.GetScheduleResponse.days:type_name -> staff.v1.ScheduleDay
-	19, // 4: staff.v1.ListServicesResponse.services:type_name -> staff.v1.ServiceResponse
-	0,  // 5: staff.v1.ScheduleEvent.event_type:type_name -> staff.v1.ScheduleEventType
-	21, // 6: staff.v1.ScheduleEvent.occurred_at:type_name -> google.protobuf.Timestamp
-	1,  // 7: staff.v1.StaffService.Login:input_type -> staff.v1.LoginRequest
-	3,  // 8: staff.v1.StaffService.Logout:input_type -> staff.v1.LogoutRequest
-	4,  // 9: staff.v1.StaffService.RefreshToken:input_type -> staff.v1.RefreshTokenRequest
-	6,  // 10: staff.v1.StaffService.GetBarber:input_type -> staff.v1.GetBarberRequest
-	8,  // 11: staff.v1.StaffService.ListBarbers:input_type -> staff.v1.ListBarbersRequest
-	12, // 12: staff.v1.StaffService.GetSchedule:input_type -> staff.v1.GetScheduleRequest
-	11, // 13: staff.v1.StaffService.AddSchedule:input_type -> staff.v1.AddScheduleRequest
-	14, // 14: staff.v1.StaffService.ListServices:input_type -> staff.v1.ListServicesRequest
-	16, // 15: staff.v1.StaffService.CreateService:input_type -> staff.v1.CreateServiceRequest
-	17, // 16: staff.v1.StaffService.UpdateService:input_type -> staff.v1.UpdateServiceRequest
-	18, // 17: staff.v1.StaffService.DeleteService:input_type -> staff.v1.DeleteServiceRequest
-	2,  // 18: staff.v1.StaffService.Login:output_type -> staff.v1.LoginResponse
-	22, // 19: staff.v1.StaffService.Logout:output_type -> google.protobuf.Empty
-	5,  // 20: staff.v1.StaffService.RefreshToken:output_type -> staff.v1.RefreshTokenResponse
-	7,  // 21: staff.v1.StaffService.GetBarber:output_type -> staff.v1.BarberResponse
-	9,  // 22: staff.v1.StaffService.ListBarbers:output_type -> staff.v1.ListBarbersResponse
-	13, // 23: staff.v1.StaffService.GetSchedule:output_type -> staff.v1.GetScheduleResponse
-	10, // 24: staff.v1.StaffService.AddSchedule:output_type -> staff.v1.ScheduleDay
-	15, // 25: staff.v1.StaffService.ListServices:output_type -> staff.v1.ListServicesResponse
-	19, // 26: staff.v1.StaffService.CreateService:output_type -> staff.v1.ServiceResponse
-	19, // 27: staff.v1.StaffService.UpdateService:output_type -> staff.v1.ServiceResponse
-	22, // 28: staff.v1.StaffService.DeleteService:output_type -> google.protobuf.Empty
-	18, // [18:29] is the sub-list for method output_type
-	7,  // [7:18] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	8,  // 0: staff.v1.LoginResponse.barber:type_name -> staff.v1.BarberResponse
+	20, // 1: staff.v1.BarberResponse.services:type_name -> staff.v1.ServiceResponse
+	8,  // 2: staff.v1.ListBarbersResponse.barbers:type_name -> staff.v1.BarberResponse
+	0,  // 3: staff.v1.ScheduleDay.part_of_day:type_name -> staff.v1.PartOfDay
+	0,  // 4: staff.v1.AddScheduleRequest.part_of_day:type_name -> staff.v1.PartOfDay
+	11, // 5: staff.v1.GetScheduleResponse.days:type_name -> staff.v1.ScheduleDay
+	20, // 6: staff.v1.ListServicesResponse.services:type_name -> staff.v1.ServiceResponse
+	1,  // 7: staff.v1.ScheduleEvent.event_type:type_name -> staff.v1.ScheduleEventType
+	22, // 8: staff.v1.ScheduleEvent.occurred_at:type_name -> google.protobuf.Timestamp
+	2,  // 9: staff.v1.StaffService.Login:input_type -> staff.v1.LoginRequest
+	4,  // 10: staff.v1.StaffService.Logout:input_type -> staff.v1.LogoutRequest
+	5,  // 11: staff.v1.StaffService.RefreshToken:input_type -> staff.v1.RefreshTokenRequest
+	7,  // 12: staff.v1.StaffService.GetBarber:input_type -> staff.v1.GetBarberRequest
+	9,  // 13: staff.v1.StaffService.ListBarbers:input_type -> staff.v1.ListBarbersRequest
+	13, // 14: staff.v1.StaffService.GetSchedule:input_type -> staff.v1.GetScheduleRequest
+	12, // 15: staff.v1.StaffService.AddSchedule:input_type -> staff.v1.AddScheduleRequest
+	15, // 16: staff.v1.StaffService.ListServices:input_type -> staff.v1.ListServicesRequest
+	17, // 17: staff.v1.StaffService.CreateService:input_type -> staff.v1.CreateServiceRequest
+	18, // 18: staff.v1.StaffService.UpdateService:input_type -> staff.v1.UpdateServiceRequest
+	19, // 19: staff.v1.StaffService.DeleteService:input_type -> staff.v1.DeleteServiceRequest
+	3,  // 20: staff.v1.StaffService.Login:output_type -> staff.v1.LoginResponse
+	23, // 21: staff.v1.StaffService.Logout:output_type -> google.protobuf.Empty
+	6,  // 22: staff.v1.StaffService.RefreshToken:output_type -> staff.v1.RefreshTokenResponse
+	8,  // 23: staff.v1.StaffService.GetBarber:output_type -> staff.v1.BarberResponse
+	10, // 24: staff.v1.StaffService.ListBarbers:output_type -> staff.v1.ListBarbersResponse
+	14, // 25: staff.v1.StaffService.GetSchedule:output_type -> staff.v1.GetScheduleResponse
+	11, // 26: staff.v1.StaffService.AddSchedule:output_type -> staff.v1.ScheduleDay
+	16, // 27: staff.v1.StaffService.ListServices:output_type -> staff.v1.ListServicesResponse
+	20, // 28: staff.v1.StaffService.CreateService:output_type -> staff.v1.ServiceResponse
+	20, // 29: staff.v1.StaffService.UpdateService:output_type -> staff.v1.ServiceResponse
+	23, // 30: staff.v1.StaffService.DeleteService:output_type -> google.protobuf.Empty
+	20, // [20:31] is the sub-list for method output_type
+	9,  // [9:20] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_staff_v1_staff_proto_init() }
@@ -1433,7 +1480,7 @@ func file_staff_v1_staff_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_staff_v1_staff_proto_rawDesc), len(file_staff_v1_staff_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
