@@ -707,8 +707,8 @@ func TestGetSchedule_RepoError(t *testing.T) {
 
 func TestAddSchedule_Success(t *testing.T) {
 	ctx := context.Background()
-	day := &model.ScheduleDay{Date: "2026-03-03", StartTime: "09:00", EndTime: "18:00"}
-	result := &model.ScheduleDay{ID: "day-1", BarberID: "b1", Date: "2026-03-03", StartTime: "09:00", EndTime: "18:00"}
+	day := &model.ScheduleDay{Date: "2026-03-03", StartTime: "09:00", EndTime: "18:00", PartOfDay: model.PartOfDayAM}
+	result := &model.ScheduleDay{ID: "day-1", BarberID: "b1", Date: "2026-03-03", StartTime: "09:00", EndTime: "18:00", PartOfDay: model.PartOfDayAM}
 
 	repo := new(MockRepo)
 	repo.On("AddSchedule", ctx, "b1", day).Return(result, nil)
@@ -788,9 +788,20 @@ func TestAddSchedule_StartTimeNotBeforeEndTime(t *testing.T) {
 	}
 }
 
+func TestAddSchedule_InvalidPartOfDay(t *testing.T) {
+	ctx := context.Background()
+	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
+
+	_, err := svc.AddSchedule(ctx, "b1", &model.ScheduleDay{Date: "2026-03-03", StartTime: "09:00", EndTime: "18:00", PartOfDay: "noon"})
+
+	var appErr *apperr.AppError
+	require.ErrorAs(t, err, &appErr)
+	assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code)
+}
+
 func TestAddSchedule_RepoError(t *testing.T) {
 	ctx := context.Background()
-	day := &model.ScheduleDay{Date: "2026-03-03", StartTime: "09:00", EndTime: "18:00"}
+	day := &model.ScheduleDay{Date: "2026-03-03", StartTime: "09:00", EndTime: "18:00", PartOfDay: model.PartOfDayAM}
 
 	repo := new(MockRepo)
 	repo.On("AddSchedule", ctx, "b1", day).Return((*model.ScheduleDay)(nil), errors.New("db error"))

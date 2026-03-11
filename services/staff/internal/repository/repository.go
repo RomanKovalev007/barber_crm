@@ -164,7 +164,7 @@ func (r *Repository) DeleteService(ctx context.Context, id, barberID string) err
 
 func (r *Repository) GetSchedule(ctx context.Context, barberID, week string) ([]model.ScheduleDay, error) {
 	rows, err := r.db.Query(ctx,
-		`SELECT id, barber_id, date::text, COALESCE(start_time::text,''), COALESCE(end_time::text,'')
+		`SELECT id, barber_id, date::text, COALESCE(start_time::text,''), COALESCE(end_time::text,''), part_of_day
 		 FROM schedule
 		 WHERE barber_id = $1 AND date >= date_trunc('week', to_date($2 || '-1', 'IYYY-"W"IW-D'))
 		   AND date < date_trunc('week', to_date($2 || '-1', 'IYYY-"W"IW-D')) + interval '7 days'
@@ -177,7 +177,7 @@ func (r *Repository) GetSchedule(ctx context.Context, barberID, week string) ([]
 	var days []model.ScheduleDay
 	for rows.Next() {
 		var d model.ScheduleDay
-		if err := rows.Scan(&d.ID, &d.BarberID, &d.Date, &d.StartTime, &d.EndTime); err != nil {
+		if err := rows.Scan(&d.ID, &d.BarberID, &d.Date, &d.StartTime, &d.EndTime, &d.PartOfDay); err != nil {
 			return nil, err
 		}
 		days = append(days, d)
@@ -190,12 +190,12 @@ func (r *Repository) GetSchedule(ctx context.Context, barberID, week string) ([]
 
 func (r *Repository) AddSchedule(ctx context.Context, barberID string, day *model.ScheduleDay) (*model.ScheduleDay, error) {
 	err := r.db.QueryRow(ctx,
-		`INSERT INTO schedule (barber_id, date, start_time, end_time)
-			VALUES ($1, $2, $3, $4)
+		`INSERT INTO schedule (barber_id, date, start_time, end_time, part_of_day)
+			VALUES ($1, $2, $3, $4, $5)
 			ON CONFLICT (barber_id, date) DO UPDATE SET
-			start_time = EXCLUDED.start_time, end_time = EXCLUDED.end_time
+			start_time = EXCLUDED.start_time, end_time = EXCLUDED.end_time, part_of_day = EXCLUDED.part_of_day
 			RETURNING id`,
-		barberID, day.Date, day.StartTime, day.EndTime).Scan(&day.ID)
+		barberID, day.Date, day.StartTime, day.EndTime, day.PartOfDay).Scan(&day.ID)
 	if err != nil {
 		return nil, err
 	}

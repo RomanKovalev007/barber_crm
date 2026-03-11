@@ -22,10 +22,18 @@ type Service struct {
 	//DurationMin int
 }
 
+type PartOfDay string
+
+const (
+	PartOfDayAM PartOfDay = "am"
+	PartOfDayPM PartOfDay = "pm"
+)
+
 type ScheduleDay struct {
-	ID         string
-	BarberID   string
-	Date       string
-	StartTime  string
-	EndTime    string
+	ID        string
+	BarberID  string
+	Date      string
+	StartTime string
+	EndTime   string
+	PartOfDay PartOfDay
 }

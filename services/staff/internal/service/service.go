@@ -278,6 +278,9 @@ func (s *Service) AddSchedule(ctx context.Context, barberID string, day *model.S
 	if day.StartTime >= day.EndTime {
 		return nil, apperr.InvalidArgument("start_time must be before end_time")
 	}
+	if day.PartOfDay != model.PartOfDayAM && day.PartOfDay != model.PartOfDayPM {
+		return nil, apperr.InvalidArgument("part_of_day must be 'am' or 'pm'")
+	}
 	result, err := s.repo.AddSchedule(ctx, barberID, day)
 	if err != nil {
 		s.logger.Error("failed to add schedule", "barber_id", barberID, "date", day.Date, "error", err)

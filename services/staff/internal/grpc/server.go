@@ -116,6 +116,7 @@ func (s *Server) AddSchedule(ctx context.Context, req *pb.AddScheduleRequest) (*
 		Date:      req.Date,
 		StartTime: req.StartTime,
 		EndTime:   req.EndTime,
+		PartOfDay: partOfDayFromProto(req.PartOfDay),
 	}
 	result, err := s.svc.AddSchedule(ctx, req.BarberId, day)
 	if err != nil {
@@ -195,6 +196,20 @@ func serviceToProto(s *model.Service) *pb.ServiceResponse {
 	}
 }
 
+func partOfDayFromProto(p pb.PartOfDay) model.PartOfDay {
+	if p == pb.PartOfDay_PART_OF_DAY_PM {
+		return model.PartOfDayPM
+	}
+	return model.PartOfDayAM
+}
+
+func partOfDayToProto(p model.PartOfDay) pb.PartOfDay {
+	if p == model.PartOfDayPM {
+		return pb.PartOfDay_PART_OF_DAY_PM
+	}
+	return pb.PartOfDay_PART_OF_DAY_AM
+}
+
 func scheduleToProto(s *model.ScheduleDay) *pb.ScheduleDay {
 	return &pb.ScheduleDay{
 		Id:        s.ID,
@@ -202,5 +217,6 @@ func scheduleToProto(s *model.ScheduleDay) *pb.ScheduleDay {
 		Date:      s.Date,
 		StartTime: s.StartTime,
 		EndTime:   s.EndTime,
+		PartOfDay: partOfDayToProto(s.PartOfDay),
 	}
 }
