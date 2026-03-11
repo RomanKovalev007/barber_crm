@@ -17,6 +17,8 @@ import (
 )
 
 var weekPattern = regexp.MustCompile(`^\d{4}-W(0[1-9]|[1-4]\d|5[0-3])$`)
+var datePattern = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
+var timePattern = regexp.MustCompile(`^\d{2}:\d{2}$`)
 
 type redisStore interface {
 	Set(ctx context.Context, key string, value any, ttl time.Duration) error
@@ -264,14 +266,17 @@ func (s *Service) AddSchedule(ctx context.Context, barberID string, day *model.S
 	if barberID == "" {
 		return nil, apperr.InvalidArgument("barber_id is empty")
 	}
-	if day.Date == "" {
-		return nil, apperr.InvalidArgument("date is empty")
+	if !datePattern.MatchString(day.Date) {
+		return nil, apperr.InvalidArgument("date must be in format YYYY-MM-DD")
 	}
-	if day.StartTime == "" {
-		return nil, apperr.InvalidArgument("start_time is empty")
+	if !timePattern.MatchString(day.StartTime) {
+		return nil, apperr.InvalidArgument("start_time must be in format HH:MM")
 	}
-	if day.EndTime == "" {
-		return nil, apperr.InvalidArgument("end_time is empty")
+	if !timePattern.MatchString(day.EndTime) {
+		return nil, apperr.InvalidArgument("end_time must be in format HH:MM")
+	}
+	if day.StartTime >= day.EndTime {
+		return nil, apperr.InvalidArgument("start_time must be before end_time")
 	}
 	result, err := s.repo.AddSchedule(ctx, barberID, day)
 	if err != nil {

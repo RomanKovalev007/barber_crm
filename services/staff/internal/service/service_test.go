@@ -737,37 +737,55 @@ func TestAddSchedule_EmptyBarberID(t *testing.T) {
 	assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code)
 }
 
-func TestAddSchedule_EmptyDate(t *testing.T) {
+func TestAddSchedule_InvalidDate(t *testing.T) {
 	ctx := context.Background()
 	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
 
-	_, err := svc.AddSchedule(ctx, "b1", &model.ScheduleDay{StartTime: "09:00", EndTime: "18:00"})
-
-	var appErr *apperr.AppError
-	require.ErrorAs(t, err, &appErr)
-	assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code)
+	for _, bad := range []string{"", "03-03-2026", "2026/03/03", "2026-3-3"} {
+		_, err := svc.AddSchedule(ctx, "b1", &model.ScheduleDay{Date: bad, StartTime: "09:00", EndTime: "18:00"})
+		var appErr *apperr.AppError
+		require.ErrorAs(t, err, &appErr, "input: %q", bad)
+		assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code, "input: %q", bad)
+	}
 }
 
-func TestAddSchedule_EmptyStartTime(t *testing.T) {
+func TestAddSchedule_InvalidStartTime(t *testing.T) {
 	ctx := context.Background()
 	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
 
-	_, err := svc.AddSchedule(ctx, "b1", &model.ScheduleDay{Date: "2026-03-03", EndTime: "18:00"})
-
-	var appErr *apperr.AppError
-	require.ErrorAs(t, err, &appErr)
-	assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code)
+	for _, bad := range []string{"", "9:00", "09:00:00", "0900"} {
+		_, err := svc.AddSchedule(ctx, "b1", &model.ScheduleDay{Date: "2026-03-03", StartTime: bad, EndTime: "18:00"})
+		var appErr *apperr.AppError
+		require.ErrorAs(t, err, &appErr, "input: %q", bad)
+		assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code, "input: %q", bad)
+	}
 }
 
-func TestAddSchedule_EmptyEndTime(t *testing.T) {
+func TestAddSchedule_InvalidEndTime(t *testing.T) {
 	ctx := context.Background()
 	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
 
-	_, err := svc.AddSchedule(ctx, "b1", &model.ScheduleDay{Date: "2026-03-03", StartTime: "09:00"})
+	for _, bad := range []string{"", "18", "6:00pm", "1800"} {
+		_, err := svc.AddSchedule(ctx, "b1", &model.ScheduleDay{Date: "2026-03-03", StartTime: "09:00", EndTime: bad})
+		var appErr *apperr.AppError
+		require.ErrorAs(t, err, &appErr, "input: %q", bad)
+		assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code, "input: %q", bad)
+	}
+}
 
-	var appErr *apperr.AppError
-	require.ErrorAs(t, err, &appErr)
-	assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code)
+func TestAddSchedule_StartTimeNotBeforeEndTime(t *testing.T) {
+	ctx := context.Background()
+	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
+
+	for _, tc := range []struct{ start, end string }{
+		{"18:00", "09:00"},
+		{"09:00", "09:00"},
+	} {
+		_, err := svc.AddSchedule(ctx, "b1", &model.ScheduleDay{Date: "2026-03-03", StartTime: tc.start, EndTime: tc.end})
+		var appErr *apperr.AppError
+		require.ErrorAs(t, err, &appErr, "start=%q end=%q", tc.start, tc.end)
+		assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code, "start=%q end=%q", tc.start, tc.end)
+	}
 }
 
 func TestAddSchedule_RepoError(t *testing.T) {
