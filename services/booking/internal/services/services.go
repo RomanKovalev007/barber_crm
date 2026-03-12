@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	staffv1 "github.com/RomanKovalev007/barber_crm/api/proto/staff/v1"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/apperr"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/model"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/repo"
@@ -15,6 +16,22 @@ import (
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
+
+type bookingRepo interface {
+	CreateBooking(ctx context.Context, b *model.Booking) error
+	GetBooking(ctx context.Context, id string) (*model.Booking, error)
+	UpdateBookingDetails(ctx context.Context, id, serviceID, serviceName string, timeStart, timeEnd time.Time) error
+	UpdateBookingStatus(ctx context.Context, id, status string) error
+	DeleteBooking(ctx context.Context, id string) error
+	GetBookingsByBarberAndDate(ctx context.Context, barberID string, date time.Time) ([]model.Booking, error)
+	HasActiveBooking(ctx context.Context, clientPhone string) (bool, error)
+}
+
+type staffClientIntr interface {
+	GetBarber(ctx context.Context, barberID string) (*staffv1.BarberResponse, error)
+	ListServices(ctx context.Context, barberID string, includeInactive bool) (*staffv1.ListServicesResponse, error)
+	GetSchedule(ctx context.Context, barberID, week string) (*staffv1.GetScheduleResponse, error)
+}
 
 const slotDuration = 60 * time.Minute
 
@@ -30,9 +47,9 @@ type BookingIntr interface {
 
 type bookingService struct {
 	log         *slog.Logger
-	repo        *repo.BookingRepo
+	repo        bookingRepo
 	redis       *redis.Client
-	staffClient *staffclient.Client
+	staffClient staffClientIntr
 }
 
 func New(r *repo.BookingRepo, rc *redis.Client, ttl int, jwt string, log *slog.Logger, staffClient *staffclient.Client) BookingIntr {
