@@ -26,13 +26,13 @@ type redisStore interface {
 	Del(ctx context.Context, key string) error
 }
 
-
 type staffRepo interface {
 	GetBarber(ctx context.Context, id string) (*model.Barber, error)
 	GetBarberByLogin(ctx context.Context, login string) (*model.Barber, error)
 	ListBarbers(ctx context.Context) ([]model.Barber, error)
 
-	AddSchedule(ctx context.Context, barberID string, day *model.ScheduleDay) (*model.ScheduleDay, error)
+	UpsertSchedule(ctx context.Context, barberID string, day *model.ScheduleDay) (*model.ScheduleDay, error)
+	DeleteSchedule(ctx context.Context, barberID, date string) error
 	GetSchedule(ctx context.Context, barberID string, week string) ([]model.ScheduleDay, error)
 
 	CreateService(ctx context.Context, s *model.Service) error
@@ -47,7 +47,7 @@ type eventProducer interface {
 
 type Service struct {
 	repo      staffRepo
-	redis  redisStore
+	redis     redisStore
 	producer  eventProducer
 	ttl       int
 	jwtSecret string
@@ -57,7 +57,7 @@ type Service struct {
 func New(repo staffRepo, redis redisStore, producer eventProducer, ttl int, jwtSecret string, logger *slog.Logger) *Service {
 	return &Service{
 		repo:      repo,
-		redis:  redis,
+		redis:     redis,
 		producer:  producer,
 		ttl:       ttl,
 		jwtSecret: jwtSecret,
@@ -183,6 +183,9 @@ func (s *Service) CreateService(ctx context.Context, svc *model.Service) error {
 	if svc.Price < 0 {
 		return apperr.InvalidArgument("price can not be negative")
 	}
+	if svc.DurationMinutes <= 0 || svc.DurationMinutes%15 != 0 {
+		return apperr.InvalidArgument("duration_minutes must be a positive multiple of 15")
+	}
 	if err := s.repo.CreateService(ctx, svc); err != nil {
 		s.logger.Error("failed to create service", "barber_id", svc.BarberID, "error", err)
 		return apperr.Internal("failed to create service")
@@ -206,6 +209,9 @@ func (s *Service) UpdateService(ctx context.Context, svc *model.Service) error {
 	}
 	if svc.Price < 0 {
 		return apperr.InvalidArgument("price can not be negative")
+	}
+	if svc.DurationMinutes <= 0 || svc.DurationMinutes%15 != 0 {
+		return apperr.InvalidArgument("duration_minutes must be a positive multiple of 15")
 	}
 	if err := s.repo.UpdateService(ctx, svc); err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -266,7 +272,7 @@ func (s *Service) GetSchedule(ctx context.Context, barberID, week string) ([]mod
 	return days, nil
 }
 
-func (s *Service) AddSchedule(ctx context.Context, barberID string, day *model.ScheduleDay) (*model.ScheduleDay, error) {
+func (s *Service) UpsertSchedule(ctx context.Context, barberID string, day *model.ScheduleDay) (*model.ScheduleDay, error) {
 	if barberID == "" {
 		return nil, apperr.InvalidArgument("barber_id is empty")
 	}
@@ -285,14 +291,35 @@ func (s *Service) AddSchedule(ctx context.Context, barberID string, day *model.S
 	if day.PartOfDay != model.PartOfDayAM && day.PartOfDay != model.PartOfDayPM {
 		return nil, apperr.InvalidArgument("part_of_day must be 'am' or 'pm'")
 	}
-	result, err := s.repo.AddSchedule(ctx, barberID, day)
+	result, err := s.repo.UpsertSchedule(ctx, barberID, day)
 	if err != nil {
-		s.logger.Error("failed to add schedule", "barber_id", barberID, "date", day.Date, "error", err)
-		return nil, apperr.Internal("failed to add schedule")
+		s.logger.Error("failed to upsert schedule", "barber_id", barberID, "date", day.Date, "error", err)
+		return nil, apperr.Internal("failed to upsert schedule")
 	}
-	s.logger.Info("schedule added", "barber_id", barberID, "date", day.Date)
+	s.logger.Info("schedule upserted", "barber_id", barberID, "date", day.Date)
 	if err := s.producer.Publish(ctx, kafka.TopicScheduleAdded, barberID, result); err != nil {
 		s.logger.Warn("failed to publish schedule.added event", "error", err)
 	}
 	return result, nil
+}
+
+func (s *Service) DeleteSchedule(ctx context.Context, barberID, date string) error {
+	if barberID == "" {
+		return apperr.InvalidArgument("barber_id is empty")
+	}
+	if !datePattern.MatchString(date) {
+		return apperr.InvalidArgument("date must be in format YYYY-MM-DD")
+	}
+	if err := s.repo.DeleteSchedule(ctx, barberID, date); err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return apperr.NotFound("schedule day not found")
+		}
+		s.logger.Error("failed to delete schedule", "barber_id", barberID, "date", date, "error", err)
+		return apperr.Internal("failed to delete schedule")
+	}
+	s.logger.Info("schedule deleted", "barber_id", barberID, "date", date)
+	if err := s.producer.Publish(ctx, kafka.TopicScheduleDeleted, barberID, map[string]string{"barber_id": barberID, "date": date}); err != nil {
+		s.logger.Warn("failed to publish schedule.deleted event", "error", err)
+	}
+	return nil
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/RomanKovalev007/barber_crm/pkg/auth"
 	"github.com/RomanKovalev007/barber_crm/services/staff/internal/apperr"
 	"github.com/RomanKovalev007/barber_crm/services/staff/internal/model"
+	"github.com/RomanKovalev007/barber_crm/services/staff/internal/repository"
 )
 
 // ---------- mocks ----------
@@ -36,9 +37,12 @@ func (m *MockRepo) ListBarbers(ctx context.Context) ([]model.Barber, error) {
 	args := m.Called(ctx)
 	return args.Get(0).([]model.Barber), args.Error(1)
 }
-func (m *MockRepo) AddSchedule(ctx context.Context, barberID string, day *model.ScheduleDay) (*model.ScheduleDay, error) {
+func (m *MockRepo) UpsertSchedule(ctx context.Context, barberID string, day *model.ScheduleDay) (*model.ScheduleDay, error) {
 	args := m.Called(ctx, barberID, day)
 	return args.Get(0).(*model.ScheduleDay), args.Error(1)
+}
+func (m *MockRepo) DeleteSchedule(ctx context.Context, barberID, date string) error {
+	return m.Called(ctx, barberID, date).Error(0)
 }
 func (m *MockRepo) GetSchedule(ctx context.Context, barberID, week string) ([]model.ScheduleDay, error) {
 	args := m.Called(ctx, barberID, week)
@@ -373,7 +377,7 @@ func TestListBarbers_RepoError(t *testing.T) {
 
 func TestCreateService_Success(t *testing.T) {
 	ctx := context.Background()
-	s := &model.Service{BarberID: "b1", Name: "Haircut", Price: 500}
+	s := &model.Service{BarberID: "b1", Name: "Haircut", Price: 500, DurationMinutes: 60}
 
 	repo := new(MockRepo)
 	repo.On("CreateService", ctx, s).Return(nil)
@@ -394,7 +398,7 @@ func TestCreateService_EmptyBarberID(t *testing.T) {
 	ctx := context.Background()
 	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
 
-	err := svc.CreateService(ctx, &model.Service{Name: "Haircut", Price: 100})
+	err := svc.CreateService(ctx, &model.Service{Name: "Haircut", Price: 100, DurationMinutes: 60})
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
@@ -405,7 +409,7 @@ func TestCreateService_ShortName(t *testing.T) {
 	ctx := context.Background()
 	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
 
-	err := svc.CreateService(ctx, &model.Service{BarberID: "b1", Name: "H", Price: 100})
+	err := svc.CreateService(ctx, &model.Service{BarberID: "b1", Name: "H", Price: 100, DurationMinutes: 60})
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
@@ -416,16 +420,28 @@ func TestCreateService_NegativePrice(t *testing.T) {
 	ctx := context.Background()
 	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
 
-	err := svc.CreateService(ctx, &model.Service{BarberID: "b1", Name: "Haircut", Price: -1})
+	err := svc.CreateService(ctx, &model.Service{BarberID: "b1", Name: "Haircut", Price: -1, DurationMinutes: 60})
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
 	assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code)
 }
 
+func TestCreateService_InvalidDuration(t *testing.T) {
+	ctx := context.Background()
+	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
+
+	for _, d := range []int{0, -15, 10, 25, 50} {
+		err := svc.CreateService(ctx, &model.Service{BarberID: "b1", Name: "Haircut", Price: 100, DurationMinutes: d})
+		var appErr *apperr.AppError
+		require.ErrorAs(t, err, &appErr, "duration: %d", d)
+		assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code, "duration: %d", d)
+	}
+}
+
 func TestCreateService_RepoError(t *testing.T) {
 	ctx := context.Background()
-	s := &model.Service{BarberID: "b1", Name: "Haircut", Price: 500}
+	s := &model.Service{BarberID: "b1", Name: "Haircut", Price: 500, DurationMinutes: 60}
 
 	repo := new(MockRepo)
 	repo.On("CreateService", ctx, s).Return(errors.New("db error"))
@@ -442,7 +458,7 @@ func TestCreateService_RepoError(t *testing.T) {
 
 func TestCreateService_ProducerError_NoReturnedError(t *testing.T) {
 	ctx := context.Background()
-	s := &model.Service{BarberID: "b1", Name: "Haircut", Price: 500}
+	s := &model.Service{BarberID: "b1", Name: "Haircut", Price: 500, DurationMinutes: 60}
 
 	repo := new(MockRepo)
 	repo.On("CreateService", ctx, s).Return(nil)
@@ -461,7 +477,7 @@ func TestCreateService_ProducerError_NoReturnedError(t *testing.T) {
 
 func TestUpdateService_Success(t *testing.T) {
 	ctx := context.Background()
-	s := &model.Service{ID: "svc-1", BarberID: "b1", Name: "Haircut", Price: 600}
+	s := &model.Service{ID: "svc-1", BarberID: "b1", Name: "Haircut", Price: 600, DurationMinutes: 45}
 
 	repo := new(MockRepo)
 	repo.On("UpdateService", ctx, s).Return(nil)
@@ -482,7 +498,7 @@ func TestUpdateService_EmptyServiceID(t *testing.T) {
 	ctx := context.Background()
 	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
 
-	err := svc.UpdateService(ctx, &model.Service{BarberID: "b1", Name: "Haircut", Price: 100})
+	err := svc.UpdateService(ctx, &model.Service{BarberID: "b1", Name: "Haircut", Price: 100, DurationMinutes: 60})
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
@@ -493,7 +509,7 @@ func TestUpdateService_EmptyBarberID(t *testing.T) {
 	ctx := context.Background()
 	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
 
-	err := svc.UpdateService(ctx, &model.Service{ID: "svc-1", Name: "Haircut", Price: 100})
+	err := svc.UpdateService(ctx, &model.Service{ID: "svc-1", Name: "Haircut", Price: 100, DurationMinutes: 60})
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
@@ -504,7 +520,7 @@ func TestUpdateService_ShortName(t *testing.T) {
 	ctx := context.Background()
 	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
 
-	err := svc.UpdateService(ctx, &model.Service{ID: "svc-1", BarberID: "b1", Name: "X", Price: 100})
+	err := svc.UpdateService(ctx, &model.Service{ID: "svc-1", BarberID: "b1", Name: "X", Price: 100, DurationMinutes: 60})
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
@@ -515,16 +531,28 @@ func TestUpdateService_NegativePrice(t *testing.T) {
 	ctx := context.Background()
 	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
 
-	err := svc.UpdateService(ctx, &model.Service{ID: "svc-1", BarberID: "b1", Name: "Haircut", Price: -5})
+	err := svc.UpdateService(ctx, &model.Service{ID: "svc-1", BarberID: "b1", Name: "Haircut", Price: -5, DurationMinutes: 60})
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
 	assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code)
 }
 
+func TestUpdateService_InvalidDuration(t *testing.T) {
+	ctx := context.Background()
+	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
+
+	for _, d := range []int{0, -15, 10, 25} {
+		err := svc.UpdateService(ctx, &model.Service{ID: "svc-1", BarberID: "b1", Name: "Haircut", Price: 100, DurationMinutes: d})
+		var appErr *apperr.AppError
+		require.ErrorAs(t, err, &appErr, "duration: %d", d)
+		assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code, "duration: %d", d)
+	}
+}
+
 func TestUpdateService_RepoError(t *testing.T) {
 	ctx := context.Background()
-	s := &model.Service{ID: "svc-1", BarberID: "b1", Name: "Haircut", Price: 100}
+	s := &model.Service{ID: "svc-1", BarberID: "b1", Name: "Haircut", Price: 100, DurationMinutes: 60}
 
 	repo := new(MockRepo)
 	repo.On("UpdateService", ctx, s).Return(errors.New("db error"))
@@ -541,7 +569,7 @@ func TestUpdateService_RepoError(t *testing.T) {
 
 func TestUpdateService_NotFound(t *testing.T) {
 	ctx := context.Background()
-	s := &model.Service{ID: "svc-1", BarberID: "b1", Name: "Haircut", Price: 100}
+	s := &model.Service{ID: "svc-1", BarberID: "b1", Name: "Haircut", Price: 100, DurationMinutes: 60}
 
 	repo := new(MockRepo)
 	repo.On("UpdateService", ctx, s).Return(errors.New("service not found"))
@@ -714,22 +742,22 @@ func TestGetSchedule_RepoError(t *testing.T) {
 	assert.Equal(t, apperr.CodeInternal, appErr.Code)
 }
 
-// ---------- AddSchedule ----------
+// ---------- UpsertSchedule ----------
 
-func TestAddSchedule_Success(t *testing.T) {
+func TestUpsertSchedule_Success(t *testing.T) {
 	ctx := context.Background()
 	day := &model.ScheduleDay{Date: "2026-03-03", StartTime: "09:00", EndTime: "18:00", PartOfDay: model.PartOfDayAM}
 	result := &model.ScheduleDay{ID: "day-1", BarberID: "b1", Date: "2026-03-03", StartTime: "09:00", EndTime: "18:00", PartOfDay: model.PartOfDayAM}
 
 	repo := new(MockRepo)
-	repo.On("AddSchedule", ctx, "b1", day).Return(result, nil)
+	repo.On("UpsertSchedule", ctx, "b1", day).Return(result, nil)
 
 	producer := new(MockProducer)
 	producer.On("Publish", ctx, "staff.schedule.added", "b1", result).Return(nil)
 
 	svc := newTestService(repo, new(MockSessionStore), producer)
 
-	got, err := svc.AddSchedule(ctx, "b1", day)
+	got, err := svc.UpsertSchedule(ctx, "b1", day)
 
 	require.NoError(t, err)
 	assert.Equal(t, result, got)
@@ -737,54 +765,54 @@ func TestAddSchedule_Success(t *testing.T) {
 	producer.AssertExpectations(t)
 }
 
-func TestAddSchedule_EmptyBarberID(t *testing.T) {
+func TestUpsertSchedule_EmptyBarberID(t *testing.T) {
 	ctx := context.Background()
 	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
 
-	_, err := svc.AddSchedule(ctx, "", &model.ScheduleDay{Date: "2026-03-03", StartTime: "09:00", EndTime: "18:00"})
+	_, err := svc.UpsertSchedule(ctx, "", &model.ScheduleDay{Date: "2026-03-03", StartTime: "09:00", EndTime: "18:00"})
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
 	assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code)
 }
 
-func TestAddSchedule_InvalidDate(t *testing.T) {
+func TestUpsertSchedule_InvalidDate(t *testing.T) {
 	ctx := context.Background()
 	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
 
 	for _, bad := range []string{"", "03-03-2026", "2026/03/03", "2026-3-3"} {
-		_, err := svc.AddSchedule(ctx, "b1", &model.ScheduleDay{Date: bad, StartTime: "09:00", EndTime: "18:00"})
+		_, err := svc.UpsertSchedule(ctx, "b1", &model.ScheduleDay{Date: bad, StartTime: "09:00", EndTime: "18:00"})
 		var appErr *apperr.AppError
 		require.ErrorAs(t, err, &appErr, "input: %q", bad)
 		assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code, "input: %q", bad)
 	}
 }
 
-func TestAddSchedule_InvalidStartTime(t *testing.T) {
+func TestUpsertSchedule_InvalidStartTime(t *testing.T) {
 	ctx := context.Background()
 	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
 
 	for _, bad := range []string{"", "9:00", "09:00:00", "0900"} {
-		_, err := svc.AddSchedule(ctx, "b1", &model.ScheduleDay{Date: "2026-03-03", StartTime: bad, EndTime: "18:00"})
+		_, err := svc.UpsertSchedule(ctx, "b1", &model.ScheduleDay{Date: "2026-03-03", StartTime: bad, EndTime: "18:00"})
 		var appErr *apperr.AppError
 		require.ErrorAs(t, err, &appErr, "input: %q", bad)
 		assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code, "input: %q", bad)
 	}
 }
 
-func TestAddSchedule_InvalidEndTime(t *testing.T) {
+func TestUpsertSchedule_InvalidEndTime(t *testing.T) {
 	ctx := context.Background()
 	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
 
 	for _, bad := range []string{"", "18", "6:00pm", "1800"} {
-		_, err := svc.AddSchedule(ctx, "b1", &model.ScheduleDay{Date: "2026-03-03", StartTime: "09:00", EndTime: bad})
+		_, err := svc.UpsertSchedule(ctx, "b1", &model.ScheduleDay{Date: "2026-03-03", StartTime: "09:00", EndTime: bad})
 		var appErr *apperr.AppError
 		require.ErrorAs(t, err, &appErr, "input: %q", bad)
 		assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code, "input: %q", bad)
 	}
 }
 
-func TestAddSchedule_StartTimeNotBeforeEndTime(t *testing.T) {
+func TestUpsertSchedule_StartTimeNotBeforeEndTime(t *testing.T) {
 	ctx := context.Background()
 	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
 
@@ -792,37 +820,96 @@ func TestAddSchedule_StartTimeNotBeforeEndTime(t *testing.T) {
 		{"18:00", "09:00"},
 		{"09:00", "09:00"},
 	} {
-		_, err := svc.AddSchedule(ctx, "b1", &model.ScheduleDay{Date: "2026-03-03", StartTime: tc.start, EndTime: tc.end})
+		_, err := svc.UpsertSchedule(ctx, "b1", &model.ScheduleDay{Date: "2026-03-03", StartTime: tc.start, EndTime: tc.end})
 		var appErr *apperr.AppError
 		require.ErrorAs(t, err, &appErr, "start=%q end=%q", tc.start, tc.end)
 		assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code, "start=%q end=%q", tc.start, tc.end)
 	}
 }
 
-func TestAddSchedule_InvalidPartOfDay(t *testing.T) {
+func TestUpsertSchedule_InvalidPartOfDay(t *testing.T) {
 	ctx := context.Background()
 	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
 
-	_, err := svc.AddSchedule(ctx, "b1", &model.ScheduleDay{Date: "2026-03-03", StartTime: "09:00", EndTime: "18:00", PartOfDay: "noon"})
+	_, err := svc.UpsertSchedule(ctx, "b1", &model.ScheduleDay{Date: "2026-03-03", StartTime: "09:00", EndTime: "18:00", PartOfDay: "noon"})
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
 	assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code)
 }
 
-func TestAddSchedule_RepoError(t *testing.T) {
+func TestUpsertSchedule_RepoError(t *testing.T) {
 	ctx := context.Background()
 	day := &model.ScheduleDay{Date: "2026-03-03", StartTime: "09:00", EndTime: "18:00", PartOfDay: model.PartOfDayAM}
 
 	repo := new(MockRepo)
-	repo.On("AddSchedule", ctx, "b1", day).Return((*model.ScheduleDay)(nil), errors.New("db error"))
+	repo.On("UpsertSchedule", ctx, "b1", day).Return((*model.ScheduleDay)(nil), errors.New("db error"))
 
 	svc := newTestService(repo, new(MockSessionStore), new(MockProducer))
 
-	_, err := svc.AddSchedule(ctx, "b1", day)
+	_, err := svc.UpsertSchedule(ctx, "b1", day)
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
 	assert.Equal(t, apperr.CodeInternal, appErr.Code)
+	repo.AssertExpectations(t)
+}
+
+// ---------- DeleteSchedule ----------
+
+func TestDeleteSchedule_Success(t *testing.T) {
+	ctx := context.Background()
+
+	repo := new(MockRepo)
+	repo.On("DeleteSchedule", ctx, "b1", "2026-03-03").Return(nil)
+
+	producer := new(MockProducer)
+	producer.On("Publish", ctx, "staff.schedule.deleted", "b1", map[string]string{"barber_id": "b1", "date": "2026-03-03"}).Return(nil)
+
+	svc := newTestService(repo, new(MockSessionStore), producer)
+
+	err := svc.DeleteSchedule(ctx, "b1", "2026-03-03")
+
+	require.NoError(t, err)
+	repo.AssertExpectations(t)
+	producer.AssertExpectations(t)
+}
+
+func TestDeleteSchedule_EmptyBarberID(t *testing.T) {
+	ctx := context.Background()
+	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
+
+	err := svc.DeleteSchedule(ctx, "", "2026-03-03")
+
+	var appErr *apperr.AppError
+	require.ErrorAs(t, err, &appErr)
+	assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code)
+}
+
+func TestDeleteSchedule_InvalidDate(t *testing.T) {
+	ctx := context.Background()
+	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
+
+	for _, bad := range []string{"", "03-03-2026", "2026/03/03"} {
+		err := svc.DeleteSchedule(ctx, "b1", bad)
+		var appErr *apperr.AppError
+		require.ErrorAs(t, err, &appErr, "input: %q", bad)
+		assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code, "input: %q", bad)
+	}
+}
+
+func TestDeleteSchedule_NotFound(t *testing.T) {
+	ctx := context.Background()
+
+	repo := new(MockRepo)
+	repo.On("DeleteSchedule", ctx, "b1", "2026-03-03").Return(repository.ErrNotFound)
+
+	svc := newTestService(repo, new(MockSessionStore), new(MockProducer))
+
+	err := svc.DeleteSchedule(ctx, "b1", "2026-03-03")
+
+	var appErr *apperr.AppError
+	require.ErrorAs(t, err, &appErr)
+	assert.Equal(t, apperr.CodeNotFound, appErr.Code)
 	repo.AssertExpectations(t)
 }

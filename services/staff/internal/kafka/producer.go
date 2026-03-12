@@ -10,10 +10,11 @@ import (
 )
 
 const (
-	TopicScheduleAdded  = "staff.schedule.added"
-	TopicServiceCreated = "staff.service.created"
-	TopicServiceUpdated = "staff.service.updated"
-	TopicServiceDeleted = "staff.service.deleted"
+	TopicScheduleAdded   = "staff.schedule.added"
+	TopicScheduleDeleted = "staff.schedule.deleted"
+	TopicServiceCreated  = "staff.service.created"
+	TopicServiceUpdated  = "staff.service.updated"
+	TopicServiceDeleted  = "staff.service.deleted"
 )
 
 type Producer struct {
