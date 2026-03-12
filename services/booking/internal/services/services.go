@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/RomanKovalev007/barber_crm/services/booking/internal/apperr"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/model"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/repo"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/staffclient"
@@ -16,9 +17,6 @@ import (
 )
 
 const slotDuration = 60 * time.Minute
-
-var ErrActiveBookingExists = errors.New("client has an active booking")
-var ErrInvalidStatusTransition = errors.New("invalid status transition")
 
 type BookingIntr interface {
 	CreateBooking(ctx context.Context, b *model.Booking) (*model.Booking, error)
@@ -49,13 +47,13 @@ func New(r *repo.BookingRepo, rc *redis.Client, ttl int, jwt string, log *slog.L
 func (s *bookingService) CreateBooking(ctx context.Context, b *model.Booking) (*model.Booking, error) {
 	if _, err := s.staffClient.GetBarber(ctx, b.BarberID); err != nil {
 		s.log.Warn("create booking: barber not found", "barber_id", b.BarberID, "error", err)
-		return nil, fmt.Errorf("barber not found: %w", err)
+		return nil, apperr.NotFound("barber not found")
 	}
 
 	svcResp, err := s.staffClient.ListServices(ctx, b.BarberID, false)
 	if err != nil {
 		s.log.Error("create booking: failed to get services", "barber_id", b.BarberID, "error", err)
-		return nil, fmt.Errorf("get services: %w", err)
+		return nil, apperr.Internal("failed to get services")
 	}
 	serviceName := ""
 	for _, svc := range svcResp.Services {
@@ -68,11 +66,11 @@ func (s *bookingService) CreateBooking(ctx context.Context, b *model.Booking) (*
 	hasActive, err := s.repo.HasActiveBooking(ctx, b.ClientPhone)
 	if err != nil {
 		s.log.Error("create booking: failed to check active booking", "client_phone", b.ClientPhone, "error", err)
-		return nil, fmt.Errorf("check active booking: %w", err)
+		return nil, apperr.Internal("failed to check active booking")
 	}
 	if hasActive {
 		s.log.Warn("create booking: client already has active booking", "client_phone", b.ClientPhone)
-		return nil, ErrActiveBookingExists
+		return nil, apperr.AlreadyExists("client already has an active booking")
 	}
 
 	b.TimeEnd = b.TimeStart.Add(slotDuration)
@@ -81,12 +79,12 @@ func (s *bookingService) CreateBooking(ctx context.Context, b *model.Booking) (*
 	existing, err := s.repo.GetBookingsByBarberAndDate(ctx, b.BarberID, b.Date)
 	if err != nil {
 		s.log.Error("create booking: failed to get existing bookings", "barber_id", b.BarberID, "date", b.Date, "error", err)
-		return nil, fmt.Errorf("get existing bookings: %w", err)
+		return nil, apperr.Internal("failed to check slot availability")
 	}
 	for _, e := range existing {
 		if b.TimeStart.Before(e.TimeEnd) && b.TimeEnd.After(e.TimeStart) {
 			s.log.Warn("create booking: slot conflict", "barber_id", b.BarberID, "time_start", b.TimeStart)
-			return nil, fmt.Errorf("time slot already booked")
+			return nil, apperr.AlreadyExists("time slot already booked")
 		}
 	}
 
@@ -96,7 +94,7 @@ func (s *bookingService) CreateBooking(ctx context.Context, b *model.Booking) (*
 
 	if err := s.repo.CreateBooking(ctx, b); err != nil {
 		s.log.Error("create booking: failed to save", "barber_id", b.BarberID, "error", err)
-		return nil, fmt.Errorf("create booking: %w", err)
+		return nil, apperr.Internal("failed to create booking")
 	}
 
 	s.log.Info("booking created", "booking_id", b.ID, "barber_id", b.BarberID, "client_phone", b.ClientPhone)
@@ -106,10 +104,11 @@ func (s *bookingService) CreateBooking(ctx context.Context, b *model.Booking) (*
 func (s *bookingService) GetBooking(ctx context.Context, id string) (*model.Booking, error) {
 	b, err := s.repo.GetBooking(ctx, id)
 	if err != nil {
-		if !errors.Is(err, repo.ErrNotFound) {
-			s.log.Error("get booking: failed", "booking_id", id, "error", err)
+		if errors.Is(err, repo.ErrNotFound) {
+			return nil, apperr.NotFound("booking not found")
 		}
-		return nil, err
+		s.log.Error("get booking: failed", "booking_id", id, "error", err)
+		return nil, apperr.Internal("failed to get booking")
 	}
 	return b, nil
 }
@@ -117,20 +116,21 @@ func (s *bookingService) GetBooking(ctx context.Context, id string) (*model.Book
 func (s *bookingService) UpdateBookingDetails(ctx context.Context, bookingID, barberID, serviceID string, timeStart time.Time) (*model.Booking, error) {
 	existing, err := s.repo.GetBooking(ctx, bookingID)
 	if err != nil {
-		if !errors.Is(err, repo.ErrNotFound) {
-			s.log.Error("update booking: failed to get booking", "booking_id", bookingID, "error", err)
+		if errors.Is(err, repo.ErrNotFound) {
+			return nil, apperr.NotFound("booking not found")
 		}
-		return nil, err
+		s.log.Error("update booking: failed to get booking", "booking_id", bookingID, "error", err)
+		return nil, apperr.Internal("failed to get booking")
 	}
 	if existing.BarberID != barberID {
 		s.log.Warn("update booking: ownership mismatch", "booking_id", bookingID, "barber_id", barberID)
-		return nil, repo.ErrNotFound
+		return nil, apperr.NotFound("booking not found")
 	}
 
 	svcResp, err := s.staffClient.ListServices(ctx, barberID, false)
 	if err != nil {
 		s.log.Error("update booking: failed to get services", "barber_id", barberID, "error", err)
-		return nil, fmt.Errorf("get services: %w", err)
+		return nil, apperr.Internal("failed to get services")
 	}
 	serviceName := existing.ServiceName
 	for _, svc := range svcResp.Services {
@@ -145,7 +145,7 @@ func (s *bookingService) UpdateBookingDetails(ctx context.Context, bookingID, ba
 	bookings, err := s.repo.GetBookingsByBarberAndDate(ctx, barberID, timeStart.UTC().Truncate(24*time.Hour))
 	if err != nil {
 		s.log.Error("update booking: failed to get bookings for conflict check", "barber_id", barberID, "error", err)
-		return nil, fmt.Errorf("get bookings: %w", err)
+		return nil, apperr.Internal("failed to check slot availability")
 	}
 	for _, b := range bookings {
 		if b.ID == bookingID {
@@ -153,13 +153,13 @@ func (s *bookingService) UpdateBookingDetails(ctx context.Context, bookingID, ba
 		}
 		if timeStart.Before(b.TimeEnd) && timeEnd.After(b.TimeStart) {
 			s.log.Warn("update booking: slot conflict", "booking_id", bookingID, "time_start", timeStart)
-			return nil, fmt.Errorf("time slot already booked")
+			return nil, apperr.AlreadyExists("time slot already booked")
 		}
 	}
 
 	if err := s.repo.UpdateBookingDetails(ctx, bookingID, serviceID, serviceName, timeStart, timeEnd); err != nil {
 		s.log.Error("update booking: failed to save", "booking_id", bookingID, "error", err)
-		return nil, err
+		return nil, apperr.Internal("failed to update booking")
 	}
 
 	s.log.Info("booking updated", "booking_id", bookingID, "barber_id", barberID, "service_id", serviceID)
@@ -169,23 +169,24 @@ func (s *bookingService) UpdateBookingDetails(ctx context.Context, bookingID, ba
 func (s *bookingService) UpdateBookingStatus(ctx context.Context, bookingID, barberID, newStatus string) (*model.Booking, error) {
 	existing, err := s.repo.GetBooking(ctx, bookingID)
 	if err != nil {
-		if !errors.Is(err, repo.ErrNotFound) {
-			s.log.Error("update booking status: failed to get booking", "booking_id", bookingID, "error", err)
+		if errors.Is(err, repo.ErrNotFound) {
+			return nil, apperr.NotFound("booking not found")
 		}
-		return nil, err
+		s.log.Error("update booking status: failed to get booking", "booking_id", bookingID, "error", err)
+		return nil, apperr.Internal("failed to get booking")
 	}
 	if existing.BarberID != barberID {
 		s.log.Warn("update booking status: ownership mismatch", "booking_id", bookingID, "barber_id", barberID)
-		return nil, repo.ErrNotFound
+		return nil, apperr.NotFound("booking not found")
 	}
 	if model.FinalStatuses[existing.Status] {
 		s.log.Warn("update booking status: invalid transition", "booking_id", bookingID, "current_status", existing.Status, "new_status", newStatus)
-		return nil, ErrInvalidStatusTransition
+		return nil, apperr.FailedPrecondition("booking is already in a final status")
 	}
 
 	if err := s.repo.UpdateBookingStatus(ctx, bookingID, newStatus); err != nil {
 		s.log.Error("update booking status: failed to save", "booking_id", bookingID, "error", err)
-		return nil, err
+		return nil, apperr.Internal("failed to update booking status")
 	}
 
 	s.log.Info("booking status updated", "booking_id", bookingID, "barber_id", barberID, "status", newStatus)
@@ -194,10 +195,11 @@ func (s *bookingService) UpdateBookingStatus(ctx context.Context, bookingID, bar
 
 func (s *bookingService) DeleteBooking(ctx context.Context, id string) error {
 	if err := s.repo.DeleteBooking(ctx, id); err != nil {
-		if !errors.Is(err, repo.ErrNotFound) {
-			s.log.Error("delete booking: failed", "booking_id", id, "error", err)
+		if errors.Is(err, repo.ErrNotFound) {
+			return apperr.NotFound("booking not found")
 		}
-		return err
+		s.log.Error("delete booking: failed", "booking_id", id, "error", err)
+		return apperr.Internal("failed to delete booking")
 	}
 	s.log.Info("booking deleted", "booking_id", id)
 	return nil
@@ -218,7 +220,7 @@ func (s *bookingService) buildSlots(ctx context.Context, barberID string, date t
 	schedResp, err := s.staffClient.GetSchedule(ctx, barberID, isoWeek)
 	if err != nil {
 		s.log.Error("build slots: failed to get schedule", "barber_id", barberID, "week", isoWeek, "error", err)
-		return nil, fmt.Errorf("get schedule: %w", err)
+		return nil, apperr.Internal("failed to get schedule")
 	}
 
 	dateStr := date.Format("2006-01-02")
@@ -228,11 +230,11 @@ func (s *bookingService) buildSlots(ctx context.Context, barberID string, date t
 		if day.Date == dateStr {
 			workStart, err = parseTimeOnDate(date, day.StartTime)
 			if err != nil {
-				return nil, fmt.Errorf("parse start_time: %w", err)
+				return nil, apperr.Internal("failed to parse schedule start_time")
 			}
 			workEnd, err = parseTimeOnDate(date, day.EndTime)
 			if err != nil {
-				return nil, fmt.Errorf("parse end_time: %w", err)
+				return nil, apperr.Internal("failed to parse schedule end_time")
 			}
 			hasWork = true
 			break
@@ -247,7 +249,7 @@ func (s *bookingService) buildSlots(ctx context.Context, barberID string, date t
 	bookings, err := s.repo.GetBookingsByBarberAndDate(ctx, barberID, date.UTC().Truncate(24*time.Hour))
 	if err != nil {
 		s.log.Error("build slots: failed to get bookings", "barber_id", barberID, "date", dateStr, "error", err)
-		return nil, fmt.Errorf("get bookings: %w", err)
+		return nil, apperr.Internal("failed to get bookings")
 	}
 
 	var slots []model.Slot

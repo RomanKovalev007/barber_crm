@@ -6,8 +6,8 @@ import (
 	"time"
 
 	pb "github.com/RomanKovalev007/barber_crm/api/proto/booking/v1"
+	"github.com/RomanKovalev007/barber_crm/services/booking/internal/apperr"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/model"
-	"github.com/RomanKovalev007/barber_crm/services/booking/internal/repo"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/services"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -22,6 +22,14 @@ type bookingServer struct {
 
 func NewServer(svc services.BookingIntr) *bookingServer {
 	return &bookingServer{svc: svc}
+}
+
+func toGRPCError(err error) error {
+	var e *apperr.AppError
+	if errors.As(err, &e) {
+		return status.Error(e.GRPCCode(), e.Message)
+	}
+	return status.Error(codes.Internal, "internal error")
 }
 
 func (s *bookingServer) CreateBooking(ctx context.Context, req *pb.CreateBookingRequest) (*pb.BookingResponse, error) {
@@ -42,10 +50,7 @@ func (s *bookingServer) CreateBooking(ctx context.Context, req *pb.CreateBooking
 
 	created, err := s.svc.CreateBooking(ctx, b)
 	if err != nil {
-		if errors.Is(err, services.ErrActiveBookingExists) {
-			return nil, status.Error(codes.AlreadyExists, "ACTIVE_BOOKING_EXISTS")
-		}
-		return nil, status.Errorf(codes.Internal, "create booking: %v", err)
+		return nil, toGRPCError(err)
 	}
 	return &pb.BookingResponse{Booking: toProto(created)}, nil
 }
@@ -56,10 +61,7 @@ func (s *bookingServer) GetBooking(ctx context.Context, req *pb.BookingIdRequest
 	}
 	b, err := s.svc.GetBooking(ctx, req.BookingId)
 	if err != nil {
-		if errors.Is(err, repo.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "booking not found")
-		}
-		return nil, status.Errorf(codes.Internal, "get booking: %v", err)
+		return nil, toGRPCError(err)
 	}
 	return &pb.BookingResponse{Booking: toProto(b)}, nil
 }
@@ -74,10 +76,7 @@ func (s *bookingServer) UpdateBooking(ctx context.Context, req *pb.UpdateBooking
 
 	updated, err := s.svc.UpdateBookingDetails(ctx, req.BookingId, req.BarberId, req.ServiceId, req.TimeStart.AsTime())
 	if err != nil {
-		if errors.Is(err, repo.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "booking not found")
-		}
-		return nil, status.Errorf(codes.Internal, "update booking: %v", err)
+		return nil, toGRPCError(err)
 	}
 	return &pb.BookingResponse{Booking: toProto(updated)}, nil
 }
@@ -94,13 +93,7 @@ func (s *bookingServer) UpdateBookingStatus(ctx context.Context, req *pb.UpdateB
 
 	updated, err := s.svc.UpdateBookingStatus(ctx, req.BookingId, req.BarberId, newStatus)
 	if err != nil {
-		if errors.Is(err, repo.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "booking not found")
-		}
-		if errors.Is(err, services.ErrInvalidStatusTransition) {
-			return nil, status.Error(codes.FailedPrecondition, "invalid status transition")
-		}
-		return nil, status.Errorf(codes.Internal, "update booking status: %v", err)
+		return nil, toGRPCError(err)
 	}
 	return &pb.BookingResponse{Booking: toProto(updated)}, nil
 }
@@ -110,10 +103,7 @@ func (s *bookingServer) DeleteBooking(ctx context.Context, req *pb.BookingIdRequ
 		return nil, status.Error(codes.InvalidArgument, "booking_id is required")
 	}
 	if err := s.svc.DeleteBooking(ctx, req.BookingId); err != nil {
-		if errors.Is(err, repo.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "booking not found")
-		}
-		return nil, status.Errorf(codes.Internal, "delete booking: %v", err)
+		return nil, toGRPCError(err)
 	}
 	return &emptypb.Empty{}, nil
 }
@@ -128,7 +118,7 @@ func (s *bookingServer) GetSlots(ctx context.Context, req *pb.SlotsRequest) (*pb
 	}
 	result, err := s.svc.GetSlots(ctx, req.BarberId, date)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "get slots: %v", err)
+		return nil, toGRPCError(err)
 	}
 	return toSlotsProto(result), nil
 }
@@ -151,7 +141,7 @@ func (s *bookingServer) GetFreeSlots(ctx context.Context, req *pb.FreeSlotsReque
 
 	result, err := s.svc.GetFreeSlots(ctx, req.BarberId, date)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "get free slots: %v", err)
+		return nil, toGRPCError(err)
 	}
 	return toFreeSlotsProto(result), nil
 }
