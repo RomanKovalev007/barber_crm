@@ -15,17 +15,19 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-const slotDuration = 15 * time.Minute
+const slotDuration = 60 * time.Minute
 
 var ErrActiveBookingExists = errors.New("client has an active booking")
+var ErrInvalidStatusTransition = errors.New("invalid status transition")
 
 type BookingIntr interface {
-	CreateBooking(ctx context.Context, req *model.Booking) (*model.Booking, error)
+	CreateBooking(ctx context.Context, b *model.Booking) (*model.Booking, error)
 	GetBooking(ctx context.Context, id string) (*model.Booking, error)
-	UpdateBooking(ctx context.Context, b *model.Booking) (*model.Booking, error)
-	DeleteBooking(ctx context.Context, id string) (*model.DeleteResult, error)
-	GetWorkDay(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error)
-	GetFree(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error)
+	UpdateBookingDetails(ctx context.Context, bookingID, barberID, serviceID string, timeStart time.Time) (*model.Booking, error)
+	UpdateBookingStatus(ctx context.Context, bookingID, barberID, newStatus string) (*model.Booking, error)
+	DeleteBooking(ctx context.Context, id string) error
+	GetSlots(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error)
+	GetFreeSlots(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error)
 }
 
 type bookingService struct {
@@ -35,21 +37,34 @@ type bookingService struct {
 	staffClient *staffclient.Client
 }
 
-func New(repo *repo.BookingRepo, rc *redis.Client, ttl int, jwt string, log *slog.Logger, staffClient *staffclient.Client) BookingIntr {
+func New(r *repo.BookingRepo, rc *redis.Client, ttl int, jwt string, log *slog.Logger, staffClient *staffclient.Client) BookingIntr {
 	return &bookingService{
 		log:         log,
-		repo:        repo,
+		repo:        r,
 		redis:       rc,
 		staffClient: staffClient,
 	}
 }
 
-func (s *bookingService) CreateBooking(ctx context.Context, req *model.Booking) (*model.Booking, error) {
-	if _, err := s.staffClient.GetBarber(ctx, req.BarberID); err != nil {
+func (s *bookingService) CreateBooking(ctx context.Context, b *model.Booking) (*model.Booking, error) {
+	if _, err := s.staffClient.GetBarber(ctx, b.BarberID); err != nil {
 		return nil, fmt.Errorf("barber not found: %w", err)
 	}
 
-	hasActive, err := s.repo.HasActiveBooking(ctx, req.ClientName)
+	// Получаем service_name из staff сервиса
+	svcResp, err := s.staffClient.ListServices(ctx, b.BarberID, false)
+	if err != nil {
+		return nil, fmt.Errorf("get services: %w", err)
+	}
+	serviceName := ""
+	for _, svc := range svcResp.Services {
+		if svc.ServiceId == b.ServiceID {
+			serviceName = svc.Name
+			break
+		}
+	}
+
+	hasActive, err := s.repo.HasActiveBooking(ctx, b.ClientPhone)
 	if err != nil {
 		return nil, fmt.Errorf("check active booking: %w", err)
 	}
@@ -57,74 +72,108 @@ func (s *bookingService) CreateBooking(ctx context.Context, req *model.Booking) 
 		return nil, ErrActiveBookingExists
 	}
 
-	existing, err := s.repo.GetBookingsByBarberAndDate(ctx, req.BarberID, req.Date)
+	b.TimeEnd = b.TimeStart.Add(slotDuration)
+	b.Date = b.TimeStart.UTC().Truncate(24 * time.Hour)
+
+	existing, err := s.repo.GetBookingsByBarberAndDate(ctx, b.BarberID, b.Date)
 	if err != nil {
 		return nil, fmt.Errorf("get existing bookings: %w", err)
 	}
-	for _, b := range existing {
-		if req.TimeStart.Before(b.TimeEnd) && req.TimeEnd.After(b.TimeStart) {
+	for _, existing := range existing {
+		if b.TimeStart.Before(existing.TimeEnd) && b.TimeEnd.After(existing.TimeStart) {
 			return nil, fmt.Errorf("time slot already booked")
 		}
 	}
 
-	req.ID = uuid.New().String()
-	req.Status = model.StatusPending
-	if err := s.repo.CreateBooking(ctx, req); err != nil {
-		return nil, fmt.Errorf("create booking: %w", err)
-	}
-	return req, nil
-}
+	b.ID = uuid.New().String()
+	b.Status = model.StatusPending
+	b.ServiceName = serviceName
 
-func (s *bookingService) GetBooking(ctx context.Context, id string) (*model.Booking, error) {
-	b, err := s.repo.GetBooking(ctx, id)
-	if err != nil {
-		return nil, err
+	if err := s.repo.CreateBooking(ctx, b); err != nil {
+		return nil, fmt.Errorf("create booking: %w", err)
 	}
 	return b, nil
 }
 
-func (s *bookingService) UpdateBooking(ctx context.Context, b *model.Booking) (*model.Booking, error) {
-	if err := s.repo.UpdateBooking(ctx, b); err != nil {
-		return nil, err
-	}
-	return s.repo.GetBooking(ctx, b.ID)
+func (s *bookingService) GetBooking(ctx context.Context, id string) (*model.Booking, error) {
+	return s.repo.GetBooking(ctx, id)
 }
 
-func (s *bookingService) DeleteBooking(ctx context.Context, id string) (*model.DeleteResult, error) {
-	b, err := s.repo.DeleteBooking(ctx, id)
+func (s *bookingService) UpdateBookingDetails(ctx context.Context, bookingID, barberID, serviceID string, timeStart time.Time) (*model.Booking, error) {
+	existing, err := s.repo.GetBooking(ctx, bookingID)
 	if err != nil {
 		return nil, err
 	}
-	return &model.DeleteResult{
-		BookingID:  b.ID,
-		ClientName: b.ClientName,
-	}, nil
-}
-
-func (s *bookingService) GetWorkDay(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error) {
-	slots, err := s.buildSlots(ctx, barberID, date)
-	if err != nil {
-		return nil, err
+	if existing.BarberID != barberID {
+		return nil, repo.ErrNotFound
 	}
-	return slots, nil
-}
 
-func (s *bookingService) GetFree(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error) {
-	result, err := s.buildSlots(ctx, barberID, date)
+	// Получаем актуальное название услуги
+	svcResp, err := s.staffClient.ListServices(ctx, barberID, false)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get services: %w", err)
 	}
-	var free []model.Slot
-	for _, sl := range result.Slots {
-		if sl.Status == model.SlotFree {
-			free = append(free, sl)
+	serviceName := existing.ServiceName
+	for _, svc := range svcResp.Services {
+		if svc.ServiceId == serviceID {
+			serviceName = svc.Name
+			break
 		}
 	}
-	result.Slots = free
-	return result, nil
+
+	timeEnd := timeStart.Add(slotDuration)
+
+	// Проверка конфликтов (исключая текущую запись)
+	bookings, err := s.repo.GetBookingsByBarberAndDate(ctx, barberID, timeStart.UTC().Truncate(24*time.Hour))
+	if err != nil {
+		return nil, fmt.Errorf("get bookings: %w", err)
+	}
+	for _, b := range bookings {
+		if b.ID == bookingID {
+			continue
+		}
+		if timeStart.Before(b.TimeEnd) && timeEnd.After(b.TimeStart) {
+			return nil, fmt.Errorf("time slot already booked")
+		}
+	}
+
+	if err := s.repo.UpdateBookingDetails(ctx, bookingID, serviceID, serviceName, timeStart, timeEnd); err != nil {
+		return nil, err
+	}
+	return s.repo.GetBooking(ctx, bookingID)
 }
 
-func (s *bookingService) buildSlots(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error) {
+func (s *bookingService) UpdateBookingStatus(ctx context.Context, bookingID, barberID, newStatus string) (*model.Booking, error) {
+	existing, err := s.repo.GetBooking(ctx, bookingID)
+	if err != nil {
+		return nil, err
+	}
+	if existing.BarberID != barberID {
+		return nil, repo.ErrNotFound
+	}
+	if model.FinalStatuses[existing.Status] {
+		return nil, ErrInvalidStatusTransition
+	}
+
+	if err := s.repo.UpdateBookingStatus(ctx, bookingID, newStatus); err != nil {
+		return nil, err
+	}
+	return s.repo.GetBooking(ctx, bookingID)
+}
+
+func (s *bookingService) DeleteBooking(ctx context.Context, id string) error {
+	return s.repo.DeleteBooking(ctx, id)
+}
+
+func (s *bookingService) GetSlots(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error) {
+	return s.buildSlots(ctx, barberID, date, false)
+}
+
+func (s *bookingService) GetFreeSlots(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error) {
+	return s.buildSlots(ctx, barberID, date, true)
+}
+
+func (s *bookingService) buildSlots(ctx context.Context, barberID string, date time.Time, onlyFree bool) (*model.SlotsResult, error) {
 	year, week := date.ISOWeek()
 	isoWeek := fmt.Sprintf("%d-W%02d", year, week)
 	schedResp, err := s.staffClient.GetSchedule(ctx, barberID, isoWeek)
@@ -150,87 +199,57 @@ func (s *bookingService) buildSlots(ctx context.Context, barberID string, date t
 		}
 	}
 
-	bookings, err := s.repo.GetBookingsByBarberAndDate(ctx, barberID, date)
+	if !hasWork {
+		return &model.SlotsResult{BarberID: barberID, Date: dateStr}, nil
+	}
+
+	bookings, err := s.repo.GetBookingsByBarberAndDate(ctx, barberID, date.UTC().Truncate(24*time.Hour))
 	if err != nil {
 		return nil, fmt.Errorf("get bookings: %w", err)
 	}
 
-	totalMinutes := 0
-	if hasWork {
-		totalMinutes = int(workEnd.Sub(workStart).Minutes())
-	}
-	totalSlots := totalMinutes / int(slotDuration.Minutes())
-
-	priority := int32(1)
-	if totalSlots > 0 {
-		halfPoint := workStart.Add(time.Duration(totalSlots/2) * slotDuration)
-		freeInSecond := 0
-		freeInFirst := 0
-		t := workStart
-		for i := 0; i < totalSlots; i++ {
-			slotEnd := t.Add(slotDuration)
-			booked := false
-			for _, b := range bookings {
-				if t.Before(b.TimeEnd) && slotEnd.After(b.TimeStart) {
-					booked = true
-					break
-				}
-			}
-			if !booked {
-				if t.Before(halfPoint) {
-					freeInFirst++
-				} else {
-					freeInSecond++
-				}
-			}
-			t = slotEnd
-		}
-		if freeInSecond > freeInFirst {
-			priority = 2
-		}
+	// Индексируем записи по времени начала для быстрого поиска
+	bookingByStart := make(map[time.Time]*model.Booking, len(bookings))
+	for i := range bookings {
+		bookingByStart[bookings[i].TimeStart] = &bookings[i]
 	}
 
 	var slots []model.Slot
-	if !hasWork {
-		return &model.SlotsResult{
-			BarberID: barberID,
-			Date:     date,
-			Slots:    slots,
-			Priority: priority,
-		}, nil
-	}
-
 	t := workStart
 	for t.Before(workEnd) {
 		slotEnd := t.Add(slotDuration)
 
-		var status model.SlotStatus
-		isBooked := false
-		for _, b := range bookings {
+		status := model.SlotFree
+		var slotBooking *model.SlotBooking
+		for i := range bookings {
+			b := &bookings[i]
 			if t.Before(b.TimeEnd) && slotEnd.After(b.TimeStart) {
-				isBooked = true
+				status = model.SlotBooked
+				slotBooking = &model.SlotBooking{
+					BookingID:   b.ID,
+					ClientName:  b.ClientName,
+					ClientPhone: b.ClientPhone,
+					ServiceName: b.ServiceName,
+				}
 				break
 			}
 		}
-		if isBooked {
-			status = model.SlotBooked
-		} else {
-			status = model.SlotFree
-		}
 
-		slots = append(slots, model.Slot{
-			Status:    status,
-			TimeStart: t,
-			TimeEnd:   slotEnd,
-		})
+		if !onlyFree || status == model.SlotFree {
+			slots = append(slots, model.Slot{
+				Status:    status,
+				TimeStart: t,
+				TimeEnd:   slotEnd,
+				Booking:   slotBooking,
+			})
+		}
 		t = slotEnd
 	}
 
 	return &model.SlotsResult{
 		BarberID: barberID,
-		Date:     date,
+		Date:     dateStr,
 		Slots:    slots,
-		Priority: priority,
 	}, nil
 }
 

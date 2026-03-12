@@ -28,8 +28,8 @@ func (c *Client) Close() error {
 	return c.conn.Close()
 }
 
-func (c *Client) GetBarber(ctx context.Context, id string) (*staffv1.BarberResponse, error) {
-	return c.client.GetBarber(ctx, &staffv1.GetBarberRequest{Id: id})
+func (c *Client) GetBarber(ctx context.Context, barberID string) (*staffv1.BarberResponse, error) {
+	return c.client.GetBarber(ctx, &staffv1.GetBarberRequest{BarberId: barberID})
 }
 
 func (c *Client) GetSchedule(ctx context.Context, barberID, week string) (*staffv1.GetScheduleResponse, error) {

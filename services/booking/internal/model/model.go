@@ -9,23 +9,26 @@ const (
 	StatusNoShow    = "no_show"
 )
 
-type Booking struct {
-	ID         string
-	ClientName string
-	BarberID   string
-	ServID     string
-	Date       time.Time
-	TimeStart  time.Time
-	TimeEnd    time.Time
-	Status     string
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+// FinalStatuses — статусы, из которых нельзя перейти в другой.
+var FinalStatuses = map[string]bool{
+	StatusCompleted: true,
+	StatusCancelled: true,
+	StatusNoShow:    true,
 }
 
-type Slot struct {
-	Status    SlotStatus
-	TimeStart time.Time
-	TimeEnd   time.Time
+type Booking struct {
+	ID          string
+	ClientName  string
+	ClientPhone string
+	BarberID    string
+	ServiceID   string
+	ServiceName string
+	Date        time.Time // хранится в БД для индексации; производное от TimeStart
+	TimeStart   time.Time
+	TimeEnd     time.Time
+	Status      string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 type SlotStatus int32
@@ -37,14 +40,22 @@ const (
 	SlotBlocked SlotStatus = 3
 )
 
-type SlotsResult struct {
-	BarberID string
-	Date     time.Time
-	Slots    []Slot
-	Priority int32
+type SlotBooking struct {
+	BookingID   string
+	ClientName  string
+	ClientPhone string
+	ServiceName string
 }
 
-type DeleteResult struct {
-	BookingID  string
-	ClientName string
+type Slot struct {
+	Status    SlotStatus
+	TimeStart time.Time
+	TimeEnd   time.Time
+	Booking   *SlotBooking // non-nil только если Status == SlotBooked
+}
+
+type SlotsResult struct {
+	BarberID string
+	Date     string // YYYY-MM-DD
+	Slots    []Slot
 }
