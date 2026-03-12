@@ -212,8 +212,8 @@ func (*Period_Custom) isPeriod_Kind() {}
 
 type DateRange struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	From          string                 `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"` // YYYY-MM-DD (inclusive)
-	To            string                 `protobuf:"bytes,2,opt,name=to,proto3" json:"to,omitempty"`     // YYYY-MM-DD (inclusive)
+	DateFrom      string                 `protobuf:"bytes,1,opt,name=date_from,json=dateFrom,proto3" json:"date_from,omitempty"` // YYYY-MM-DD (inclusive)
+	DateTo        string                 `protobuf:"bytes,2,opt,name=date_to,json=dateTo,proto3" json:"date_to,omitempty"`       // YYYY-MM-DD (inclusive)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -248,37 +248,36 @@ func (*DateRange) Descriptor() ([]byte, []int) {
 	return file_analytics_v1_analytics_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *DateRange) GetFrom() string {
+func (x *DateRange) GetDateFrom() string {
 	if x != nil {
-		return x.From
+		return x.DateFrom
 	}
 	return ""
 }
 
-func (x *DateRange) GetTo() string {
+func (x *DateRange) GetDateTo() string {
 	if x != nil {
-		return x.To
+		return x.DateTo
 	}
 	return ""
 }
 
 type BarberStatsResponse struct {
-	state      protoimpl.MessageState `protogen:"open.v1"`
-	BarberId   string                 `protobuf:"bytes,1,opt,name=barber_id,json=barberId,proto3" json:"barber_id,omitempty"`
-	PeriodFrom string                 `protobuf:"bytes,2,opt,name=period_from,json=periodFrom,proto3" json:"period_from,omitempty"` // YYYY-MM-DD (resolved)
-	PeriodTo   string                 `protobuf:"bytes,3,opt,name=period_to,json=periodTo,proto3" json:"period_to,omitempty"`       // YYYY-MM-DD (resolved)
-	// Числовые показатели
-	ClientsServed     int64         `protobuf:"varint,4,opt,name=clients_served,json=clientsServed,proto3" json:"clients_served,omitempty"` // COUNT bookings WHERE status = completed
-	TotalRevenue      int64         `protobuf:"varint,5,opt,name=total_revenue,json=totalRevenue,proto3" json:"total_revenue,omitempty"`    // SUM price WHERE status = completed (руб.)
-	HoursWorked       float64       `protobuf:"fixed64,6,opt,name=hours_worked,json=hoursWorked,proto3" json:"hours_worked,omitempty"`      // SUM рабочих часов из расписания
-	AverageCheck      float64       `protobuf:"fixed64,7,opt,name=average_check,json=averageCheck,proto3" json:"average_check,omitempty"`   // total_revenue / clients_served
-	BookingsTotal     int64         `protobuf:"varint,8,opt,name=bookings_total,json=bookingsTotal,proto3" json:"bookings_total,omitempty"`
-	BookingsCompleted int64         `protobuf:"varint,9,opt,name=bookings_completed,json=bookingsCompleted,proto3" json:"bookings_completed,omitempty"`
-	BookingsCancelled int64         `protobuf:"varint,10,opt,name=bookings_cancelled,json=bookingsCancelled,proto3" json:"bookings_cancelled,omitempty"`
-	BookingsNoShow    int64         `protobuf:"varint,11,opt,name=bookings_no_show,json=bookingsNoShow,proto3" json:"bookings_no_show,omitempty"`
-	OccupancyRate     float64       `protobuf:"fixed64,12,opt,name=occupancy_rate,json=occupancyRate,proto3" json:"occupancy_rate,omitempty"`  // 0.0–1.0: время записей / рабочее время
-	TopServices       []*TopService `protobuf:"bytes,13,rep,name=top_services,json=topServices,proto3" json:"top_services,omitempty"`          // отсортировано по count DESC
-	DailyBreakdown    []*DayStat    `protobuf:"bytes,14,rep,name=daily_breakdown,json=dailyBreakdown,proto3" json:"daily_breakdown,omitempty"` // для графиков на фронте
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	BarberId          string                 `protobuf:"bytes,1,opt,name=barber_id,json=barberId,proto3" json:"barber_id,omitempty"`
+	DateFrom          string                 `protobuf:"bytes,2,opt,name=date_from,json=dateFrom,proto3" json:"date_from,omitempty"` // YYYY-MM-DD (resolved)
+	DateTo            string                 `protobuf:"bytes,3,opt,name=date_to,json=dateTo,proto3" json:"date_to,omitempty"`       // YYYY-MM-DD (resolved)
+	ClientsServed     int64                  `protobuf:"varint,4,opt,name=clients_served,json=clientsServed,proto3" json:"clients_served,omitempty"`
+	TotalRevenue      int64                  `protobuf:"varint,5,opt,name=total_revenue,json=totalRevenue,proto3" json:"total_revenue,omitempty"` // руб.
+	HoursWorked       float64                `protobuf:"fixed64,6,opt,name=hours_worked,json=hoursWorked,proto3" json:"hours_worked,omitempty"`
+	AverageCheck      float64                `protobuf:"fixed64,7,opt,name=average_check,json=averageCheck,proto3" json:"average_check,omitempty"`
+	BookingsTotal     int64                  `protobuf:"varint,8,opt,name=bookings_total,json=bookingsTotal,proto3" json:"bookings_total,omitempty"`
+	BookingsCompleted int64                  `protobuf:"varint,9,opt,name=bookings_completed,json=bookingsCompleted,proto3" json:"bookings_completed,omitempty"`
+	BookingsCancelled int64                  `protobuf:"varint,10,opt,name=bookings_cancelled,json=bookingsCancelled,proto3" json:"bookings_cancelled,omitempty"`
+	BookingsNoShow    int64                  `protobuf:"varint,11,opt,name=bookings_no_show,json=bookingsNoShow,proto3" json:"bookings_no_show,omitempty"`
+	OccupancyRate     float64                `protobuf:"fixed64,12,opt,name=occupancy_rate,json=occupancyRate,proto3" json:"occupancy_rate,omitempty"` // 0.0–1.0
+	TopServices       []*TopService          `protobuf:"bytes,13,rep,name=top_services,json=topServices,proto3" json:"top_services,omitempty"`
+	DailyBreakdown    []*DayStat             `protobuf:"bytes,14,rep,name=daily_breakdown,json=dailyBreakdown,proto3" json:"daily_breakdown,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -320,16 +319,16 @@ func (x *BarberStatsResponse) GetBarberId() string {
 	return ""
 }
 
-func (x *BarberStatsResponse) GetPeriodFrom() string {
+func (x *BarberStatsResponse) GetDateFrom() string {
 	if x != nil {
-		return x.PeriodFrom
+		return x.DateFrom
 	}
 	return ""
 }
 
-func (x *BarberStatsResponse) GetPeriodTo() string {
+func (x *BarberStatsResponse) GetDateTo() string {
 	if x != nil {
-		return x.PeriodTo
+		return x.DateTo
 	}
 	return ""
 }
@@ -415,8 +414,8 @@ type TopService struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ServiceId     string                 `protobuf:"bytes,1,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty"`
 	ServiceName   string                 `protobuf:"bytes,2,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
-	Count         int64                  `protobuf:"varint,3,opt,name=count,proto3" json:"count,omitempty"`     // завершённых записей
-	Revenue       int64                  `protobuf:"varint,4,opt,name=revenue,proto3" json:"revenue,omitempty"` // суммарная выручка
+	Count         int64                  `protobuf:"varint,3,opt,name=count,proto3" json:"count,omitempty"`
+	Revenue       int64                  `protobuf:"varint,4,opt,name=revenue,proto3" json:"revenue,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -558,15 +557,14 @@ const file_analytics_v1_analytics_proto_rawDesc = "" +
 	"\x06Period\x128\n" +
 	"\x06preset\x18\x01 \x01(\x0e2\x1e.analytics.v1.PredefinedPeriodH\x00R\x06preset\x121\n" +
 	"\x06custom\x18\x02 \x01(\v2\x17.analytics.v1.DateRangeH\x00R\x06customB\x06\n" +
-	"\x04kind\"/\n" +
-	"\tDateRange\x12\x12\n" +
-	"\x04from\x18\x01 \x01(\tR\x04from\x12\x0e\n" +
-	"\x02to\x18\x02 \x01(\tR\x02to\"\xd7\x04\n" +
+	"\x04kind\"A\n" +
+	"\tDateRange\x12\x1b\n" +
+	"\tdate_from\x18\x01 \x01(\tR\bdateFrom\x12\x17\n" +
+	"\adate_to\x18\x02 \x01(\tR\x06dateTo\"\xcf\x04\n" +
 	"\x13BarberStatsResponse\x12\x1b\n" +
-	"\tbarber_id\x18\x01 \x01(\tR\bbarberId\x12\x1f\n" +
-	"\vperiod_from\x18\x02 \x01(\tR\n" +
-	"periodFrom\x12\x1b\n" +
-	"\tperiod_to\x18\x03 \x01(\tR\bperiodTo\x12%\n" +
+	"\tbarber_id\x18\x01 \x01(\tR\bbarberId\x12\x1b\n" +
+	"\tdate_from\x18\x02 \x01(\tR\bdateFrom\x12\x17\n" +
+	"\adate_to\x18\x03 \x01(\tR\x06dateTo\x12%\n" +
 	"\x0eclients_served\x18\x04 \x01(\x03R\rclientsServed\x12#\n" +
 	"\rtotal_revenue\x18\x05 \x01(\x03R\ftotalRevenue\x12!\n" +
 	"\fhours_worked\x18\x06 \x01(\x01R\vhoursWorked\x12#\n" +

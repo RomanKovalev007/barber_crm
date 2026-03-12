@@ -4,13 +4,11 @@ package analytics.v1;
 
 option go_package = "github.com/RomanKovalev007/barber_crm/api/proto/analytics/v1;analyticsv1";
 
-// ─── gRPC Service ────────────────────────────────────────────────────────────
-
 service AnalyticsService {
   rpc GetBarberStats(GetBarberStatsRequest) returns (BarberStatsResponse);
 }
 
-// ─── Request / Period ────────────────────────────────────────────────────────
+// ─── Request ─────────────────────────────────────────────────────────────────
 
 message GetBarberStatsRequest {
   string barber_id = 1;
@@ -33,37 +31,36 @@ enum PredefinedPeriod {
 }
 
 message DateRange {
-  string from = 1; // YYYY-MM-DD (inclusive)
-  string to   = 2; // YYYY-MM-DD (inclusive)
+  string date_from = 1; // YYYY-MM-DD (inclusive)
+  string date_to   = 2; // YYYY-MM-DD (inclusive)
 }
 
 // ─── Response ────────────────────────────────────────────────────────────────
 
 message BarberStatsResponse {
-  string barber_id   = 1;
-  string period_from = 2; // YYYY-MM-DD (resolved)
-  string period_to   = 3; // YYYY-MM-DD (resolved)
+  string barber_id  = 1;
+  string date_from  = 2; // YYYY-MM-DD (resolved)
+  string date_to    = 3; // YYYY-MM-DD (resolved)
 
-  // Числовые показатели
-  int64  clients_served      = 4;  // COUNT bookings WHERE status = completed
-  int64  total_revenue       = 5;  // SUM price WHERE status = completed (руб.)
-  double hours_worked        = 6;  // SUM рабочих часов из расписания
-  double average_check       = 7;  // total_revenue / clients_served
+  int64  clients_served      = 4;
+  int64  total_revenue       = 5;  // руб.
+  double hours_worked        = 6;
+  double average_check       = 7;
   int64  bookings_total      = 8;
   int64  bookings_completed  = 9;
   int64  bookings_cancelled  = 10;
   int64  bookings_no_show    = 11;
-  double occupancy_rate      = 12; // 0.0–1.0: время записей / рабочее время
+  double occupancy_rate      = 12; // 0.0–1.0
 
-  repeated TopService top_services    = 13; // отсортировано по count DESC
-  repeated DayStat    daily_breakdown = 14; // для графиков на фронте
+  repeated TopService top_services    = 13;
+  repeated DayStat    daily_breakdown = 14;
 }
 
 message TopService {
   string service_id   = 1;
   string service_name = 2;
-  int64  count        = 3; // завершённых записей
-  int64  revenue      = 4; // суммарная выручка
+  int64  count        = 3;
+  int64  revenue      = 4;
 }
 
 message DayStat {

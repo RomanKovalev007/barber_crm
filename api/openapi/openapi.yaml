@@ -1,0 +1,1249 @@
+openapi: 3.0.3
+info:
+  title: Barber CRM — API Gateway
+  version: 0.1.0
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: Public
+    description: Публичные ручки (без авторизации) — для клиентов
+  - name: Auth
+    description: Авторизация барберов
+  - name: Staff — Barber
+    description: Личный кабинет барбера
+  - name: Staff — Services
+    description: Управление услугами барбера
+  - name: Staff — Schedule
+    description: Управление расписанием
+  - name: Staff — Bookings
+    description: Управление записями
+  - name: Staff — Clients
+    description: Клиентская база
+  - name: Staff — Analytics
+    description: Аналитика
+
+# ─────────────────────────────────────────────
+# Security scheme
+# ─────────────────────────────────────────────
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    # ── Barber ──────────────────────────────
+    Barber:
+      type: object
+      properties:
+        barber_id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          example: "Иван Петров"
+        services:
+          type: array
+          items:
+            $ref: "#/components/schemas/Service"
+
+    # ── Service ─────────────────────────────
+    Service:
+      type: object
+      properties:
+        service_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Стрижка"
+        price:
+          type: integer
+          description: Цена в рублях
+          example: 1200
+        duration_minutes:
+          type: integer
+          description: Длительность услуги в минутах (кратно 15)
+          example: 45
+        is_active:
+          type: boolean
+          example: true
+
+    # ── Slot ────────────────────────────────
+    Slot:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [free, booked, blocked]
+        time_start:
+          type: string
+          format: date-time
+          example: "2026-03-11T10:00:00Z"
+        time_end:
+          type: string
+          format: date-time
+          example: "2026-03-11T10:45:00Z"
+        booking:
+          description: Присутствует только если status = booked
+          $ref: "#/components/schemas/SlotBooking"
+
+    # ── SlotBooking ──────────────────────────
+    SlotBooking:
+      type: object
+      description: Краткая информация о записи, встроенная в слот
+      properties:
+        booking_id:
+          type: string
+          format: uuid
+        client_name:
+          type: string
+          example: "Алексей"
+        client_phone:
+          type: string
+          example: "+79161234567"
+        service_name:
+          type: string
+          example: "Стрижка"
+
+    # ── ScheduleDay ─────────────────────────
+    ScheduleDay:
+      type: object
+      properties:
+        schedule_day_id:
+          type: string
+          format: uuid
+        barber_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+          example: "2026-03-11"
+        start_time:
+          type: string
+          example: "09:00"
+        end_time:
+          type: string
+          example: "20:00"
+        part_of_day:
+          type: string
+          enum: [am, pm]
+          description: |
+            Предпочтительная половина дня. Слоты показываются только в этой части,
+            пока в противоположной нет записей в радиусе ~1 часа.
+
+    # ── Booking ─────────────────────────────
+    Booking:
+      type: object
+      properties:
+        booking_id:
+          type: string
+          format: uuid
+        barber_id:
+          type: string
+          format: uuid
+        service_id:
+          type: string
+          format: uuid
+        service_name:
+          type: string
+          example: "Стрижка"
+        client_name:
+          type: string
+          example: "Алексей"
+        client_phone:
+          type: string
+          example: "+79161234567"
+        time_start:
+          type: string
+          format: date-time
+          example: "2026-03-11T10:00:00Z"
+        time_end:
+          type: string
+          format: date-time
+          example: "2026-03-11T10:45:00Z"
+        status:
+          type: string
+          enum: [pending, completed, cancelled, no_show]
+
+    # ── Client ──────────────────────────────
+    Client:
+      type: object
+      properties:
+        client_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Алексей Смирнов"
+        phone:
+          type: string
+          example: "+79161234567"
+        notes:
+          type: string
+          description: Заметки барбера о клиенте
+          example: "Аллергия на лак"
+        visits_count:
+          type: integer
+          example: 5
+        last_visit:
+          type: string
+          format: date
+          example: "2026-02-20"
+
+    # ── Analytics ───────────────────────────
+    BarberStats:
+      type: object
+      properties:
+        barber_id:
+          type: string
+          format: uuid
+        date_from:
+          type: string
+          format: date
+        date_to:
+          type: string
+          format: date
+        clients_served:
+          type: integer
+          example: 42
+        total_revenue:
+          type: integer
+          description: Выручка в рублях
+          example: 58000
+        hours_worked:
+          type: number
+          format: double
+          example: 96.5
+        average_check:
+          type: number
+          format: double
+          example: 1380.95
+        bookings_total:
+          type: integer
+          example: 50
+        bookings_completed:
+          type: integer
+          example: 42
+        bookings_cancelled:
+          type: integer
+          example: 5
+        bookings_no_show:
+          type: integer
+          example: 3
+        occupancy_rate:
+          type: number
+          format: double
+          description: Доля занятого рабочего времени (0.0–1.0)
+          example: 0.78
+        top_services:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopService"
+        daily_breakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/DayStat"
+
+    TopService:
+      type: object
+      properties:
+        service_id:
+          type: string
+          format: uuid
+        service_name:
+          type: string
+          example: "Стрижка"
+        count:
+          type: integer
+          example: 28
+        revenue:
+          type: integer
+          example: 33600
+
+    DayStat:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          example: "2026-03-11"
+        clients:
+          type: integer
+          example: 6
+        revenue:
+          type: integer
+          example: 7200
+        hours_worked:
+          type: number
+          format: double
+          example: 8.0
+
+    # ── Auth ────────────────────────────────
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+          description: Время жизни access токена в секундах
+          example: 3600
+        barber:
+          $ref: "#/components/schemas/Barber"
+
+    # ── Errors ──────────────────────────────
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          example: "NOT_FOUND"
+        message:
+          type: string
+          example: "barber not found"
+
+# ─────────────────────────────────────────────
+# Paths
+# ─────────────────────────────────────────────
+paths:
+
+  # ╔══════════════════════════════════════════╗
+  # ║  PUBLIC                                  ║
+  # ╚══════════════════════════════════════════╝
+
+  /barbers:
+    get:
+      tags: [Public]
+      summary: Список всех барберов
+      description: Возвращает всех активных барберов с их активными услугами.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  barbers:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Barber"
+
+  /barbers/{barber_id}/free-slots:
+    get:
+      tags: [Public]
+      summary: Свободные слоты барбера
+      description: |
+        Возвращает свободные временные слоты барбера на указанную дату.
+        Если дата не указана — возвращает слоты на ближайший доступный день.
+        Слоты формируются по 15 минут с учётом длительности выбранной услуги и логики part_of_day.
+      parameters:
+        - name: barber_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2026-03-11"
+        - name: service_id
+          in: query
+          required: false
+          description: Если передан — возвращаются только слоты, в которые влезает услуга нужной длительности
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  barber_id:
+                    type: string
+                    format: uuid
+                  date:
+                    type: string
+                    format: date
+                  slots:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Slot"
+        "404":
+          description: Барбер не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /barbers/{barber_id}/services:
+    get:
+      tags: [Public]
+      summary: Услуги барбера
+      description: Возвращает список активных услуг барбера.
+      parameters:
+        - name: barber_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  services:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Service"
+        "404":
+          description: Барбер не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /bookings:
+    post:
+      tags: [Public]
+      summary: Создать запись (клиент)
+      description: |
+        Клиент записывается к барберу на конкретный слот.
+        time_end вычисляется на основе duration_minutes выбранной услуги — передавать не нужно.
+        Телефон и имя используются для идентификации клиента в client-сервисе.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [barber_id, service_id, client_name, client_phone, time_start]
+              properties:
+                barber_id:
+                  type: string
+                  format: uuid
+                service_id:
+                  type: string
+                  format: uuid
+                client_name:
+                  type: string
+                  example: "Алексей"
+                client_phone:
+                  type: string
+                  example: "+79161234567"
+                time_start:
+                  type: string
+                  format: date-time
+                  example: "2026-03-11T10:00:00Z"
+      responses:
+        "201":
+          description: Запись создана
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "409":
+          description: Слот уже занят
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Некорректные данные
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # ╔══════════════════════════════════════════╗
+  # ║  AUTH                                    ║
+  # ╚══════════════════════════════════════════╝
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Авторизация барбера
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [login, password]
+              properties:
+                login:
+                  type: string
+                  example: "ivan"
+                password:
+                  type: string
+                  format: password
+                  example: "secret123"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "401":
+          description: Неверный логин или пароль
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Выход
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        "204":
+          description: Успешный выход
+        "401":
+          description: Невалидный токен
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Обновление access токена
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+                  expires_in:
+                    type: integer
+                    example: 3600
+        "401":
+          description: Невалидный или истёкший refresh токен
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # ╔══════════════════════════════════════════╗
+  # ║  STAFF — BARBER                          ║
+  # ╚══════════════════════════════════════════╝
+
+  /staff/barber:
+    get:
+      tags: [Staff — Barber]
+      summary: Профиль текущего барбера
+      description: Возвращает информацию о барбере и его услуги. Барбер определяется из JWT.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Barber"
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # ╔══════════════════════════════════════════╗
+  # ║  STAFF — SERVICES                        ║
+  # ╚══════════════════════════════════════════╝
+
+  /staff/services:
+    get:
+      tags: [Staff — Services]
+      summary: Список услуг барбера
+      description: Возвращает все услуги (включая неактивные).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: include_inactive
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  services:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Service"
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    post:
+      tags: [Staff — Services]
+      summary: Добавить услугу
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, price, duration_minutes]
+              properties:
+                name:
+                  type: string
+                  example: "Стрижка машинкой"
+                price:
+                  type: integer
+                  example: 1000
+                duration_minutes:
+                  type: integer
+                  description: Длительность в минутах (кратно 15)
+                  example: 45
+      responses:
+        "201":
+          description: Услуга создана
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+        "400":
+          description: Некорректные данные
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /staff/services/{service_id}:
+    put:
+      tags: [Staff — Services]
+      summary: Редактировать услугу
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: service_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, price, duration_minutes, is_active]
+              properties:
+                name:
+                  type: string
+                  example: "Стрижка с бородой"
+                price:
+                  type: integer
+                  example: 1500
+                duration_minutes:
+                  type: integer
+                  description: Длительность в минутах (кратно 15)
+                  example: 60
+                is_active:
+                  type: boolean
+                  example: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+        "404":
+          description: Услуга не найдена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      tags: [Staff — Services]
+      summary: Удалить услугу (soft delete)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: service_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Услуга удалена
+        "404":
+          description: Услуга не найдена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # ╔══════════════════════════════════════════╗
+  # ║  STAFF — SCHEDULE                        ║
+  # ╚══════════════════════════════════════════╝
+
+  /staff/schedule:
+    get:
+      tags: [Staff — Schedule]
+      summary: Расписание барбера
+      description: Возвращает расписание на неделю. Неделя передаётся в формате ISO 8601 (например, 2026-W10).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: week
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "2026-W10"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  week:
+                    type: string
+                    example: "2026-W10"
+                  days:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ScheduleDay"
+        "400":
+          description: Некорректный формат недели
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /staff/schedule/{date}:
+    put:
+      tags: [Staff — Schedule]
+      summary: Установить рабочий день (upsert)
+      description: |
+        Создаёт или обновляет рабочие часы барбера на конкретный день.
+        Идемпотентный upsert по barber_id + date.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2026-03-11"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [start_time, end_time, part_of_day]
+              properties:
+                start_time:
+                  type: string
+                  example: "09:00"
+                end_time:
+                  type: string
+                  example: "14:00"
+                part_of_day:
+                  type: string
+                  enum: [am, pm]
+                  example: "am"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduleDay"
+        "400":
+          description: Некорректные данные
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      tags: [Staff — Schedule]
+      summary: Удалить рабочий день
+      description: Удаляет запись из расписания (например, внезапный выходной).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2026-03-11"
+      responses:
+        "204":
+          description: Рабочий день удалён
+        "404":
+          description: День не найден в расписании
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # ╔══════════════════════════════════════════╗
+  # ║  STAFF — SLOTS                           ║
+  # ╚══════════════════════════════════════════╝
+
+  /staff/slots:
+    get:
+      tags: [Staff — Schedule]
+      summary: Все слоты барбера на день
+      description: |
+        Возвращает полную сетку слотов (по 15 минут) на указанный день.
+        Занятые слоты содержат встроенную информацию о записи.
+        Используется барбером для просмотра своего дня.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2026-03-11"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    format: date
+                  slots:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Slot"
+        "400":
+          description: Дата не указана или некорректна
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Рабочий день не найден в расписании
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # ╔══════════════════════════════════════════╗
+  # ║  STAFF — BOOKINGS                        ║
+  # ╚══════════════════════════════════════════╝
+
+  /staff/bookings:
+    post:
+      tags: [Staff — Bookings]
+      summary: Создать запись вручную
+      description: |
+        Барбер создаёт запись от своего имени (например, по звонку клиента).
+        time_end вычисляется на основе duration_minutes выбранной услуги.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [service_id, client_name, client_phone, time_start]
+              properties:
+                service_id:
+                  type: string
+                  format: uuid
+                client_name:
+                  type: string
+                  example: "Алексей"
+                client_phone:
+                  type: string
+                  example: "+79161234567"
+                time_start:
+                  type: string
+                  format: date-time
+                  example: "2026-03-11T10:00:00Z"
+      responses:
+        "201":
+          description: Запись создана
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "409":
+          description: Слот уже занят
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /staff/bookings/{booking_id}:
+    get:
+      tags: [Staff — Bookings]
+      summary: Информация о записи
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: booking_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "404":
+          description: Запись не найдена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    put:
+      tags: [Staff — Bookings]
+      summary: Редактировать запись
+      description: Обновляет детали записи (перенос времени, изменение услуги).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: booking_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                service_id:
+                  type: string
+                  format: uuid
+                time_start:
+                  type: string
+                  format: date-time
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "404":
+          description: Запись не найдена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Слот уже занят
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    patch:
+      tags: [Staff — Bookings]
+      summary: Изменить статус записи
+      description: |
+        Барбер вручную меняет статус записи:
+        - `cancelled` — отмена
+        - `completed` — визит состоялся
+        - `no_show` — клиент не пришёл
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: booking_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [cancelled, completed, no_show]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "404":
+          description: Запись не найдена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Недопустимый переход статуса
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      tags: [Staff — Bookings]
+      summary: Удалить запись
+      description: Физически удаляет запись (например, созданную по ошибке).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: booking_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Запись удалена
+        "404":
+          description: Запись не найдена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # ╔══════════════════════════════════════════╗
+  # ║  STAFF — CLIENTS                         ║
+  # ╚══════════════════════════════════════════╝
+
+  /staff/clients:
+    get:
+      tags: [Staff — Clients]
+      summary: Список клиентов барбера
+      description: Возвращает всех клиентов, которые когда-либо записывались к этому барберу.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: Поиск по имени или телефону
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  clients:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Client"
+
+  /staff/clients/{client_id}:
+    get:
+      tags: [Staff — Clients]
+      summary: Профиль клиента
+      description: Информация о клиенте + история визитов к этому барберу.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: client_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "404":
+          description: Клиент не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    put:
+      tags: [Staff — Clients]
+      summary: Редактировать клиента
+      description: Барбер может изменить имя клиента или добавить заметку.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: client_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Алексей Смирнов"
+                notes:
+                  type: string
+                  example: "Постоянный клиент, предпочитает короткие стрижки"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "404":
+          description: Клиент не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # ╔══════════════════════════════════════════╗
+  # ║  STAFF — ANALYTICS                       ║
+  # ╚══════════════════════════════════════════╝
+
+  /staff/analytics:
+    get:
+      tags: [Staff — Analytics]
+      summary: Аналитика барбера
+      description: |
+        Возвращает полную статистику барбера за указанный период.
+
+        Можно использовать предустановленный период (`period`) или произвольный диапазон дат (`date_from` + `date_to`).
+        При наличии обоих — приоритет у `date_from`/`date_to`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [day, week, month, all]
+            example: "month"
+        - name: date_from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2026-01-01"
+        - name: date_to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2026-03-11"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BarberStats"
+        "400":
+          description: Некорректные параметры периода
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
