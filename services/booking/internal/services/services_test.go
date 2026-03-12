@@ -24,7 +24,7 @@ type MockRepo struct {
 	mock.Mock
 }
 
-func (m *MockRepo) CreateBooking(ctx context.Context, b *model.Booking) error {
+func (m *MockRepo) CreateBookingTx(ctx context.Context, b *model.Booking) error {
 	return m.Called(ctx, b).Error(0)
 }
 func (m *MockRepo) GetBooking(ctx context.Context, id string) (*model.Booking, error) {
@@ -43,10 +43,6 @@ func (m *MockRepo) DeleteBooking(ctx context.Context, id string) error {
 func (m *MockRepo) GetBookingsByBarberAndDate(ctx context.Context, barberID string, date time.Time) ([]model.Booking, error) {
 	args := m.Called(ctx, barberID, date)
 	return args.Get(0).([]model.Booking), args.Error(1)
-}
-func (m *MockRepo) HasActiveBooking(ctx context.Context, clientPhone string) (bool, error) {
-	args := m.Called(ctx, clientPhone)
-	return args.Bool(0), args.Error(1)
 }
 
 type MockStaffClient struct {
@@ -88,7 +84,6 @@ var testDate = time.Date(2026, 3, 16, 0, 0, 0, 0, time.UTC) // Monday, 2026-W12
 func TestCreateBooking_Success(t *testing.T) {
 	ctx := context.Background()
 	timeStart := time.Date(2026, 3, 16, 10, 0, 0, 0, time.UTC)
-	date := timeStart.UTC().Truncate(24 * time.Hour)
 
 	r := new(MockRepo)
 	sc := new(MockStaffClient)
@@ -97,9 +92,7 @@ func TestCreateBooking_Success(t *testing.T) {
 	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{
 		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-1", Name: "Haircut"}},
 	}, nil)
-	r.On("HasActiveBooking", ctx, "+79001234567").Return(false, nil)
-	r.On("GetBookingsByBarberAndDate", ctx, "b1", date).Return([]model.Booking{}, nil)
-	r.On("CreateBooking", ctx, mock.AnythingOfType("*model.Booking")).Return(nil)
+	r.On("CreateBookingTx", ctx, mock.AnythingOfType("*model.Booking")).Return(nil)
 
 	svc := newTestService(r, sc)
 
@@ -150,24 +143,6 @@ func TestCreateBooking_ListServicesError(t *testing.T) {
 	assert.Equal(t, apperr.CodeInternal, appErr.Code)
 }
 
-func TestCreateBooking_HasActiveBookingError(t *testing.T) {
-	ctx := context.Background()
-	sc := new(MockStaffClient)
-	sc.On("GetBarber", ctx, "b1").Return(&staffv1.BarberResponse{}, nil)
-	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{}, nil)
-
-	r := new(MockRepo)
-	r.On("HasActiveBooking", ctx, "+7").Return(false, errors.New("db error"))
-
-	svc := newTestService(r, sc)
-
-	_, err := svc.CreateBooking(ctx, &model.Booking{BarberID: "b1", ClientPhone: "+7"})
-
-	var appErr *apperr.AppError
-	require.ErrorAs(t, err, &appErr)
-	assert.Equal(t, apperr.CodeInternal, appErr.Code)
-}
-
 func TestCreateBooking_ClientAlreadyHasActiveBooking(t *testing.T) {
 	ctx := context.Background()
 	sc := new(MockStaffClient)
@@ -175,7 +150,7 @@ func TestCreateBooking_ClientAlreadyHasActiveBooking(t *testing.T) {
 	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{}, nil)
 
 	r := new(MockRepo)
-	r.On("HasActiveBooking", ctx, "+7").Return(true, nil)
+	r.On("CreateBookingTx", ctx, mock.AnythingOfType("*model.Booking")).Return(repo.ErrActiveBookingExists)
 
 	svc := newTestService(r, sc)
 
@@ -188,25 +163,16 @@ func TestCreateBooking_ClientAlreadyHasActiveBooking(t *testing.T) {
 
 func TestCreateBooking_SlotConflict(t *testing.T) {
 	ctx := context.Background()
-	timeStart := time.Date(2026, 3, 16, 10, 0, 0, 0, time.UTC)
-	date := timeStart.UTC().Truncate(24 * time.Hour)
-
 	sc := new(MockStaffClient)
 	sc.On("GetBarber", ctx, "b1").Return(&staffv1.BarberResponse{}, nil)
 	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{}, nil)
 
-	existing := []model.Booking{{
-		ID:        "existing-1",
-		TimeStart: timeStart,
-		TimeEnd:   timeStart.Add(slotDuration),
-	}}
 	r := new(MockRepo)
-	r.On("HasActiveBooking", ctx, "+7").Return(false, nil)
-	r.On("GetBookingsByBarberAndDate", ctx, "b1", date).Return(existing, nil)
+	r.On("CreateBookingTx", ctx, mock.AnythingOfType("*model.Booking")).Return(repo.ErrSlotConflict)
 
 	svc := newTestService(r, sc)
 
-	_, err := svc.CreateBooking(ctx, &model.Booking{BarberID: "b1", ClientPhone: "+7", TimeStart: timeStart})
+	_, err := svc.CreateBooking(ctx, &model.Booking{BarberID: "b1", ClientPhone: "+7"})
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
@@ -215,21 +181,16 @@ func TestCreateBooking_SlotConflict(t *testing.T) {
 
 func TestCreateBooking_RepoCreateError(t *testing.T) {
 	ctx := context.Background()
-	timeStart := time.Date(2026, 3, 16, 10, 0, 0, 0, time.UTC)
-	date := timeStart.UTC().Truncate(24 * time.Hour)
-
 	sc := new(MockStaffClient)
 	sc.On("GetBarber", ctx, "b1").Return(&staffv1.BarberResponse{}, nil)
 	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{}, nil)
 
 	r := new(MockRepo)
-	r.On("HasActiveBooking", ctx, "+7").Return(false, nil)
-	r.On("GetBookingsByBarberAndDate", ctx, "b1", date).Return([]model.Booking{}, nil)
-	r.On("CreateBooking", ctx, mock.AnythingOfType("*model.Booking")).Return(errors.New("db error"))
+	r.On("CreateBookingTx", ctx, mock.AnythingOfType("*model.Booking")).Return(errors.New("db error"))
 
 	svc := newTestService(r, sc)
 
-	_, err := svc.CreateBooking(ctx, &model.Booking{BarberID: "b1", ClientPhone: "+7", TimeStart: timeStart})
+	_, err := svc.CreateBooking(ctx, &model.Booking{BarberID: "b1", ClientPhone: "+7"})
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)

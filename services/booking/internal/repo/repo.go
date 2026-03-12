@@ -11,7 +11,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var ErrNotFound = errors.New("booking not found")
+var (
+	ErrNotFound           = errors.New("booking not found")
+	ErrSlotConflict       = errors.New("time slot already booked")
+	ErrActiveBookingExists = errors.New("client already has an active booking")
+)
 
 type BookingRepo struct {
 	pool *pgxpool.Pool
@@ -21,14 +25,67 @@ func New(pool *pgxpool.Pool) *BookingRepo {
 	return &BookingRepo{pool: pool}
 }
 
-func (r *BookingRepo) CreateBooking(ctx context.Context, b *model.Booking) error {
-	_, err := r.pool.Exec(ctx, `
+// CreateBookingTx atomically checks availability and inserts the booking.
+// Returns ErrActiveBookingExists or ErrSlotConflict on business-rule violations.
+func (r *BookingRepo) CreateBookingTx(ctx context.Context, b *model.Booking) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	// Lock and check: client must not already have a pending booking.
+	var hasActive bool
+	if err = tx.QueryRow(ctx, `
+		SELECT EXISTS(
+			SELECT 1 FROM bookings
+			WHERE client_phone=$1 AND status=$2
+			FOR UPDATE
+		)`, b.ClientPhone, model.StatusPending,
+	).Scan(&hasActive); err != nil {
+		return err
+	}
+	if hasActive {
+		return ErrActiveBookingExists
+	}
+
+	// Lock all active bookings for this barber on this date and check for overlap.
+	rows, err := tx.Query(ctx, `
+		SELECT time_start, time_end FROM bookings
+		WHERE barber_id=$1 AND date=$2 AND status NOT IN ($3,$4)
+		FOR UPDATE`,
+		b.BarberID, b.Date, model.StatusCancelled, model.StatusNoShow,
+	)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var ts, te time.Time
+		if err = rows.Scan(&ts, &te); err != nil {
+			rows.Close()
+			return err
+		}
+		if b.TimeStart.Before(te) && b.TimeEnd.After(ts) {
+			rows.Close()
+			return ErrSlotConflict
+		}
+	}
+	rows.Close()
+	if err = rows.Err(); err != nil {
+		return err
+	}
+
+	// Insert.
+	if _, err = tx.Exec(ctx, `
 		INSERT INTO bookings (id, client_name, client_phone, barber_id, service_id, service_name, date, time_start, time_end, status)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
 		b.ID, b.ClientName, b.ClientPhone, b.BarberID, b.ServiceID, b.ServiceName,
 		b.Date, b.TimeStart, b.TimeEnd, b.Status,
-	)
-	return err
+	); err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }
 
 func (r *BookingRepo) GetBooking(ctx context.Context, id string) (*model.Booking, error) {
@@ -120,13 +177,3 @@ func (r *BookingRepo) GetBookingsByBarberAndDate(ctx context.Context, barberID s
 	return bookings, rows.Err()
 }
 
-func (r *BookingRepo) HasActiveBooking(ctx context.Context, clientPhone string) (bool, error) {
-	var exists bool
-	err := r.pool.QueryRow(ctx, `
-		SELECT EXISTS(
-			SELECT 1 FROM bookings
-			WHERE client_phone=$1 AND status=$2
-		)`, clientPhone, model.StatusPending,
-	).Scan(&exists)
-	return exists, err
-}

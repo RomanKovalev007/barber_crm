@@ -18,13 +18,12 @@ import (
 )
 
 type bookingRepo interface {
-	CreateBooking(ctx context.Context, b *model.Booking) error
+	CreateBookingTx(ctx context.Context, b *model.Booking) error
 	GetBooking(ctx context.Context, id string) (*model.Booking, error)
 	UpdateBookingDetails(ctx context.Context, id, serviceID, serviceName string, timeStart, timeEnd time.Time) error
 	UpdateBookingStatus(ctx context.Context, id, status string) error
 	DeleteBooking(ctx context.Context, id string) error
 	GetBookingsByBarberAndDate(ctx context.Context, barberID string, date time.Time) ([]model.Booking, error)
-	HasActiveBooking(ctx context.Context, clientPhone string) (bool, error)
 }
 
 type staffClientIntr interface {
@@ -72,46 +71,30 @@ func (s *bookingService) CreateBooking(ctx context.Context, b *model.Booking) (*
 		s.log.Error("create booking: failed to get services", "barber_id", b.BarberID, "error", err)
 		return nil, apperr.Internal("failed to get services")
 	}
-	serviceName := ""
 	for _, svc := range svcResp.Services {
 		if svc.ServiceId == b.ServiceID {
-			serviceName = svc.Name
+			b.ServiceName = svc.Name
 			break
-		}
-	}
-
-	hasActive, err := s.repo.HasActiveBooking(ctx, b.ClientPhone)
-	if err != nil {
-		s.log.Error("create booking: failed to check active booking", "client_phone", b.ClientPhone, "error", err)
-		return nil, apperr.Internal("failed to check active booking")
-	}
-	if hasActive {
-		s.log.Warn("create booking: client already has active booking", "client_phone", b.ClientPhone)
-		return nil, apperr.AlreadyExists("client already has an active booking")
-	}
-
-	b.TimeEnd = b.TimeStart.Add(slotDuration)
-	b.Date = b.TimeStart.UTC().Truncate(24 * time.Hour)
-
-	existing, err := s.repo.GetBookingsByBarberAndDate(ctx, b.BarberID, b.Date)
-	if err != nil {
-		s.log.Error("create booking: failed to get existing bookings", "barber_id", b.BarberID, "date", b.Date, "error", err)
-		return nil, apperr.Internal("failed to check slot availability")
-	}
-	for _, e := range existing {
-		if b.TimeStart.Before(e.TimeEnd) && b.TimeEnd.After(e.TimeStart) {
-			s.log.Warn("create booking: slot conflict", "barber_id", b.BarberID, "time_start", b.TimeStart)
-			return nil, apperr.AlreadyExists("time slot already booked")
 		}
 	}
 
 	b.ID = uuid.New().String()
 	b.Status = model.StatusPending
-	b.ServiceName = serviceName
+	b.TimeEnd = b.TimeStart.Add(slotDuration)
+	b.Date = b.TimeStart.UTC().Truncate(24 * time.Hour)
 
-	if err := s.repo.CreateBooking(ctx, b); err != nil {
-		s.log.Error("create booking: failed to save", "barber_id", b.BarberID, "error", err)
-		return nil, apperr.Internal("failed to create booking")
+	if err := s.repo.CreateBookingTx(ctx, b); err != nil {
+		switch {
+		case errors.Is(err, repo.ErrActiveBookingExists):
+			s.log.Warn("create booking: client already has active booking", "client_phone", b.ClientPhone)
+			return nil, apperr.AlreadyExists("client already has an active booking")
+		case errors.Is(err, repo.ErrSlotConflict):
+			s.log.Warn("create booking: slot conflict", "barber_id", b.BarberID, "time_start", b.TimeStart)
+			return nil, apperr.AlreadyExists("time slot already booked")
+		default:
+			s.log.Error("create booking: failed to save", "barber_id", b.BarberID, "error", err)
+			return nil, apperr.Internal("failed to create booking")
+		}
 	}
 
 	s.log.Info("booking created", "booking_id", b.ID, "barber_id", b.BarberID, "client_phone", b.ClientPhone)
