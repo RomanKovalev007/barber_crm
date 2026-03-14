@@ -66,9 +66,9 @@ func (s *Service) GetBarberStats(ctx context.Context, req *pb.GetBarberStatsRequ
 	}
 
 	resp := &pb.BarberStatsResponse{
-		BarberId:         req.BarberId,
-		PeriodFrom:       from,
-		PeriodTo:         to,
+		BarberId: req.BarberId,
+		DateFrom: from,
+		DateTo:   to,
 		ClientsServed:    stats.ClientsServed,
 		TotalRevenue:     stats.TotalRevenue,
 		HoursWorked:      hoursWorked,
@@ -123,7 +123,7 @@ func resolvePeriod(p *pb.Period) (from, to string) {
 		}
 
 	case *pb.Period_Custom:
-		return k.Custom.From, k.Custom.To
+		return k.Custom.DateFrom, k.Custom.DateTo
 	}
 
 	return "", ""
