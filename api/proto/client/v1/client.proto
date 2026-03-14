@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package client.v1;
+
+option go_package = "github.com/RomanKovalev007/barber_crm/api/proto/client/v1;clientv1";
+
+import "google/protobuf/timestamp.proto";
+
+service ClientService {
+  rpc ListClients(ListClientsRequest) returns (ListClientsResponse);
+  rpc GetClient(GetClientRequest) returns (ClientResponse);
+  rpc GetClientByPhone(GetClientByPhoneRequest) returns (ClientResponse);
+  rpc UpdateClient(UpdateClientRequest) returns (ClientResponse);
+}
+
+message Client {
+  string                    client_id    = 1;
+  string                    barber_id    = 2;
+  string                    name         = 3;
+  string                    phone        = 4;
+  string                    notes        = 5;
+  int32                     visits_count = 6;
+  google.protobuf.Timestamp last_visit   = 7;
+  google.protobuf.Timestamp created_at   = 8;
+}
+
+message ListClientsRequest {
+  string barber_id = 1;
+  string search    = 2; // optional: filter by name or phone (ILIKE %search%)
+}
+
+message ListClientsResponse {
+  repeated Client clients = 1;
+}
+
+message GetClientRequest {
+  string client_id = 1;
+}
+
+message GetClientByPhoneRequest {
+  string barber_id = 1;
+  string phone     = 2;
+}
+
+message ClientResponse {
+  Client client = 1;
+}
+
+message UpdateClientRequest {
+  string client_id = 1;
+  string name      = 2;
+  string notes     = 3;
+}

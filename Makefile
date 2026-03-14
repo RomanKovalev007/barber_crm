@@ -6,8 +6,8 @@ proto:
 		-I api/proto \
 		api/proto/staff/v1/staff.proto \
 		api/proto/booking/v1/booking.proto \
-		api/proto/analytics/v1/analytics.proto
+		api/proto/analytics/v1/analytics.proto \
+		api/proto/client/v1/client.proto
 
 # Future:
-# 		api/proto/client/v1/client.proto \
 # 		api/proto/notification/v1/notification.proto
