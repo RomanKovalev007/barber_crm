@@ -14,6 +14,7 @@ import (
 	"github.com/RomanKovalev007/barber_crm/pkg/postgres"
 	"github.com/RomanKovalev007/barber_crm/pkg/redis"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/bookingrpc"
+	"github.com/RomanKovalev007/barber_crm/services/booking/internal/kafka"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/repo"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/services"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/staffclient"
@@ -53,8 +54,15 @@ func main() {
 	}
 	defer staffClient.Close()
 
+	producer := kafka.NewProducer(cfg.KafkaCfg.Brokers)
+	if err := producer.Ping(ctx); err != nil {
+		log.Error("failed to connect to kafka", "error", err)
+		os.Exit(1)
+	}
+	defer producer.Close()
+
 	bookingRepo := repo.New(pool)
-	bookingService := services.New(bookingRepo, redisClient, ttl, cfg.JWTSecret, log, staffClient)
+	bookingService := services.New(bookingRepo, redisClient, ttl, cfg.JWTSecret, log, staffClient, producer)
 	srv := bookingrpc.NewServer(bookingService)
 
 	grpcServer := grpc.NewServer()

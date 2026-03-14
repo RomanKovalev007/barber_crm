@@ -8,7 +8,10 @@ import (
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
+	staffpb "github.com/RomanKovalev007/barber_crm/api/proto/staff/v1"
 	"github.com/RomanKovalev007/barber_crm/pkg/auth"
 	"github.com/RomanKovalev007/barber_crm/services/staff/internal/apperr"
 	"github.com/RomanKovalev007/barber_crm/services/staff/internal/kafka"
@@ -32,7 +35,7 @@ type staffRepo interface {
 	ListBarbers(ctx context.Context) ([]model.Barber, error)
 
 	UpsertSchedule(ctx context.Context, barberID string, day *model.ScheduleDay) (*model.ScheduleDay, error)
-	DeleteSchedule(ctx context.Context, barberID, date string) error
+	DeleteSchedule(ctx context.Context, barberID, date string) (string, error)
 	GetSchedule(ctx context.Context, barberID string, week string) ([]model.ScheduleDay, error)
 
 	CreateService(ctx context.Context, s *model.Service) error
@@ -42,7 +45,7 @@ type staffRepo interface {
 }
 
 type eventProducer interface {
-	Publish(ctx context.Context, topic, key string, payload any) error
+	Publish(ctx context.Context, topic, key string, msg proto.Message) error
 }
 
 type Service struct {
@@ -191,9 +194,6 @@ func (s *Service) CreateService(ctx context.Context, svc *model.Service) error {
 		return apperr.Internal("failed to create service")
 	}
 	s.logger.Info("service created", "service_id", svc.ID, "barber_id", svc.BarberID)
-	if err := s.producer.Publish(ctx, kafka.TopicServiceCreated, svc.BarberID, svc); err != nil {
-		s.logger.Warn("failed to publish service.created event", "error", err)
-	}
 	return nil
 }
 
@@ -221,9 +221,6 @@ func (s *Service) UpdateService(ctx context.Context, svc *model.Service) error {
 		return apperr.Internal("failed to update service")
 	}
 	s.logger.Info("service updated", "service_id", svc.ID, "barber_id", svc.BarberID)
-	if err := s.producer.Publish(ctx, kafka.TopicServiceUpdated, svc.ID, svc); err != nil {
-		s.logger.Warn("failed to publish service.updated event", "error", err)
-	}
 	return nil
 }
 
@@ -239,9 +236,6 @@ func (s *Service) DeleteService(ctx context.Context, id, barberID string) error 
 		return apperr.NotFound("service not found")
 	}
 	s.logger.Info("service deleted", "service_id", id, "barber_id", barberID)
-	if err := s.producer.Publish(ctx, kafka.TopicServiceDeleted, id, map[string]string{"id": id, "barber_id": barberID}); err != nil {
-		s.logger.Warn("failed to publish service.deleted event", "error", err)
-	}
 	return nil
 }
 
@@ -297,10 +291,31 @@ func (s *Service) UpsertSchedule(ctx context.Context, barberID string, day *mode
 		return nil, apperr.Internal("failed to upsert schedule")
 	}
 	s.logger.Info("schedule upserted", "barber_id", barberID, "date", day.Date)
-	if err := s.producer.Publish(ctx, kafka.TopicScheduleAdded, barberID, result); err != nil {
+	event := &staffpb.ScheduleEvent{
+		ScheduleId: result.ID,
+		BarberId:   barberID,
+		Date:       result.Date,
+		StartTime:  result.StartTime,
+		EndTime:    result.EndTime,
+		PartOfDay:  partOfDayToProto(result.PartOfDay),
+		EventType:  staffpb.ScheduleEventType_SCHEDULE_EVENT_ADDED,
+		OccurredAt: timestamppb.Now(),
+	}
+	if err := s.producer.Publish(ctx, kafka.TopicScheduleEvents, barberID, event); err != nil {
 		s.logger.Warn("failed to publish schedule.added event", "error", err)
 	}
 	return result, nil
+}
+
+func partOfDayToProto(p model.PartOfDay) staffpb.PartOfDay {
+	switch p {
+	case model.PartOfDayAM:
+		return staffpb.PartOfDay_PART_OF_DAY_AM
+	case model.PartOfDayPM:
+		return staffpb.PartOfDay_PART_OF_DAY_PM
+	default:
+		return staffpb.PartOfDay_PART_OF_DAY_UNSPECIFIED
+	}
 }
 
 func (s *Service) DeleteSchedule(ctx context.Context, barberID, date string) error {
@@ -310,7 +325,8 @@ func (s *Service) DeleteSchedule(ctx context.Context, barberID, date string) err
 	if !datePattern.MatchString(date) {
 		return apperr.InvalidArgument("date must be in format YYYY-MM-DD")
 	}
-	if err := s.repo.DeleteSchedule(ctx, barberID, date); err != nil {
+	scheduleID, err := s.repo.DeleteSchedule(ctx, barberID, date)
+	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			return apperr.NotFound("schedule day not found")
 		}
@@ -318,7 +334,14 @@ func (s *Service) DeleteSchedule(ctx context.Context, barberID, date string) err
 		return apperr.Internal("failed to delete schedule")
 	}
 	s.logger.Info("schedule deleted", "barber_id", barberID, "date", date)
-	if err := s.producer.Publish(ctx, kafka.TopicScheduleDeleted, barberID, map[string]string{"barber_id": barberID, "date": date}); err != nil {
+	event := &staffpb.ScheduleEvent{
+		ScheduleId: scheduleID,
+		BarberId:   barberID,
+		Date:       date,
+		EventType:  staffpb.ScheduleEventType_SCHEDULE_EVENT_DELETED,
+		OccurredAt: timestamppb.Now(),
+	}
+	if err := s.producer.Publish(ctx, kafka.TopicScheduleEvents, barberID, event); err != nil {
 		s.logger.Warn("failed to publish schedule.deleted event", "error", err)
 	}
 	return nil

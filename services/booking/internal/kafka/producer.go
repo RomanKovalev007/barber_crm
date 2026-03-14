@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-const TopicScheduleEvents = "schedule.events"
+const TopicBookingEvents = "bookings.events"
 
 type Producer struct {
 	writer *kafka.Writer
@@ -25,13 +25,13 @@ func NewProducer(brokers string) *Producer {
 	}
 }
 
-func (p *Producer) Publish(ctx context.Context, topic, key string, msg proto.Message) error {
+func (p *Producer) Publish(ctx context.Context, key string, msg proto.Message) error {
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("marshal proto: %w", err)
 	}
 	return p.writer.WriteMessages(ctx, kafka.Message{
-		Topic: topic,
+		Topic: TopicBookingEvents,
 		Key:   []byte(key),
 		Value: data,
 	})

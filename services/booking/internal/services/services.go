@@ -9,12 +9,15 @@ import (
 	"time"
 
 	staffv1 "github.com/RomanKovalev007/barber_crm/api/proto/staff/v1"
+	bookingpb "github.com/RomanKovalev007/barber_crm/api/proto/booking/v1"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/apperr"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/model"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/repo"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/staffclient"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type bookingRepo interface {
@@ -30,6 +33,10 @@ type staffClientIntr interface {
 	GetBarber(ctx context.Context, barberID string) (*staffv1.BarberResponse, error)
 	ListServices(ctx context.Context, barberID string, includeInactive bool) (*staffv1.ListServicesResponse, error)
 	GetSchedule(ctx context.Context, barberID, week string) (*staffv1.GetScheduleResponse, error)
+}
+
+type eventProducer interface {
+	Publish(ctx context.Context, key string, msg proto.Message) error
 }
 
 const slotDuration = 60 * time.Minute
@@ -49,14 +56,16 @@ type bookingService struct {
 	repo        bookingRepo
 	redis       *redis.Client
 	staffClient staffClientIntr
+	producer    eventProducer
 }
 
-func New(r *repo.BookingRepo, rc *redis.Client, ttl int, jwt string, log *slog.Logger, staffClient *staffclient.Client) BookingIntr {
+func New(r *repo.BookingRepo, rc *redis.Client, ttl int, jwt string, log *slog.Logger, staffClient *staffclient.Client, producer eventProducer) BookingIntr {
 	return &bookingService{
 		log:         log,
 		repo:        r,
 		redis:       rc,
 		staffClient: staffClient,
+		producer:    producer,
 	}
 }
 
@@ -98,6 +107,7 @@ func (s *bookingService) CreateBooking(ctx context.Context, b *model.Booking) (*
 	}
 
 	s.log.Info("booking created", "booking_id", b.ID, "barber_id", b.BarberID, "client_phone", b.ClientPhone)
+	s.publishEvent(ctx, b, bookingpb.BookingStatus_BOOKING_STATUS_PENDING)
 	return b, nil
 }
 
@@ -163,7 +173,13 @@ func (s *bookingService) UpdateBookingDetails(ctx context.Context, bookingID, ba
 	}
 
 	s.log.Info("booking updated", "booking_id", bookingID, "barber_id", barberID, "service_id", serviceID)
-	return s.repo.GetBooking(ctx, bookingID)
+
+	updated, err := s.repo.GetBooking(ctx, bookingID)
+	if err != nil {
+		return nil, apperr.Internal("failed to get updated booking")
+	}
+	s.publishEvent(ctx, updated, bookingStatusToProto(updated.Status))
+	return updated, nil
 }
 
 func (s *bookingService) UpdateBookingStatus(ctx context.Context, bookingID, barberID, newStatus string) (*model.Booking, error) {
@@ -190,7 +206,13 @@ func (s *bookingService) UpdateBookingStatus(ctx context.Context, bookingID, bar
 	}
 
 	s.log.Info("booking status updated", "booking_id", bookingID, "barber_id", barberID, "status", newStatus)
-	return s.repo.GetBooking(ctx, bookingID)
+
+	updated, err := s.repo.GetBooking(ctx, bookingID)
+	if err != nil {
+		return nil, apperr.Internal("failed to get updated booking")
+	}
+	s.publishEvent(ctx, updated, bookingStatusToProto(newStatus))
+	return updated, nil
 }
 
 func (s *bookingService) DeleteBooking(ctx context.Context, id string) error {
@@ -289,6 +311,41 @@ func (s *bookingService) buildSlots(ctx context.Context, barberID string, date t
 		Date:     dateStr,
 		Slots:    slots,
 	}, nil
+}
+
+// ─── helpers ─────────────────────────────────────────────────────────────────
+
+func (s *bookingService) publishEvent(ctx context.Context, b *model.Booking, status bookingpb.BookingStatus) {
+	event := &bookingpb.BookingEvent{
+		BookingId:   b.ID,
+		BarberId:    b.BarberID,
+		ClientPhone: b.ClientPhone,
+		ClientName:  b.ClientName,
+		ServiceId:   b.ServiceID,
+		ServiceName: b.ServiceName,
+		TimeStart:   timestamppb.New(b.TimeStart),
+		TimeEnd:     timestamppb.New(b.TimeEnd),
+		Status:      status,
+		OccurredAt:  timestamppb.New(time.Now()),
+	}
+	if err := s.producer.Publish(ctx, b.ID, event); err != nil {
+		s.log.Warn("publish booking event failed", "booking_id", b.ID, "status", status, "error", err)
+	}
+}
+
+func bookingStatusToProto(s string) bookingpb.BookingStatus {
+	switch s {
+	case model.StatusPending:
+		return bookingpb.BookingStatus_BOOKING_STATUS_PENDING
+	case model.StatusCompleted:
+		return bookingpb.BookingStatus_BOOKING_STATUS_COMPLETED
+	case model.StatusCancelled:
+		return bookingpb.BookingStatus_BOOKING_STATUS_CANCELLED
+	case model.StatusNoShow:
+		return bookingpb.BookingStatus_BOOKING_STATUS_NO_SHOW
+	default:
+		return bookingpb.BookingStatus_BOOKING_STATUS_UNSPECIFIED
+	}
 }
 
 func parseTimeOnDate(date time.Time, timeStr string) (time.Time, error) {

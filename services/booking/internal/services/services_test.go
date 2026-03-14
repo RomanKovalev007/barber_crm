@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 )
 
 // ---------- mocks ----------
@@ -62,13 +63,24 @@ func (m *MockStaffClient) GetSchedule(ctx context.Context, barberID, week string
 	return args.Get(0).(*staffv1.GetScheduleResponse), args.Error(1)
 }
 
+type MockProducer struct {
+	mock.Mock
+}
+
+func (m *MockProducer) Publish(ctx context.Context, key string, msg proto.Message) error {
+	return m.Called(ctx, key, msg).Error(0)
+}
+
 // ---------- helpers ----------
 
 func newTestService(r bookingRepo, sc staffClientIntr) *bookingService {
+	p := new(MockProducer)
+	p.On("Publish", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	return &bookingService{
 		log:         slog.New(slog.NewTextHandler(io.Discard, nil)),
 		repo:        r,
 		staffClient: sc,
+		producer:    p,
 	}
 }
 
