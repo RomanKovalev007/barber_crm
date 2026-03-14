@@ -170,11 +170,14 @@ func (s *bookingService) UpdateBookingDetails(ctx context.Context, bookingID, ba
 
 	s.log.Info("booking updated", "booking_id", bookingID, "barber_id", barberID, "service_id", serviceID)
 
+	// Не публикуем событие здесь: UpdateBookingStatus публикует его с актуальными
+	// данными из БД (включая обновлённые service_id/price) при смене статуса.
+	// Лишнее событие с тем же статусом перезаписало бы запись в ClickHouse и
+	// могло бы "откатить" статус, если бы оно пришло после события об изменении статуса.
 	updated, err := s.repo.GetBooking(ctx, bookingID)
 	if err != nil {
 		return nil, apperr.Internal("failed to get updated booking")
 	}
-	s.publishEvent(ctx, updated, bookingStatusToProto(updated.Status))
 	return updated, nil
 }
 
