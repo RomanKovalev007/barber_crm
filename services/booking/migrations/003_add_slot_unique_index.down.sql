@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS bookings_barber_time_start_active_idx;

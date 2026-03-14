@@ -4,32 +4,46 @@ package staff.v1;
 option go_package = "github.com/RomanKovalev007/barber_crm/api/proto/staff/v1;staffv1";
 
 import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
 
 service StaffService {
+  // Auth
   rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Logout(LogoutRequest) returns (google.protobuf.Empty);
   rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+
+  // Barber
   rpc GetBarber(GetBarberRequest) returns (BarberResponse);
   rpc ListBarbers(ListBarbersRequest) returns (ListBarbersResponse);
+
+  // Schedule
   rpc GetSchedule(GetScheduleRequest) returns (GetScheduleResponse);
-  rpc AddSchedule(AddScheduleRequest) returns (ScheduleDay);
+  rpc UpsertSchedule(UpsertScheduleRequest) returns (ScheduleDay);
+  rpc DeleteSchedule(DeleteScheduleRequest) returns (google.protobuf.Empty);
+
+  // Services
   rpc ListServices(ListServicesRequest) returns (ListServicesResponse);
   rpc CreateService(CreateServiceRequest) returns (ServiceResponse);
   rpc UpdateService(UpdateServiceRequest) returns (ServiceResponse);
   rpc DeleteService(DeleteServiceRequest) returns (google.protobuf.Empty);
 }
 
-// ─── Auth ───
+// ─── Auth ───────────────────────────────────────────────────────────────────
 
 message LoginRequest {
-  string login = 1;
+  string login    = 1;
   string password = 2;
 }
 
 message LoginResponse {
-  string access_token = 1;
-  string refresh_token = 2;
-  int32 expires_in = 3;
-  BarberResponse barber = 4;
+  string        access_token  = 1;
+  string        refresh_token = 2;
+  int32         expires_in    = 3; // секунды
+  BarberResponse barber       = 4;
+}
+
+message LogoutRequest {
+  string refresh_token = 1;
 }
 
 message RefreshTokenRequest {
@@ -37,24 +51,21 @@ message RefreshTokenRequest {
 }
 
 message RefreshTokenResponse {
-  string access_token = 1;
+  string access_token  = 1;
   string refresh_token = 2;
-  int32 expires_in = 3;
+  int32  expires_in    = 3;
 }
 
-// ─── Barber ───
+// ─── Barber ─────────────────────────────────────────────────────────────────
 
 message GetBarberRequest {
-  string id = 1;
+  string barber_id = 1;
 }
 
 message BarberResponse {
-  string id = 1;
-  string name = 2;
-  string photo_url = 3;
-  string specialization = 4;
-  double rating = 5;
-  repeated ServiceResponse services = 6;
+  string                 barber_id = 1;
+  string                 name      = 2;
+  repeated ServiceResponse services = 3;
 }
 
 message ListBarbersRequest {}
@@ -63,38 +74,51 @@ message ListBarbersResponse {
   repeated BarberResponse barbers = 1;
 }
 
-// ─── Schedule ───
+// ─── Schedule ───────────────────────────────────────────────────────────────
 
-message ScheduleDay {
-  string id = 1;
-  string barber_id = 2;
-  string date = 3;
-  string start_time = 4;
-  string end_time = 5;
+enum PartOfDay {
+  PART_OF_DAY_UNSPECIFIED = 0;
+  PART_OF_DAY_AM          = 1;
+  PART_OF_DAY_PM          = 2;
 }
 
-message AddScheduleRequest {
-  string barber_id = 1;
-  string date = 2;
-  string start_time = 3;
-  string end_time = 4;
+message ScheduleDay {
+  string    schedule_day_id = 1;
+  string    barber_id       = 2;
+  string    date            = 3; // YYYY-MM-DD
+  string    start_time      = 4; // HH:MM
+  string    end_time        = 5; // HH:MM
+  PartOfDay part_of_day     = 6;
 }
 
 message GetScheduleRequest {
   string barber_id = 1;
-  string week = 2; // ISO week: "2026-W08"
+  string week      = 2; // ISO week: "2026-W10"
 }
 
 message GetScheduleResponse {
-  string week = 1;
+  string              week = 1;
   repeated ScheduleDay days = 2;
 }
 
-// ─── Services ───
+message UpsertScheduleRequest {
+  string    barber_id   = 1;
+  string    date        = 2; // YYYY-MM-DD
+  string    start_time  = 3; // HH:MM
+  string    end_time    = 4; // HH:MM
+  PartOfDay part_of_day = 5;
+}
+
+message DeleteScheduleRequest {
+  string barber_id = 1;
+  string date      = 2; // YYYY-MM-DD
+}
+
+// ─── Services ───────────────────────────────────────────────────────────────
 
 message ListServicesRequest {
-  string barber_id = 1;
-  bool include_inactive = 2;
+  string barber_id        = 1;
+  bool   include_inactive = 2;
 }
 
 message ListServicesResponse {
@@ -102,27 +126,50 @@ message ListServicesResponse {
 }
 
 message CreateServiceRequest {
-  string barber_id = 1;
-  string name = 2;
-  int32 price = 3;
+  string barber_id         = 1;
+  string name              = 2;
+  int32  price             = 3;
+  int32  duration_minutes  = 4; // кратно 15
 }
 
 message UpdateServiceRequest {
-  string id = 1;
-  string barber_id = 2;
-  string name = 3;
-  int32 price = 4;
-  bool is_active = 5;
+  string service_id        = 1;
+  string barber_id         = 2;
+  string name              = 3;
+  int32  price             = 4;
+  int32  duration_minutes  = 5;
+  bool   is_active         = 6;
 }
 
 message DeleteServiceRequest {
-  string id = 1;
-  string barber_id = 2;
+  string service_id = 1;
+  string barber_id  = 2;
 }
 
 message ServiceResponse {
-  string id = 1;
-  string name = 2;
-  int32 price = 3;
-  bool is_active = 4;
+  string service_id        = 1;
+  string name              = 2;
+  int32  price             = 3;
+  int32  duration_minutes  = 4;
+  bool   is_active         = 5;
+}
+
+// ─── Kafka Events ────────────────────────────────────────────────────────────
+
+// ScheduleEvent отправляется при upsert или удалении рабочего дня барбера.
+message ScheduleEvent {
+  string                    schedule_id = 1;
+  string                    barber_id   = 2;
+  string                    date        = 3; // YYYY-MM-DD
+  string                    start_time  = 4; // HH:MM
+  string                    end_time    = 5; // HH:MM
+  PartOfDay                 part_of_day = 6;
+  ScheduleEventType         event_type  = 7;
+  google.protobuf.Timestamp occurred_at = 8;
+}
+
+enum ScheduleEventType {
+  SCHEDULE_EVENT_UNSPECIFIED = 0;
+  SCHEDULE_EVENT_ADDED       = 1;
+  SCHEDULE_EVENT_DELETED     = 2;
 }

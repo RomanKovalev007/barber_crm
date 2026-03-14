@@ -1,0 +1,2 @@
+ALTER TABLE services
+    ADD COLUMN IF NOT EXISTS duration_minutes INTEGER NOT NULL DEFAULT 60;

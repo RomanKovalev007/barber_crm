@@ -20,28 +20,36 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	StaffService_Login_FullMethodName         = "/staff.v1.StaffService/Login"
-	StaffService_RefreshToken_FullMethodName  = "/staff.v1.StaffService/RefreshToken"
-	StaffService_GetBarber_FullMethodName     = "/staff.v1.StaffService/GetBarber"
-	StaffService_ListBarbers_FullMethodName   = "/staff.v1.StaffService/ListBarbers"
-	StaffService_GetSchedule_FullMethodName   = "/staff.v1.StaffService/GetSchedule"
-	StaffService_AddSchedule_FullMethodName   = "/staff.v1.StaffService/AddSchedule"
-	StaffService_ListServices_FullMethodName  = "/staff.v1.StaffService/ListServices"
-	StaffService_CreateService_FullMethodName = "/staff.v1.StaffService/CreateService"
-	StaffService_UpdateService_FullMethodName = "/staff.v1.StaffService/UpdateService"
-	StaffService_DeleteService_FullMethodName = "/staff.v1.StaffService/DeleteService"
+	StaffService_Login_FullMethodName          = "/staff.v1.StaffService/Login"
+	StaffService_Logout_FullMethodName         = "/staff.v1.StaffService/Logout"
+	StaffService_RefreshToken_FullMethodName   = "/staff.v1.StaffService/RefreshToken"
+	StaffService_GetBarber_FullMethodName      = "/staff.v1.StaffService/GetBarber"
+	StaffService_ListBarbers_FullMethodName    = "/staff.v1.StaffService/ListBarbers"
+	StaffService_GetSchedule_FullMethodName    = "/staff.v1.StaffService/GetSchedule"
+	StaffService_UpsertSchedule_FullMethodName = "/staff.v1.StaffService/UpsertSchedule"
+	StaffService_DeleteSchedule_FullMethodName = "/staff.v1.StaffService/DeleteSchedule"
+	StaffService_ListServices_FullMethodName   = "/staff.v1.StaffService/ListServices"
+	StaffService_CreateService_FullMethodName  = "/staff.v1.StaffService/CreateService"
+	StaffService_UpdateService_FullMethodName  = "/staff.v1.StaffService/UpdateService"
+	StaffService_DeleteService_FullMethodName  = "/staff.v1.StaffService/DeleteService"
 )
 
 // StaffServiceClient is the client API for StaffService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type StaffServiceClient interface {
+	// Auth
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
+	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	RefreshToken(ctx context.Context, in *RefreshTokenRequest, opts ...grpc.CallOption) (*RefreshTokenResponse, error)
+	// Barber
 	GetBarber(ctx context.Context, in *GetBarberRequest, opts ...grpc.CallOption) (*BarberResponse, error)
 	ListBarbers(ctx context.Context, in *ListBarbersRequest, opts ...grpc.CallOption) (*ListBarbersResponse, error)
+	// Schedule
 	GetSchedule(ctx context.Context, in *GetScheduleRequest, opts ...grpc.CallOption) (*GetScheduleResponse, error)
-	AddSchedule(ctx context.Context, in *AddScheduleRequest, opts ...grpc.CallOption) (*ScheduleDay, error)
+	UpsertSchedule(ctx context.Context, in *UpsertScheduleRequest, opts ...grpc.CallOption) (*ScheduleDay, error)
+	DeleteSchedule(ctx context.Context, in *DeleteScheduleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Services
 	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
 	CreateService(ctx context.Context, in *CreateServiceRequest, opts ...grpc.CallOption) (*ServiceResponse, error)
 	UpdateService(ctx context.Context, in *UpdateServiceRequest, opts ...grpc.CallOption) (*ServiceResponse, error)
@@ -60,6 +68,16 @@ func (c *staffServiceClient) Login(ctx context.Context, in *LoginRequest, opts .
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LoginResponse)
 	err := c.cc.Invoke(ctx, StaffService_Login_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *staffServiceClient) Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, StaffService_Logout_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -106,10 +124,20 @@ func (c *staffServiceClient) GetSchedule(ctx context.Context, in *GetScheduleReq
 	return out, nil
 }
 
-func (c *staffServiceClient) AddSchedule(ctx context.Context, in *AddScheduleRequest, opts ...grpc.CallOption) (*ScheduleDay, error) {
+func (c *staffServiceClient) UpsertSchedule(ctx context.Context, in *UpsertScheduleRequest, opts ...grpc.CallOption) (*ScheduleDay, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ScheduleDay)
-	err := c.cc.Invoke(ctx, StaffService_AddSchedule_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, StaffService_UpsertSchedule_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *staffServiceClient) DeleteSchedule(ctx context.Context, in *DeleteScheduleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, StaffService_DeleteSchedule_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -160,12 +188,18 @@ func (c *staffServiceClient) DeleteService(ctx context.Context, in *DeleteServic
 // All implementations must embed UnimplementedStaffServiceServer
 // for forward compatibility.
 type StaffServiceServer interface {
+	// Auth
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
+	Logout(context.Context, *LogoutRequest) (*emptypb.Empty, error)
 	RefreshToken(context.Context, *RefreshTokenRequest) (*RefreshTokenResponse, error)
+	// Barber
 	GetBarber(context.Context, *GetBarberRequest) (*BarberResponse, error)
 	ListBarbers(context.Context, *ListBarbersRequest) (*ListBarbersResponse, error)
+	// Schedule
 	GetSchedule(context.Context, *GetScheduleRequest) (*GetScheduleResponse, error)
-	AddSchedule(context.Context, *AddScheduleRequest) (*ScheduleDay, error)
+	UpsertSchedule(context.Context, *UpsertScheduleRequest) (*ScheduleDay, error)
+	DeleteSchedule(context.Context, *DeleteScheduleRequest) (*emptypb.Empty, error)
+	// Services
 	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
 	CreateService(context.Context, *CreateServiceRequest) (*ServiceResponse, error)
 	UpdateService(context.Context, *UpdateServiceRequest) (*ServiceResponse, error)
@@ -183,6 +217,9 @@ type UnimplementedStaffServiceServer struct{}
 func (UnimplementedStaffServiceServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Login not implemented")
 }
+func (UnimplementedStaffServiceServer) Logout(context.Context, *LogoutRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method Logout not implemented")
+}
 func (UnimplementedStaffServiceServer) RefreshToken(context.Context, *RefreshTokenRequest) (*RefreshTokenResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RefreshToken not implemented")
 }
@@ -195,8 +232,11 @@ func (UnimplementedStaffServiceServer) ListBarbers(context.Context, *ListBarbers
 func (UnimplementedStaffServiceServer) GetSchedule(context.Context, *GetScheduleRequest) (*GetScheduleResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSchedule not implemented")
 }
-func (UnimplementedStaffServiceServer) AddSchedule(context.Context, *AddScheduleRequest) (*ScheduleDay, error) {
-	return nil, status.Error(codes.Unimplemented, "method AddSchedule not implemented")
+func (UnimplementedStaffServiceServer) UpsertSchedule(context.Context, *UpsertScheduleRequest) (*ScheduleDay, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpsertSchedule not implemented")
+}
+func (UnimplementedStaffServiceServer) DeleteSchedule(context.Context, *DeleteScheduleRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteSchedule not implemented")
 }
 func (UnimplementedStaffServiceServer) ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListServices not implemented")
@@ -245,6 +285,24 @@ func _StaffService_Login_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(StaffServiceServer).Login(ctx, req.(*LoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StaffService_Logout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LogoutRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StaffServiceServer).Logout(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StaffService_Logout_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StaffServiceServer).Logout(ctx, req.(*LogoutRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -321,20 +379,38 @@ func _StaffService_GetSchedule_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _StaffService_AddSchedule_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddScheduleRequest)
+func _StaffService_UpsertSchedule_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertScheduleRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(StaffServiceServer).AddSchedule(ctx, in)
+		return srv.(StaffServiceServer).UpsertSchedule(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: StaffService_AddSchedule_FullMethodName,
+		FullMethod: StaffService_UpsertSchedule_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StaffServiceServer).AddSchedule(ctx, req.(*AddScheduleRequest))
+		return srv.(StaffServiceServer).UpsertSchedule(ctx, req.(*UpsertScheduleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StaffService_DeleteSchedule_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteScheduleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StaffServiceServer).DeleteSchedule(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StaffService_DeleteSchedule_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StaffServiceServer).DeleteSchedule(ctx, req.(*DeleteScheduleRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -423,6 +499,10 @@ var StaffService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _StaffService_Login_Handler,
 		},
 		{
+			MethodName: "Logout",
+			Handler:    _StaffService_Logout_Handler,
+		},
+		{
 			MethodName: "RefreshToken",
 			Handler:    _StaffService_RefreshToken_Handler,
 		},
@@ -439,8 +519,12 @@ var StaffService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _StaffService_GetSchedule_Handler,
 		},
 		{
-			MethodName: "AddSchedule",
-			Handler:    _StaffService_AddSchedule_Handler,
+			MethodName: "UpsertSchedule",
+			Handler:    _StaffService_UpsertSchedule_Handler,
+		},
+		{
+			MethodName: "DeleteSchedule",
+			Handler:    _StaffService_DeleteSchedule_Handler,
 		},
 		{
 			MethodName: "ListServices",

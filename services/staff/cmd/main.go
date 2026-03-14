@@ -6,19 +6,24 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"syscall"
+	"time"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/health"
-	"google.golang.org/grpc/health/grpc_health_v1"
 	pb "github.com/RomanKovalev007/barber_crm/api/proto/staff/v1"
-	"github.com/RomanKovalev007/barber_crm/pkg/logger"
 	"github.com/RomanKovalev007/barber_crm/pkg/config"
-	"github.com/RomanKovalev007/barber_crm/pkg/redis"
+	"github.com/RomanKovalev007/barber_crm/pkg/logger"
 	"github.com/RomanKovalev007/barber_crm/pkg/postgres"
+	"github.com/RomanKovalev007/barber_crm/pkg/redis"
 	staffgrpc "github.com/RomanKovalev007/barber_crm/services/staff/internal/grpc"
+	"github.com/RomanKovalev007/barber_crm/services/staff/internal/kafka"
 	"github.com/RomanKovalev007/barber_crm/services/staff/internal/repository"
 	"github.com/RomanKovalev007/barber_crm/services/staff/internal/service"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/status"
 )
 
 func main() {
@@ -45,11 +50,29 @@ func main() {
 	}
 	defer rdb.Close()
 
+	producer := kafka.NewProducer(cfg.KafkaCfg.Brokers)
+	defer producer.Close()
+
+	if err := producer.Ping(ctx); err != nil {
+		log.Error("failed to connect to kafka", "error", err)
+		os.Exit(1)
+	}
+
 	repo := repository.New(pool)
-	svc := service.New(repo, rdb, ttl, cfg.JWTSecret, log)
+	svc := service.New(repo, repository.NewRedisStore(rdb), producer, ttl, cfg.JWTSecret, log)
 	srv := staffgrpc.NewServer(svc)
 
-	grpcServer := grpc.NewServer()
+	recoveryInterceptor := grpc.UnaryInterceptor(func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Error("panic recovered", "method", info.FullMethod, "panic", r, "stack", string(debug.Stack()))
+				err = status.Error(codes.Internal, "internal error")
+			}
+		}()
+		return handler(ctx, req)
+	})
+
+	grpcServer := grpc.NewServer(recoveryInterceptor)
 	pb.RegisterStaffServiceServer(grpcServer, srv)
 	healthSrv := health.NewServer()
 	grpc_health_v1.RegisterHealthServer(grpcServer, healthSrv)
@@ -73,5 +96,20 @@ func main() {
 	<-quit
 
 	log.Info("shutting down staff service")
-	grpcServer.GracefulStop()
+
+	stopped := make(chan struct{})
+	go func() {
+		grpcServer.GracefulStop()
+		close(stopped)
+	}()
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+	defer cancel()
+	select {
+	case <-stopped:
+		log.Info("graceful shutdown complete")
+	case <-shutdownCtx.Done():
+		log.Warn("graceful shutdown timed out, forcing stop")
+		grpcServer.Stop()
+	}
 }

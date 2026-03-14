@@ -9,8 +9,9 @@ import (
 type StaffConfig struct {
 	GRPCPort    string `env:"GRPC_PORT" env-default:":50051"`
 	JWTSecret   string `env:"JWT_SECRET" env-default:"jwt-secret"`
-	DbCfg PostgresConfig
+	DbCfg    PostgresConfig
 	RedisCfg RedisConfig
+	KafkaCfg KafkaConfig
 }
 
 func ParseStaffConfig() (*StaffConfig, error) {

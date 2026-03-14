@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -9,6 +10,8 @@ import (
 
 	"github.com/RomanKovalev007/barber_crm/services/staff/internal/model"
 )
+
+var ErrNotFound = errors.New("not found")
 
 type Repository struct {
 	db *pgxpool.Pool
@@ -55,25 +58,43 @@ func (r *Repository) GetBarber(ctx context.Context, id string) (*model.Barber, e
 
 func (r *Repository) ListBarbers(ctx context.Context) ([]model.Barber, error) {
 	rows, err := r.db.Query(ctx,
-		`SELECT id, name
-		 FROM barbers WHERE is_active = true ORDER BY name`)
+		`SELECT b.id, b.name,
+		        s.id, s.barber_id, s.name, s.price, s.duration_minutes, s.is_active
+		 FROM barbers b
+		 LEFT JOIN services s ON s.barber_id = b.id AND s.is_active = true
+		 WHERE b.is_active = true
+		 ORDER BY b.name, s.name`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
 	var barbers []model.Barber
+	index := map[string]int{}
 	for rows.Next() {
-		var b model.Barber
-		if err := rows.Scan(&b.ID, &b.Name); err != nil {
+		var bID, bName string
+		var sID, sBarberID, sName *string
+		var sPrice, sDuration *int
+		var sIsActive *bool
+		if err := rows.Scan(&bID, &bName, &sID, &sBarberID, &sName, &sPrice, &sDuration, &sIsActive); err != nil {
 			return nil, err
 		}
-		services, err := r.ListServices(ctx, b.ID, false)
-		if err != nil {
-			return nil, err
+		i, seen := index[bID]
+		if !seen {
+			barbers = append(barbers, model.Barber{ID: bID, Name: bName})
+			i = len(barbers) - 1
+			index[bID] = i
 		}
-		b.Services = services
-		barbers = append(barbers, b)
+		if sID != nil {
+			barbers[i].Services = append(barbers[i].Services, model.Service{
+				ID:              *sID,
+				BarberID:        *sBarberID,
+				Name:            *sName,
+				Price:           *sPrice,
+				DurationMinutes: *sDuration,
+				IsActive:        *sIsActive,
+			})
+		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -82,7 +103,7 @@ func (r *Repository) ListBarbers(ctx context.Context) ([]model.Barber, error) {
 }
 
 func (r *Repository) ListServices(ctx context.Context, barberID string, includeInactive bool) ([]model.Service, error) {
-	query := `SELECT id, barber_id, name, price, is_active
+	query := `SELECT id, barber_id, name, price, duration_minutes, is_active
 	          FROM services WHERE barber_id = $1`
 	if !includeInactive {
 		query += ` AND is_active = true`
@@ -98,7 +119,7 @@ func (r *Repository) ListServices(ctx context.Context, barberID string, includeI
 	var services []model.Service
 	for rows.Next() {
 		var s model.Service
-		if err := rows.Scan(&s.ID, &s.BarberID, &s.Name, &s.Price, &s.IsActive); err != nil {
+		if err := rows.Scan(&s.ID, &s.BarberID, &s.Name, &s.Price, &s.DurationMinutes, &s.IsActive); err != nil {
 			return nil, err
 		}
 		services = append(services, s)
@@ -111,17 +132,23 @@ func (r *Repository) ListServices(ctx context.Context, barberID string, includeI
 
 func (r *Repository) CreateService(ctx context.Context, s *model.Service) error {
 	return r.db.QueryRow(ctx,
-		`INSERT INTO services (barber_id, name, price)
-		 VALUES ($1, $2, $3) RETURNING id`,
-		s.BarberID, s.Name, s.Price).Scan(&s.ID)
+		`INSERT INTO services (barber_id, name, price, duration_minutes)
+		 VALUES ($1, $2, $3, $4) RETURNING id`,
+		s.BarberID, s.Name, s.Price, s.DurationMinutes).Scan(&s.ID)
 }
 
 func (r *Repository) UpdateService(ctx context.Context, s *model.Service) error {
-	_, err := r.db.Exec(ctx,
-		`UPDATE services SET name=$1, price=$2, is_active=$3
-		 WHERE id=$4 AND barber_id=$5`,
-		s.Name, s.Price, s.IsActive, s.ID, s.BarberID)
-	return err
+	tag, err := r.db.Exec(ctx,
+		`UPDATE services SET name=$1, price=$2, duration_minutes=$3, is_active=$4
+		 WHERE id=$5 AND barber_id=$6`,
+		s.Name, s.Price, s.DurationMinutes, s.IsActive, s.ID, s.BarberID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 func (r *Repository) DeleteService(ctx context.Context, id, barberID string) error {
@@ -131,14 +158,14 @@ func (r *Repository) DeleteService(ctx context.Context, id, barberID string) err
 		return err
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("service not found")
+		return ErrNotFound
 	}
 	return nil
 }
 
 func (r *Repository) GetSchedule(ctx context.Context, barberID, week string) ([]model.ScheduleDay, error) {
 	rows, err := r.db.Query(ctx,
-		`SELECT id, barber_id, date::text, COALESCE(start_time::text,''), COALESCE(end_time::text,'')
+		`SELECT id, barber_id, date::text, COALESCE(start_time::text,''), COALESCE(end_time::text,''), part_of_day
 		 FROM schedule
 		 WHERE barber_id = $1 AND date >= date_trunc('week', to_date($2 || '-1', 'IYYY-"W"IW-D'))
 		   AND date < date_trunc('week', to_date($2 || '-1', 'IYYY-"W"IW-D')) + interval '7 days'
@@ -151,7 +178,7 @@ func (r *Repository) GetSchedule(ctx context.Context, barberID, week string) ([]
 	var days []model.ScheduleDay
 	for rows.Next() {
 		var d model.ScheduleDay
-		if err := rows.Scan(&d.ID, &d.BarberID, &d.Date, &d.StartTime, &d.EndTime); err != nil {
+		if err := rows.Scan(&d.ID, &d.BarberID, &d.Date, &d.StartTime, &d.EndTime, &d.PartOfDay); err != nil {
 			return nil, err
 		}
 		days = append(days, d)
@@ -162,19 +189,29 @@ func (r *Repository) GetSchedule(ctx context.Context, barberID, week string) ([]
 	return days, nil
 }
 
-func (r *Repository) AddSchedule(ctx context.Context, barberID string, day *model.ScheduleDay) (*model.ScheduleDay, error) {
+func (r *Repository) UpsertSchedule(ctx context.Context, barberID string, day *model.ScheduleDay) (*model.ScheduleDay, error) {
 	err := r.db.QueryRow(ctx,
-		`INSERT INTO schedule (barber_id, date, start_time, end_time)
-			VALUES ($1, $2, $3, $4)
+		`INSERT INTO schedule (barber_id, date, start_time, end_time, part_of_day)
+			VALUES ($1, $2, $3, $4, $5)
 			ON CONFLICT (barber_id, date) DO UPDATE SET
-			start_time = EXCLUDED.start_time, end_time = EXCLUDED.end_time
+			start_time = EXCLUDED.start_time, end_time = EXCLUDED.end_time, part_of_day = EXCLUDED.part_of_day
 			RETURNING id`,
-		barberID, day.Date, day.StartTime, day.EndTime).Scan(&day.ID)
+		barberID, day.Date, day.StartTime, day.EndTime, day.PartOfDay).Scan(&day.ID)
 	if err != nil {
 		return nil, err
 	}
-
 	day.BarberID = barberID
-
 	return day, nil
+}
+
+func (r *Repository) DeleteSchedule(ctx context.Context, barberID, date string) error {
+	tag, err := r.db.Exec(ctx,
+		`DELETE FROM schedule WHERE barber_id = $1 AND date = $2`, barberID, date)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
 }

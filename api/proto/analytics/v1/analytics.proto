@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package analytics.v1;
+
+option go_package = "github.com/RomanKovalev007/barber_crm/api/proto/analytics/v1;analyticsv1";
+
+service AnalyticsService {
+  rpc GetBarberStats(GetBarberStatsRequest) returns (BarberStatsResponse);
+}
+
+// ─── Request ─────────────────────────────────────────────────────────────────
+
+message GetBarberStatsRequest {
+  string barber_id = 1;
+  Period period    = 2;
+}
+
+message Period {
+  oneof kind {
+    PredefinedPeriod preset = 1;
+    DateRange        custom = 2;
+  }
+}
+
+enum PredefinedPeriod {
+  PERIOD_UNSPECIFIED = 0;
+  PERIOD_DAY         = 1; // сегодня
+  PERIOD_WEEK        = 2; // текущая неделя (Пн–Вс)
+  PERIOD_MONTH       = 3; // текущий месяц
+  PERIOD_ALL         = 4; // за всё время
+}
+
+message DateRange {
+  string date_from = 1; // YYYY-MM-DD (inclusive)
+  string date_to   = 2; // YYYY-MM-DD (inclusive)
+}
+
+// ─── Response ────────────────────────────────────────────────────────────────
+
+message BarberStatsResponse {
+  string barber_id  = 1;
+  string date_from  = 2; // YYYY-MM-DD (resolved)
+  string date_to    = 3; // YYYY-MM-DD (resolved)
+
+  int64  clients_served      = 4;
+  int64  total_revenue       = 5;  // руб.
+  double hours_worked        = 6;
+  double average_check       = 7;
+  int64  bookings_total      = 8;
+  int64  bookings_completed  = 9;
+  int64  bookings_cancelled  = 10;
+  int64  bookings_no_show    = 11;
+  double occupancy_rate      = 12; // 0.0–1.0
+
+  repeated TopService top_services    = 13;
+  repeated DayStat    daily_breakdown = 14;
+}
+
+message TopService {
+  string service_id   = 1;
+  string service_name = 2;
+  int64  count        = 3;
+  int64  revenue      = 4;
+}
+
+message DayStat {
+  string date         = 1; // YYYY-MM-DD
+  int64  clients      = 2;
+  int64  revenue      = 3;
+  double hours_worked = 4;
+}

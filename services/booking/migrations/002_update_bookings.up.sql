@@ -1,0 +1,5 @@
+ALTER TABLE bookings RENAME COLUMN serv_id TO service_id;
+
+ALTER TABLE bookings
+    ADD COLUMN IF NOT EXISTS client_phone TEXT NOT NULL DEFAULT '',
+    ADD COLUMN IF NOT EXISTS service_name TEXT NOT NULL DEFAULT '';
