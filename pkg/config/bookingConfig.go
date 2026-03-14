@@ -12,6 +12,7 @@ type BookingConfig struct {
 	StaffGRPCAddr string `env:"STAFF_GRPC_ADDR" env-default:"staff:50051"`
 	DbCfg         PostgresConfig
 	RedisCfg      RedisConfig
+	KafkaCfg      KafkaConfig
 }
 
 func ParseBookingConfig() (*BookingConfig, error) {
