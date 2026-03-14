@@ -2,11 +2,11 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"time"
 
 	pb "github.com/RomanKovalev007/barber_crm/api/proto/analytics/v1"
+	"github.com/RomanKovalev007/barber_crm/services/analytics/internal/apperr"
 	"github.com/RomanKovalev007/barber_crm/services/analytics/internal/model"
 )
 
@@ -28,29 +28,33 @@ func New(repo analyticsRepo, logger *slog.Logger) *Service {
 
 func (s *Service) GetBarberStats(ctx context.Context, req *pb.GetBarberStatsRequest) (*pb.BarberStatsResponse, error) {
 	if req.BarberId == "" {
-		return nil, fmt.Errorf("barber_id is empty")
+		return nil, apperr.InvalidArgument("barber_id is required")
 	}
 
 	from, to := resolvePeriod(req.Period)
 
 	stats, err := s.repo.GetBookingStats(ctx, req.BarberId, from, to)
 	if err != nil {
-		return nil, fmt.Errorf("booking stats: %w", err)
+		s.logger.Error("get barber stats: booking stats", "barber_id", req.BarberId, "error", err)
+		return nil, apperr.Internal("failed to get booking stats")
 	}
 
 	scheduleMinutes, err := s.repo.GetScheduleMinutes(ctx, req.BarberId, from, to)
 	if err != nil {
-		return nil, fmt.Errorf("schedule minutes: %w", err)
+		s.logger.Error("get barber stats: schedule minutes", "barber_id", req.BarberId, "error", err)
+		return nil, apperr.Internal("failed to get schedule minutes")
 	}
 
 	topServices, err := s.repo.GetTopServices(ctx, req.BarberId, from, to)
 	if err != nil {
-		return nil, fmt.Errorf("top services: %w", err)
+		s.logger.Error("get barber stats: top services", "barber_id", req.BarberId, "error", err)
+		return nil, apperr.Internal("failed to get top services")
 	}
 
 	daily, err := s.repo.GetDailyBreakdown(ctx, req.BarberId, from, to)
 	if err != nil {
-		return nil, fmt.Errorf("daily breakdown: %w", err)
+		s.logger.Error("get barber stats: daily breakdown", "barber_id", req.BarberId, "error", err)
+		return nil, apperr.Internal("failed to get daily breakdown")
 	}
 
 	hoursWorked := scheduleMinutes / 60.0
@@ -65,24 +69,29 @@ func (s *Service) GetBarberStats(ctx context.Context, req *pb.GetBarberStatsRequ
 		occupancyRate = stats.BookedMinutes / scheduleMinutes
 	}
 
-	resp := &pb.BarberStatsResponse{
-		BarberId: req.BarberId,
-		DateFrom: from,
-		DateTo:   to,
-		ClientsServed:    stats.ClientsServed,
-		TotalRevenue:     stats.TotalRevenue,
-		HoursWorked:      hoursWorked,
-		AverageCheck:     averageCheck,
-		BookingsTotal:    stats.BookingsTotal,
+	s.logger.Info("get barber stats: ok",
+		"barber_id", req.BarberId,
+		"from", from, "to", to,
+		"clients_served", stats.ClientsServed,
+		"total_revenue", stats.TotalRevenue,
+	)
+
+	return &pb.BarberStatsResponse{
+		BarberId:          req.BarberId,
+		DateFrom:          from,
+		DateTo:            to,
+		ClientsServed:     stats.ClientsServed,
+		TotalRevenue:      stats.TotalRevenue,
+		HoursWorked:       hoursWorked,
+		AverageCheck:      averageCheck,
+		BookingsTotal:     stats.BookingsTotal,
 		BookingsCompleted: stats.BookingsCompleted,
 		BookingsCancelled: stats.BookingsCancelled,
-		BookingsNoShow:   stats.BookingsNoShow,
-		OccupancyRate:    occupancyRate,
-		TopServices:      toProtoTopServices(topServices),
-		DailyBreakdown:   toProtoDailyBreakdown(daily),
-	}
-
-	return resp, nil
+		BookingsNoShow:    stats.BookingsNoShow,
+		OccupancyRate:     occupancyRate,
+		TopServices:       toProtoTopServices(topServices),
+		DailyBreakdown:    toProtoDailyBreakdown(daily),
+	}, nil
 }
 
 // ─── period resolution ───────────────────────────────────────────────────────

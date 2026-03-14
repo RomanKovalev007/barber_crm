@@ -95,8 +95,8 @@ func (c *Consumer) consumeBookings(ctx context.Context) {
 			ServiceID:   event.ServiceId,
 			ServiceName: event.ServiceName,
 			Price:       event.Price,
-			StartTime:   event.StartTime.AsTime(),
-			EndTime:     event.EndTime.AsTime(),
+			StartTime:   event.TimeStart.AsTime(),
+			EndTime:     event.TimeEnd.AsTime(),
 			Status:      bookingStatusToString(event.Status),
 			OccurredAt:  event.OccurredAt.AsTime(),
 		}

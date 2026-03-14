@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	pb "github.com/RomanKovalev007/barber_crm/api/proto/analytics/v1"
+	"github.com/RomanKovalev007/barber_crm/services/analytics/internal/apperr"
 	"github.com/RomanKovalev007/barber_crm/services/analytics/internal/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -73,8 +74,9 @@ func TestGetBarberStats_EmptyBarberID(t *testing.T) {
 
 	_, err := svc.GetBarberStats(context.Background(), &pb.GetBarberStatsRequest{BarberId: ""})
 
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "barber_id is empty")
+	var appErr *apperr.AppError
+	require.ErrorAs(t, err, &appErr)
+	assert.Equal(t, apperr.CodeInvalidArgument, appErr.Code)
 }
 
 func TestGetBarberStats_Success(t *testing.T) {
@@ -154,8 +156,9 @@ func TestGetBarberStats_GetBookingStatsError(t *testing.T) {
 		Period:   customPeriod("2026-01-01", "2026-01-31"),
 	})
 
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "booking stats")
+	var appErr *apperr.AppError
+	require.ErrorAs(t, err, &appErr)
+	assert.Equal(t, apperr.CodeInternal, appErr.Code)
 }
 
 func TestGetBarberStats_GetScheduleMinutesError(t *testing.T) {
@@ -173,8 +176,9 @@ func TestGetBarberStats_GetScheduleMinutesError(t *testing.T) {
 		Period:   customPeriod("2026-01-01", "2026-01-31"),
 	})
 
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "schedule minutes")
+	var appErr *apperr.AppError
+	require.ErrorAs(t, err, &appErr)
+	assert.Equal(t, apperr.CodeInternal, appErr.Code)
 }
 
 func TestGetBarberStats_GetTopServicesError(t *testing.T) {
@@ -193,8 +197,9 @@ func TestGetBarberStats_GetTopServicesError(t *testing.T) {
 		Period:   customPeriod("2026-01-01", "2026-01-31"),
 	})
 
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "top services")
+	var appErr *apperr.AppError
+	require.ErrorAs(t, err, &appErr)
+	assert.Equal(t, apperr.CodeInternal, appErr.Code)
 }
 
 func TestGetBarberStats_GetDailyBreakdownError(t *testing.T) {
@@ -214,8 +219,9 @@ func TestGetBarberStats_GetDailyBreakdownError(t *testing.T) {
 		Period:   customPeriod("2026-01-01", "2026-01-31"),
 	})
 
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "daily breakdown")
+	var appErr *apperr.AppError
+	require.ErrorAs(t, err, &appErr)
+	assert.Equal(t, apperr.CodeInternal, appErr.Code)
 }
 
 // ─── resolvePeriod ────────────────────────────────────────────────────────────
