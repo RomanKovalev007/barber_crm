@@ -2,20 +2,14 @@ package kafka
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/segmentio/kafka-go"
+	"google.golang.org/protobuf/proto"
 )
 
-const (
-	TopicScheduleAdded   = "staff.schedule.added"
-	TopicScheduleDeleted = "staff.schedule.deleted"
-	TopicServiceCreated  = "staff.service.created"
-	TopicServiceUpdated  = "staff.service.updated"
-	TopicServiceDeleted  = "staff.service.deleted"
-)
+const TopicScheduleEvents = "schedule.events"
 
 type Producer struct {
 	writer *kafka.Writer
@@ -31,10 +25,10 @@ func NewProducer(brokers string) *Producer {
 	}
 }
 
-func (p *Producer) Publish(ctx context.Context, topic, key string, payload any) error {
-	data, err := json.Marshal(payload)
+func (p *Producer) Publish(ctx context.Context, topic, key string, msg proto.Message) error {
+	data, err := proto.Marshal(msg)
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal proto: %w", err)
 	}
 	return p.writer.WriteMessages(ctx, kafka.Message{
 		Topic: topic,

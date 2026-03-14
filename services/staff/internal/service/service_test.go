@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/RomanKovalev007/barber_crm/pkg/auth"
 	"github.com/RomanKovalev007/barber_crm/services/staff/internal/apperr"
@@ -41,8 +42,9 @@ func (m *MockRepo) UpsertSchedule(ctx context.Context, barberID string, day *mod
 	args := m.Called(ctx, barberID, day)
 	return args.Get(0).(*model.ScheduleDay), args.Error(1)
 }
-func (m *MockRepo) DeleteSchedule(ctx context.Context, barberID, date string) error {
-	return m.Called(ctx, barberID, date).Error(0)
+func (m *MockRepo) DeleteSchedule(ctx context.Context, barberID, date string) (string, error) {
+	args := m.Called(ctx, barberID, date)
+	return args.String(0), args.Error(1)
 }
 func (m *MockRepo) GetSchedule(ctx context.Context, barberID, week string) ([]model.ScheduleDay, error) {
 	args := m.Called(ctx, barberID, week)
@@ -81,8 +83,8 @@ type MockProducer struct {
 	mock.Mock
 }
 
-func (m *MockProducer) Publish(ctx context.Context, topic, key string, payload any) error {
-	return m.Called(ctx, topic, key, payload).Error(0)
+func (m *MockProducer) Publish(ctx context.Context, topic, key string, msg proto.Message) error {
+	return m.Called(ctx, topic, key, msg).Error(0)
 }
 
 // ---------- helpers ----------
@@ -382,16 +384,12 @@ func TestCreateService_Success(t *testing.T) {
 	repo := new(MockRepo)
 	repo.On("CreateService", ctx, s).Return(nil)
 
-	producer := new(MockProducer)
-	producer.On("Publish", ctx, "staff.service.created", "b1", s).Return(nil)
-
-	svc := newTestService(repo, new(MockSessionStore), producer)
+	svc := newTestService(repo, new(MockSessionStore), new(MockProducer))
 
 	err := svc.CreateService(ctx, s)
 
 	require.NoError(t, err)
 	repo.AssertExpectations(t)
-	producer.AssertExpectations(t)
 }
 
 func TestCreateService_EmptyBarberID(t *testing.T) {
@@ -456,22 +454,6 @@ func TestCreateService_RepoError(t *testing.T) {
 	repo.AssertExpectations(t)
 }
 
-func TestCreateService_ProducerError_NoReturnedError(t *testing.T) {
-	ctx := context.Background()
-	s := &model.Service{BarberID: "b1", Name: "Haircut", Price: 500, DurationMinutes: 60}
-
-	repo := new(MockRepo)
-	repo.On("CreateService", ctx, s).Return(nil)
-
-	producer := new(MockProducer)
-	producer.On("Publish", ctx, "staff.service.created", "b1", s).Return(errors.New("kafka down"))
-
-	svc := newTestService(repo, new(MockSessionStore), producer)
-
-	err := svc.CreateService(ctx, s)
-	require.NoError(t, err)
-	producer.AssertExpectations(t)
-}
 
 // ---------- UpdateService ----------
 
@@ -482,16 +464,12 @@ func TestUpdateService_Success(t *testing.T) {
 	repo := new(MockRepo)
 	repo.On("UpdateService", ctx, s).Return(nil)
 
-	producer := new(MockProducer)
-	producer.On("Publish", ctx, "staff.service.updated", "svc-1", s).Return(nil)
-
-	svc := newTestService(repo, new(MockSessionStore), producer)
+	svc := newTestService(repo, new(MockSessionStore), new(MockProducer))
 
 	err := svc.UpdateService(ctx, s)
 
 	require.NoError(t, err)
 	repo.AssertExpectations(t)
-	producer.AssertExpectations(t)
 }
 
 func TestUpdateService_EmptyServiceID(t *testing.T) {
@@ -592,16 +570,12 @@ func TestDeleteService_Success(t *testing.T) {
 	repo := new(MockRepo)
 	repo.On("DeleteService", ctx, "svc-1", "b1").Return(nil)
 
-	producer := new(MockProducer)
-	producer.On("Publish", ctx, "staff.service.deleted", "svc-1", map[string]string{"id": "svc-1", "barber_id": "b1"}).Return(nil)
-
-	svc := newTestService(repo, new(MockSessionStore), producer)
+	svc := newTestService(repo, new(MockSessionStore), new(MockProducer))
 
 	err := svc.DeleteService(ctx, "svc-1", "b1")
 
 	require.NoError(t, err)
 	repo.AssertExpectations(t)
-	producer.AssertExpectations(t)
 }
 
 func TestDeleteService_EmptyServiceID(t *testing.T) {
@@ -753,7 +727,7 @@ func TestUpsertSchedule_Success(t *testing.T) {
 	repo.On("UpsertSchedule", ctx, "b1", day).Return(result, nil)
 
 	producer := new(MockProducer)
-	producer.On("Publish", ctx, "staff.schedule.added", "b1", result).Return(nil)
+	producer.On("Publish", ctx, "schedule.events", "b1", mock.Anything).Return(nil)
 
 	svc := newTestService(repo, new(MockSessionStore), producer)
 
@@ -861,10 +835,10 @@ func TestDeleteSchedule_Success(t *testing.T) {
 	ctx := context.Background()
 
 	repo := new(MockRepo)
-	repo.On("DeleteSchedule", ctx, "b1", "2026-03-03").Return(nil)
+	repo.On("DeleteSchedule", ctx, "b1", "2026-03-03").Return("sched-1", nil)
 
 	producer := new(MockProducer)
-	producer.On("Publish", ctx, "staff.schedule.deleted", "b1", map[string]string{"barber_id": "b1", "date": "2026-03-03"}).Return(nil)
+	producer.On("Publish", ctx, "schedule.events", "b1", mock.Anything).Return(nil)
 
 	svc := newTestService(repo, new(MockSessionStore), producer)
 
@@ -902,7 +876,7 @@ func TestDeleteSchedule_NotFound(t *testing.T) {
 	ctx := context.Background()
 
 	repo := new(MockRepo)
-	repo.On("DeleteSchedule", ctx, "b1", "2026-03-03").Return(repository.ErrNotFound)
+	repo.On("DeleteSchedule", ctx, "b1", "2026-03-03").Return("", repository.ErrNotFound)
 
 	svc := newTestService(repo, new(MockSessionStore), new(MockProducer))
 

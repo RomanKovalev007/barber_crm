@@ -204,14 +204,16 @@ func (r *Repository) UpsertSchedule(ctx context.Context, barberID string, day *m
 	return day, nil
 }
 
-func (r *Repository) DeleteSchedule(ctx context.Context, barberID, date string) error {
-	tag, err := r.db.Exec(ctx,
-		`DELETE FROM schedule WHERE barber_id = $1 AND date = $2`, barberID, date)
+func (r *Repository) DeleteSchedule(ctx context.Context, barberID, date string) (string, error) {
+	var id string
+	err := r.db.QueryRow(ctx,
+		`DELETE FROM schedule WHERE barber_id = $1 AND date = $2 RETURNING id`,
+		barberID, date).Scan(&id)
 	if err != nil {
-		return err
+		if err == pgx.ErrNoRows {
+			return "", ErrNotFound
+		}
+		return "", err
 	}
-	if tag.RowsAffected() == 0 {
-		return ErrNotFound
-	}
-	return nil
+	return id, nil
 }
