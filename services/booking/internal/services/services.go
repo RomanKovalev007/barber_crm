@@ -80,12 +80,18 @@ func (s *bookingService) CreateBooking(ctx context.Context, b *model.Booking) (*
 		s.log.Error("create booking: failed to get services", "barber_id", b.BarberID, "error", err)
 		return nil, apperr.Internal("failed to get services")
 	}
+	var foundSvc bool
 	for _, svc := range svcResp.Services {
 		if svc.ServiceId == b.ServiceID {
 			b.ServiceName = svc.Name
 			b.Price = svc.Price
+			foundSvc = true
 			break
 		}
+	}
+	if !foundSvc {
+		s.log.Warn("create booking: service not found", "service_id", b.ServiceID, "barber_id", b.BarberID)
+		return nil, apperr.NotFound("service not found")
 	}
 
 	b.ID = uuid.New().String()
@@ -143,14 +149,20 @@ func (s *bookingService) UpdateBookingDetails(ctx context.Context, bookingID, ba
 		s.log.Error("update booking: failed to get services", "barber_id", barberID, "error", err)
 		return nil, apperr.Internal("failed to get services")
 	}
-	serviceName := existing.ServiceName
-	price := existing.Price
+	var serviceName string
+	var price int32
+	var foundSvc bool
 	for _, svc := range svcResp.Services {
 		if svc.ServiceId == serviceID {
 			serviceName = svc.Name
 			price = svc.Price
+			foundSvc = true
 			break
 		}
+	}
+	if !foundSvc {
+		s.log.Warn("update booking: service not found", "service_id", serviceID, "barber_id", barberID)
+		return nil, apperr.NotFound("service not found")
 	}
 
 	timeEnd := timeStart.Add(slotDuration)

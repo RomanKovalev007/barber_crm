@@ -155,18 +155,37 @@ func TestCreateBooking_ListServicesError(t *testing.T) {
 	assert.Equal(t, apperr.CodeInternal, appErr.Code)
 }
 
+func TestCreateBooking_ServiceNotFound(t *testing.T) {
+	ctx := context.Background()
+	sc := new(MockStaffClient)
+	sc.On("GetBarber", ctx, "b1").Return(&staffv1.BarberResponse{}, nil)
+	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{
+		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-other", Name: "Other"}},
+	}, nil)
+
+	svc := newTestService(new(MockRepo), sc)
+
+	_, err := svc.CreateBooking(ctx, &model.Booking{BarberID: "b1", ServiceID: "svc-1", ClientPhone: "+7"})
+
+	var appErr *apperr.AppError
+	require.ErrorAs(t, err, &appErr)
+	assert.Equal(t, apperr.CodeNotFound, appErr.Code)
+}
+
 func TestCreateBooking_ClientAlreadyHasActiveBooking(t *testing.T) {
 	ctx := context.Background()
 	sc := new(MockStaffClient)
 	sc.On("GetBarber", ctx, "b1").Return(&staffv1.BarberResponse{}, nil)
-	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{}, nil)
+	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{
+		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-1", Name: "Haircut", Price: 500}},
+	}, nil)
 
 	r := new(MockRepo)
 	r.On("CreateBookingTx", ctx, mock.AnythingOfType("*model.Booking")).Return(repo.ErrActiveBookingExists)
 
 	svc := newTestService(r, sc)
 
-	_, err := svc.CreateBooking(ctx, &model.Booking{BarberID: "b1", ClientPhone: "+7"})
+	_, err := svc.CreateBooking(ctx, &model.Booking{BarberID: "b1", ServiceID: "svc-1", ClientPhone: "+7"})
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
@@ -177,14 +196,16 @@ func TestCreateBooking_SlotConflict(t *testing.T) {
 	ctx := context.Background()
 	sc := new(MockStaffClient)
 	sc.On("GetBarber", ctx, "b1").Return(&staffv1.BarberResponse{}, nil)
-	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{}, nil)
+	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{
+		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-1", Name: "Haircut", Price: 500}},
+	}, nil)
 
 	r := new(MockRepo)
 	r.On("CreateBookingTx", ctx, mock.AnythingOfType("*model.Booking")).Return(repo.ErrSlotConflict)
 
 	svc := newTestService(r, sc)
 
-	_, err := svc.CreateBooking(ctx, &model.Booking{BarberID: "b1", ClientPhone: "+7"})
+	_, err := svc.CreateBooking(ctx, &model.Booking{BarberID: "b1", ServiceID: "svc-1", ClientPhone: "+7"})
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
@@ -195,14 +216,16 @@ func TestCreateBooking_RepoCreateError(t *testing.T) {
 	ctx := context.Background()
 	sc := new(MockStaffClient)
 	sc.On("GetBarber", ctx, "b1").Return(&staffv1.BarberResponse{}, nil)
-	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{}, nil)
+	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{
+		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-1", Name: "Haircut", Price: 500}},
+	}, nil)
 
 	r := new(MockRepo)
 	r.On("CreateBookingTx", ctx, mock.AnythingOfType("*model.Booking")).Return(errors.New("db error"))
 
 	svc := newTestService(r, sc)
 
-	_, err := svc.CreateBooking(ctx, &model.Booking{BarberID: "b1", ClientPhone: "+7"})
+	_, err := svc.CreateBooking(ctx, &model.Booking{BarberID: "b1", ServiceID: "svc-1", ClientPhone: "+7"})
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
@@ -317,17 +340,39 @@ func TestUpdateBookingDetails_OwnershipMismatch(t *testing.T) {
 	assert.Equal(t, apperr.CodeNotFound, appErr.Code)
 }
 
+func TestUpdateBookingDetails_ServiceNotFound(t *testing.T) {
+	ctx := context.Background()
+
+	sc := new(MockStaffClient)
+	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{
+		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-other", Name: "Other"}},
+	}, nil)
+
+	r := new(MockRepo)
+	r.On("GetBooking", ctx, "bk-1").Return(&model.Booking{ID: "bk-1", BarberID: "b1"}, nil)
+
+	svc := newTestService(r, sc)
+
+	_, err := svc.UpdateBookingDetails(ctx, "bk-1", "b1", "svc-1", time.Now())
+
+	var appErr *apperr.AppError
+	require.ErrorAs(t, err, &appErr)
+	assert.Equal(t, apperr.CodeNotFound, appErr.Code)
+}
+
 func TestUpdateBookingDetails_SlotConflict(t *testing.T) {
 	ctx := context.Background()
 	timeStart := time.Date(2026, 3, 16, 10, 0, 0, 0, time.UTC)
 	timeEnd := timeStart.Add(slotDuration)
 
 	sc := new(MockStaffClient)
-	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{}, nil)
+	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{
+		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-1", Name: "Haircut", Price: 500}},
+	}, nil)
 
 	r := new(MockRepo)
 	r.On("GetBooking", ctx, "bk-1").Return(&model.Booking{ID: "bk-1", BarberID: "b1"}, nil)
-	r.On("UpdateBookingDetailsTx", ctx, "bk-1", "svc-1", "", int32(0), timeStart, timeEnd).Return(repo.ErrSlotConflict)
+	r.On("UpdateBookingDetailsTx", ctx, "bk-1", "svc-1", "Haircut", int32(500), timeStart, timeEnd).Return(repo.ErrSlotConflict)
 
 	svc := newTestService(r, sc)
 
@@ -346,16 +391,18 @@ func TestUpdateBookingDetails_NoConflictWithSelf(t *testing.T) {
 	updated := &model.Booking{ID: "bk-1", BarberID: "b1"}
 
 	sc := new(MockStaffClient)
-	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{}, nil)
+	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{
+		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-1", Name: "Haircut", Price: 500}},
+	}, nil)
 
 	r := new(MockRepo)
 	r.On("GetBooking", ctx, "bk-1").Return(&model.Booking{ID: "bk-1", BarberID: "b1"}, nil).Once()
-	r.On("UpdateBookingDetailsTx", ctx, "bk-1", "", "", int32(0), timeStart, timeEnd).Return(nil)
+	r.On("UpdateBookingDetailsTx", ctx, "bk-1", "svc-1", "Haircut", int32(500), timeStart, timeEnd).Return(nil)
 	r.On("GetBooking", ctx, "bk-1").Return(updated, nil).Once()
 
 	svc := newTestService(r, sc)
 
-	_, err := svc.UpdateBookingDetails(ctx, "bk-1", "b1", "", timeStart)
+	_, err := svc.UpdateBookingDetails(ctx, "bk-1", "b1", "svc-1", timeStart)
 	require.NoError(t, err)
 }
 
