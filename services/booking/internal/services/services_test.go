@@ -32,7 +32,7 @@ func (m *MockRepo) GetBooking(ctx context.Context, id string) (*model.Booking, e
 	args := m.Called(ctx, id)
 	return args.Get(0).(*model.Booking), args.Error(1)
 }
-func (m *MockRepo) UpdateBookingDetails(ctx context.Context, id, serviceID, serviceName string, price int32, timeStart, timeEnd time.Time) error {
+func (m *MockRepo) UpdateBookingDetailsTx(ctx context.Context, id, serviceID, serviceName string, price int32, timeStart, timeEnd time.Time) error {
 	return m.Called(ctx, id, serviceID, serviceName, price, timeStart, timeEnd).Error(0)
 }
 func (m *MockRepo) UpdateBookingStatus(ctx context.Context, id, status string) error {
@@ -263,7 +263,6 @@ func TestUpdateBookingDetails_Success(t *testing.T) {
 	ctx := context.Background()
 	timeStart := time.Date(2026, 3, 16, 14, 0, 0, 0, time.UTC)
 	timeEnd := timeStart.Add(slotDuration)
-	date := timeStart.UTC().Truncate(24 * time.Hour)
 
 	existing := &model.Booking{ID: "bk-1", BarberID: "b1", ServiceName: "OldCut"}
 	updated := &model.Booking{ID: "bk-1", BarberID: "b1", ServiceID: "svc-2", ServiceName: "NewCut", TimeStart: timeStart, TimeEnd: timeEnd}
@@ -275,8 +274,7 @@ func TestUpdateBookingDetails_Success(t *testing.T) {
 
 	r := new(MockRepo)
 	r.On("GetBooking", ctx, "bk-1").Return(existing, nil).Once()
-	r.On("GetBookingsByBarberAndDate", ctx, "b1", date).Return([]model.Booking{}, nil)
-	r.On("UpdateBookingDetails", ctx, "bk-1", "svc-2", "NewCut", int32(0), timeStart, timeEnd).Return(nil)
+	r.On("UpdateBookingDetailsTx", ctx, "bk-1", "svc-2", "NewCut", int32(0), timeStart, timeEnd).Return(nil)
 	r.On("GetBooking", ctx, "bk-1").Return(updated, nil).Once()
 
 	svc := newTestService(r, sc)
@@ -322,20 +320,14 @@ func TestUpdateBookingDetails_OwnershipMismatch(t *testing.T) {
 func TestUpdateBookingDetails_SlotConflict(t *testing.T) {
 	ctx := context.Background()
 	timeStart := time.Date(2026, 3, 16, 10, 0, 0, 0, time.UTC)
-	date := timeStart.UTC().Truncate(24 * time.Hour)
-
-	conflicting := []model.Booking{{
-		ID:        "bk-other",
-		TimeStart: timeStart,
-		TimeEnd:   timeStart.Add(slotDuration),
-	}}
+	timeEnd := timeStart.Add(slotDuration)
 
 	sc := new(MockStaffClient)
 	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{}, nil)
 
 	r := new(MockRepo)
 	r.On("GetBooking", ctx, "bk-1").Return(&model.Booking{ID: "bk-1", BarberID: "b1"}, nil)
-	r.On("GetBookingsByBarberAndDate", ctx, "b1", date).Return(conflicting, nil)
+	r.On("UpdateBookingDetailsTx", ctx, "bk-1", "svc-1", "", int32(0), timeStart, timeEnd).Return(repo.ErrSlotConflict)
 
 	svc := newTestService(r, sc)
 
@@ -350,14 +342,7 @@ func TestUpdateBookingDetails_NoConflictWithSelf(t *testing.T) {
 	ctx := context.Background()
 	timeStart := time.Date(2026, 3, 16, 10, 0, 0, 0, time.UTC)
 	timeEnd := timeStart.Add(slotDuration)
-	date := timeStart.UTC().Truncate(24 * time.Hour)
 
-	// same booking ID — must not be treated as conflict
-	sameBooking := []model.Booking{{
-		ID:        "bk-1",
-		TimeStart: timeStart,
-		TimeEnd:   timeEnd,
-	}}
 	updated := &model.Booking{ID: "bk-1", BarberID: "b1"}
 
 	sc := new(MockStaffClient)
@@ -365,8 +350,7 @@ func TestUpdateBookingDetails_NoConflictWithSelf(t *testing.T) {
 
 	r := new(MockRepo)
 	r.On("GetBooking", ctx, "bk-1").Return(&model.Booking{ID: "bk-1", BarberID: "b1"}, nil).Once()
-	r.On("GetBookingsByBarberAndDate", ctx, "b1", date).Return(sameBooking, nil)
-	r.On("UpdateBookingDetails", ctx, "bk-1", "", "", int32(0), timeStart, timeEnd).Return(nil)
+	r.On("UpdateBookingDetailsTx", ctx, "bk-1", "", "", int32(0), timeStart, timeEnd).Return(nil)
 	r.On("GetBooking", ctx, "bk-1").Return(updated, nil).Once()
 
 	svc := newTestService(r, sc)

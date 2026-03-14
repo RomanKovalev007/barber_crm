@@ -23,7 +23,7 @@ import (
 type bookingRepo interface {
 	CreateBookingTx(ctx context.Context, b *model.Booking) error
 	GetBooking(ctx context.Context, id string) (*model.Booking, error)
-	UpdateBookingDetails(ctx context.Context, id, serviceID, serviceName string, price int32, timeStart, timeEnd time.Time) error
+	UpdateBookingDetailsTx(ctx context.Context, id, serviceID, serviceName string, price int32, timeStart, timeEnd time.Time) error
 	UpdateBookingStatus(ctx context.Context, id, status string) error
 	DeleteBooking(ctx context.Context, id string) error
 	GetBookingsByBarberAndDate(ctx context.Context, barberID string, date time.Time) ([]model.Booking, error)
@@ -155,24 +155,17 @@ func (s *bookingService) UpdateBookingDetails(ctx context.Context, bookingID, ba
 
 	timeEnd := timeStart.Add(slotDuration)
 
-	bookings, err := s.repo.GetBookingsByBarberAndDate(ctx, barberID, timeStart.UTC().Truncate(24*time.Hour))
-	if err != nil {
-		s.log.Error("update booking: failed to get bookings for conflict check", "barber_id", barberID, "error", err)
-		return nil, apperr.Internal("failed to check slot availability")
-	}
-	for _, b := range bookings {
-		if b.ID == bookingID {
-			continue
-		}
-		if timeStart.Before(b.TimeEnd) && timeEnd.After(b.TimeStart) {
+	if err := s.repo.UpdateBookingDetailsTx(ctx, bookingID, serviceID, serviceName, price, timeStart, timeEnd); err != nil {
+		switch {
+		case errors.Is(err, repo.ErrSlotConflict):
 			s.log.Warn("update booking: slot conflict", "booking_id", bookingID, "time_start", timeStart)
 			return nil, apperr.AlreadyExists("time slot already booked")
+		case errors.Is(err, repo.ErrNotFound):
+			return nil, apperr.NotFound("booking not found")
+		default:
+			s.log.Error("update booking: failed to save", "booking_id", bookingID, "error", err)
+			return nil, apperr.Internal("failed to update booking")
 		}
-	}
-
-	if err := s.repo.UpdateBookingDetails(ctx, bookingID, serviceID, serviceName, price, timeStart, timeEnd); err != nil {
-		s.log.Error("update booking: failed to save", "booking_id", bookingID, "error", err)
-		return nil, apperr.Internal("failed to update booking")
 	}
 
 	s.log.Info("booking updated", "booking_id", bookingID, "barber_id", barberID, "service_id", serviceID)
