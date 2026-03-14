@@ -389,6 +389,7 @@ type Booking struct {
 	TimeStart     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=time_start,json=timeStart,proto3" json:"time_start,omitempty"`
 	TimeEnd       *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=time_end,json=timeEnd,proto3" json:"time_end,omitempty"`
 	Status        BookingStatus          `protobuf:"varint,9,opt,name=status,proto3,enum=booking.v1.BookingStatus" json:"status,omitempty"`
+	Price         int32                  `protobuf:"varint,10,opt,name=price,proto3" json:"price,omitempty"` // цена услуги на момент записи (руб.)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -484,6 +485,13 @@ func (x *Booking) GetStatus() BookingStatus {
 		return x.Status
 	}
 	return BookingStatus_BOOKING_STATUS_UNSPECIFIED
+}
+
+func (x *Booking) GetPrice() int32 {
+	if x != nil {
+		return x.Price
+	}
+	return 0
 }
 
 type BookingResponse struct {
@@ -1054,7 +1062,7 @@ const file_booking_v1_booking_proto_rawDesc = "" +
 	"\x06status\x18\x03 \x01(\x0e2\x19.booking.v1.BookingStatusR\x06status\"1\n" +
 	"\x10BookingIdRequest\x12\x1d\n" +
 	"\n" +
-	"booking_id\x18\x01 \x01(\tR\tbookingId\"\xf0\x02\n" +
+	"booking_id\x18\x01 \x01(\tR\tbookingId\"\x86\x03\n" +
 	"\aBooking\x12\x1d\n" +
 	"\n" +
 	"booking_id\x18\x01 \x01(\tR\tbookingId\x12\x1b\n" +
@@ -1068,7 +1076,9 @@ const file_booking_v1_booking_proto_rawDesc = "" +
 	"\n" +
 	"time_start\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\ttimeStart\x125\n" +
 	"\btime_end\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\atimeEnd\x121\n" +
-	"\x06status\x18\t \x01(\x0e2\x19.booking.v1.BookingStatusR\x06status\"@\n" +
+	"\x06status\x18\t \x01(\x0e2\x19.booking.v1.BookingStatusR\x06status\x12\x14\n" +
+	"\x05price\x18\n" +
+	" \x01(\x05R\x05price\"@\n" +
 	"\x0fBookingResponse\x12-\n" +
 	"\abooking\x18\x01 \x01(\v2\x13.booking.v1.BookingR\abooking\"?\n" +
 	"\fSlotsRequest\x12\x1b\n" +

@@ -32,8 +32,8 @@ func (m *MockRepo) GetBooking(ctx context.Context, id string) (*model.Booking, e
 	args := m.Called(ctx, id)
 	return args.Get(0).(*model.Booking), args.Error(1)
 }
-func (m *MockRepo) UpdateBookingDetails(ctx context.Context, id, serviceID, serviceName string, timeStart, timeEnd time.Time) error {
-	return m.Called(ctx, id, serviceID, serviceName, timeStart, timeEnd).Error(0)
+func (m *MockRepo) UpdateBookingDetails(ctx context.Context, id, serviceID, serviceName string, price int32, timeStart, timeEnd time.Time) error {
+	return m.Called(ctx, id, serviceID, serviceName, price, timeStart, timeEnd).Error(0)
 }
 func (m *MockRepo) UpdateBookingStatus(ctx context.Context, id, status string) error {
 	return m.Called(ctx, id, status).Error(0)
@@ -276,7 +276,7 @@ func TestUpdateBookingDetails_Success(t *testing.T) {
 	r := new(MockRepo)
 	r.On("GetBooking", ctx, "bk-1").Return(existing, nil).Once()
 	r.On("GetBookingsByBarberAndDate", ctx, "b1", date).Return([]model.Booking{}, nil)
-	r.On("UpdateBookingDetails", ctx, "bk-1", "svc-2", "NewCut", timeStart, timeEnd).Return(nil)
+	r.On("UpdateBookingDetails", ctx, "bk-1", "svc-2", "NewCut", int32(0), timeStart, timeEnd).Return(nil)
 	r.On("GetBooking", ctx, "bk-1").Return(updated, nil).Once()
 
 	svc := newTestService(r, sc)
@@ -366,7 +366,7 @@ func TestUpdateBookingDetails_NoConflictWithSelf(t *testing.T) {
 	r := new(MockRepo)
 	r.On("GetBooking", ctx, "bk-1").Return(&model.Booking{ID: "bk-1", BarberID: "b1"}, nil).Once()
 	r.On("GetBookingsByBarberAndDate", ctx, "b1", date).Return(sameBooking, nil)
-	r.On("UpdateBookingDetails", ctx, "bk-1", "", "", timeStart, timeEnd).Return(nil)
+	r.On("UpdateBookingDetails", ctx, "bk-1", "", "", int32(0), timeStart, timeEnd).Return(nil)
 	r.On("GetBooking", ctx, "bk-1").Return(updated, nil).Once()
 
 	svc := newTestService(r, sc)

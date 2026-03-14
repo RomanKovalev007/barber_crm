@@ -156,6 +156,7 @@ func toProto(b *model.Booking) *pb.Booking {
 		BarberId:    b.BarberID,
 		ServiceId:   b.ServiceID,
 		ServiceName: b.ServiceName,
+		Price:       b.Price,
 		TimeStart:   timestamppb.New(b.TimeStart),
 		TimeEnd:     timestamppb.New(b.TimeEnd),
 		Status:      bookingStatusToProto(b.Status),

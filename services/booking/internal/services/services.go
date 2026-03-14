@@ -23,7 +23,7 @@ import (
 type bookingRepo interface {
 	CreateBookingTx(ctx context.Context, b *model.Booking) error
 	GetBooking(ctx context.Context, id string) (*model.Booking, error)
-	UpdateBookingDetails(ctx context.Context, id, serviceID, serviceName string, timeStart, timeEnd time.Time) error
+	UpdateBookingDetails(ctx context.Context, id, serviceID, serviceName string, price int32, timeStart, timeEnd time.Time) error
 	UpdateBookingStatus(ctx context.Context, id, status string) error
 	DeleteBooking(ctx context.Context, id string) error
 	GetBookingsByBarberAndDate(ctx context.Context, barberID string, date time.Time) ([]model.Booking, error)
@@ -83,6 +83,7 @@ func (s *bookingService) CreateBooking(ctx context.Context, b *model.Booking) (*
 	for _, svc := range svcResp.Services {
 		if svc.ServiceId == b.ServiceID {
 			b.ServiceName = svc.Name
+			b.Price = svc.Price
 			break
 		}
 	}
@@ -143,9 +144,11 @@ func (s *bookingService) UpdateBookingDetails(ctx context.Context, bookingID, ba
 		return nil, apperr.Internal("failed to get services")
 	}
 	serviceName := existing.ServiceName
+	price := existing.Price
 	for _, svc := range svcResp.Services {
 		if svc.ServiceId == serviceID {
 			serviceName = svc.Name
+			price = svc.Price
 			break
 		}
 	}
@@ -167,7 +170,7 @@ func (s *bookingService) UpdateBookingDetails(ctx context.Context, bookingID, ba
 		}
 	}
 
-	if err := s.repo.UpdateBookingDetails(ctx, bookingID, serviceID, serviceName, timeStart, timeEnd); err != nil {
+	if err := s.repo.UpdateBookingDetails(ctx, bookingID, serviceID, serviceName, price, timeStart, timeEnd); err != nil {
 		s.log.Error("update booking: failed to save", "booking_id", bookingID, "error", err)
 		return nil, apperr.Internal("failed to update booking")
 	}
@@ -323,6 +326,7 @@ func (s *bookingService) publishEvent(ctx context.Context, b *model.Booking, sta
 		ClientName:  b.ClientName,
 		ServiceId:   b.ServiceID,
 		ServiceName: b.ServiceName,
+		Price:       b.Price,
 		TimeStart:   timestamppb.New(b.TimeStart),
 		TimeEnd:     timestamppb.New(b.TimeEnd),
 		Status:      status,

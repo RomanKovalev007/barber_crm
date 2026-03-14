@@ -23,6 +23,7 @@ type Booking struct {
 	BarberID    string
 	ServiceID   string
 	ServiceName string
+	Price       int32     // цена услуги на момент записи (руб.)
 	Date        time.Time // хранится в БД для индексации; производное от TimeStart
 	TimeStart   time.Time
 	TimeEnd     time.Time

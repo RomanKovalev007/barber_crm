@@ -77,10 +77,10 @@ func (r *BookingRepo) CreateBookingTx(ctx context.Context, b *model.Booking) err
 
 	// Insert.
 	if _, err = tx.Exec(ctx, `
-		INSERT INTO bookings (id, client_name, client_phone, barber_id, service_id, service_name, date, time_start, time_end, status)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+		INSERT INTO bookings (id, client_name, client_phone, barber_id, service_id, service_name, price, date, time_start, time_end, status)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
 		b.ID, b.ClientName, b.ClientPhone, b.BarberID, b.ServiceID, b.ServiceName,
-		b.Date, b.TimeStart, b.TimeEnd, b.Status,
+		b.Price, b.Date, b.TimeStart, b.TimeEnd, b.Status,
 	); err != nil {
 		return err
 	}
@@ -91,11 +91,11 @@ func (r *BookingRepo) CreateBookingTx(ctx context.Context, b *model.Booking) err
 func (r *BookingRepo) GetBooking(ctx context.Context, id string) (*model.Booking, error) {
 	var b model.Booking
 	err := r.pool.QueryRow(ctx, `
-		SELECT id, client_name, client_phone, barber_id, service_id, service_name,
+		SELECT id, client_name, client_phone, barber_id, service_id, service_name, price,
 		       date, time_start, time_end, status, created_at, updated_at
 		FROM bookings WHERE id = $1`, id,
 	).Scan(
-		&b.ID, &b.ClientName, &b.ClientPhone, &b.BarberID, &b.ServiceID, &b.ServiceName,
+		&b.ID, &b.ClientName, &b.ClientPhone, &b.BarberID, &b.ServiceID, &b.ServiceName, &b.Price,
 		&b.Date, &b.TimeStart, &b.TimeEnd, &b.Status, &b.CreatedAt, &b.UpdatedAt,
 	)
 	if err != nil {
@@ -107,13 +107,13 @@ func (r *BookingRepo) GetBooking(ctx context.Context, id string) (*model.Booking
 	return &b, nil
 }
 
-func (r *BookingRepo) UpdateBookingDetails(ctx context.Context, id, serviceID, serviceName string, timeStart, timeEnd time.Time) error {
+func (r *BookingRepo) UpdateBookingDetails(ctx context.Context, id, serviceID, serviceName string, price int32, timeStart, timeEnd time.Time) error {
 	tag, err := r.pool.Exec(ctx, `
 		UPDATE bookings
-		SET service_id=$2, service_name=$3, time_start=$4, time_end=$5,
-		    date=$6, updated_at=NOW()
+		SET service_id=$2, service_name=$3, price=$4, time_start=$5, time_end=$6,
+		    date=$7, updated_at=NOW()
 		WHERE id=$1`,
-		id, serviceID, serviceName, timeStart, timeEnd, timeStart.UTC().Truncate(24*time.Hour),
+		id, serviceID, serviceName, price, timeStart, timeEnd, timeStart.UTC().Truncate(24*time.Hour),
 	)
 	if err != nil {
 		return err
@@ -151,7 +151,7 @@ func (r *BookingRepo) DeleteBooking(ctx context.Context, id string) error {
 
 func (r *BookingRepo) GetBookingsByBarberAndDate(ctx context.Context, barberID string, date time.Time) ([]model.Booking, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, client_name, client_phone, barber_id, service_id, service_name,
+		SELECT id, client_name, client_phone, barber_id, service_id, service_name, price,
 		       date, time_start, time_end, status, created_at, updated_at
 		FROM bookings
 		WHERE barber_id=$1 AND date=$2 AND status NOT IN ($3,$4)
@@ -167,7 +167,7 @@ func (r *BookingRepo) GetBookingsByBarberAndDate(ctx context.Context, barberID s
 	for rows.Next() {
 		var b model.Booking
 		if err := rows.Scan(
-			&b.ID, &b.ClientName, &b.ClientPhone, &b.BarberID, &b.ServiceID, &b.ServiceName,
+			&b.ID, &b.ClientName, &b.ClientPhone, &b.BarberID, &b.ServiceID, &b.ServiceName, &b.Price,
 			&b.Date, &b.TimeStart, &b.TimeEnd, &b.Status, &b.CreatedAt, &b.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan booking: %w", err)
