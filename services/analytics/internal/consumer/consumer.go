@@ -87,19 +87,7 @@ func (c *Consumer) consumeBookings(ctx context.Context) {
 			continue
 		}
 
-		b := &model.Booking{
-			BookingID:   event.BookingId,
-			BarberID:    event.BarberId,
-			ClientPhone: event.ClientPhone,
-			ClientName:  event.ClientName,
-			ServiceID:   event.ServiceId,
-			ServiceName: event.ServiceName,
-			Price:       event.Price,
-			StartTime:   event.TimeStart.AsTime(),
-			EndTime:     event.TimeEnd.AsTime(),
-			Status:      bookingStatusToString(event.Status),
-			OccurredAt:  event.OccurredAt.AsTime(),
-		}
+		b := bookingEventToModel(&event)
 
 		if !c.retryInsert(ctx, func() error { return c.repo.InsertBooking(ctx, b) }, "booking", b.BookingID) {
 			continue
@@ -133,15 +121,7 @@ func (c *Consumer) consumeSchedule(ctx context.Context) {
 			continue
 		}
 
-		s := &model.Schedule{
-			ScheduleID: event.ScheduleId,
-			BarberID:   event.BarberId,
-			Date:       event.Date,
-			StartTime:  event.StartTime,
-			EndTime:    event.EndTime,
-			IsDeleted:  event.EventType == staffpb.ScheduleEventType_SCHEDULE_EVENT_DELETED,
-			OccurredAt: event.OccurredAt.AsTime(),
-		}
+		s := scheduleEventToModel(&event)
 
 		if !c.retryInsert(ctx, func() error { return c.repo.InsertSchedule(ctx, s) }, "schedule", s.ScheduleID) {
 			continue
@@ -178,6 +158,34 @@ func (c *Consumer) retryInsert(ctx context.Context, fn func() error, topic, id s
 func (c *Consumer) commitOrLog(ctx context.Context, r *kafka.Reader, msg kafka.Message, topic string) {
 	if err := r.CommitMessages(ctx, msg); err != nil {
 		c.log.Error("commit message", "topic", topic, "error", err)
+	}
+}
+
+func bookingEventToModel(event *bookingpb.BookingEvent) *model.Booking {
+	return &model.Booking{
+		BookingID:   event.BookingId,
+		BarberID:    event.BarberId,
+		ClientPhone: event.ClientPhone,
+		ClientName:  event.ClientName,
+		ServiceID:   event.ServiceId,
+		ServiceName: event.ServiceName,
+		Price:       event.Price,
+		StartTime:   event.TimeStart.AsTime(),
+		EndTime:     event.TimeEnd.AsTime(),
+		Status:      bookingStatusToString(event.Status),
+		OccurredAt:  event.OccurredAt.AsTime(),
+	}
+}
+
+func scheduleEventToModel(event *staffpb.ScheduleEvent) *model.Schedule {
+	return &model.Schedule{
+		ScheduleID: event.ScheduleId,
+		BarberID:   event.BarberId,
+		Date:       event.Date,
+		StartTime:  event.StartTime,
+		EndTime:    event.EndTime,
+		IsDeleted:  event.EventType == staffpb.ScheduleEventType_SCHEDULE_EVENT_DELETED,
+		OccurredAt: event.OccurredAt.AsTime(),
 	}
 }
 
