@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 	"time"
 
@@ -84,8 +83,7 @@ func (h *StaffHandler) CreateService(w http.ResponseWriter, r *http.Request) {
 		Price           int32  `json:"price"`
 		DurationMinutes int32  `json:"duration_minutes"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid request body")
+	if !decodeBody(w, r, &req) {
 		return
 	}
 	if req.Name == "" {
@@ -129,8 +127,7 @@ func (h *StaffHandler) UpdateService(w http.ResponseWriter, r *http.Request) {
 		DurationMinutes int32  `json:"duration_minutes"`
 		IsActive        bool   `json:"is_active"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid request body")
+	if !decodeBody(w, r, &req) {
 		return
 	}
 	if req.Name == "" {
@@ -222,8 +219,7 @@ func (h *StaffHandler) UpsertSchedule(w http.ResponseWriter, r *http.Request) {
 		EndTime   string `json:"end_time"`
 		PartOfDay string `json:"part_of_day"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid request body")
+	if !decodeBody(w, r, &req) {
 		return
 	}
 	if req.StartTime == "" || req.EndTime == "" {
@@ -304,8 +300,7 @@ func (h *StaffHandler) CreateBooking(w http.ResponseWriter, r *http.Request) {
 		ClientPhone string    `json:"client_phone"`
 		TimeStart   time.Time `json:"time_start"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid request body")
+	if !decodeBody(w, r, &req) {
 		return
 	}
 	if err := validateServiceID(req.ServiceID); err != nil {
@@ -369,8 +364,7 @@ func (h *StaffHandler) UpdateBooking(w http.ResponseWriter, r *http.Request) {
 		ServiceID string    `json:"service_id"`
 		TimeStart time.Time `json:"time_start"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid request body")
+	if !decodeBody(w, r, &req) {
 		return
 	}
 
@@ -409,8 +403,7 @@ func (h *StaffHandler) UpdateBookingStatus(w http.ResponseWriter, r *http.Reques
 	var req struct {
 		Status string `json:"status"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid request body")
+	if !decodeBody(w, r, &req) {
 		return
 	}
 
@@ -498,8 +491,7 @@ func (h *StaffHandler) UpdateClient(w http.ResponseWriter, r *http.Request) {
 		Name  string `json:"name"`
 		Notes string `json:"notes"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid request body")
+	if !decodeBody(w, r, &req) {
 		return
 	}
 

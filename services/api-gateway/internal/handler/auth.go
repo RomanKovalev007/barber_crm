@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 
 	staffv1 "github.com/RomanKovalev007/barber_crm/api/proto/staff/v1"
@@ -21,8 +20,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Login    string `json:"login"`
 		Password string `json:"password"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid request body")
+	if !decodeBody(w, r, &req) {
 		return
 	}
 	if req.Login == "" || req.Password == "" {
@@ -51,8 +49,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		RefreshToken string `json:"refresh_token"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid request body")
+	if !decodeBody(w, r, &req) {
 		return
 	}
 	if req.RefreshToken == "" {
@@ -75,8 +72,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		RefreshToken string `json:"refresh_token"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid request body")
+	if !decodeBody(w, r, &req) {
 		return
 	}
 	if req.RefreshToken == "" {

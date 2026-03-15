@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	bookingv1 "github.com/RomanKovalev007/barber_crm/api/proto/booking/v1"
@@ -103,15 +103,36 @@ func (h *PublicHandler) FreeSlotsByBarber(w http.ResponseWriter, r *http.Request
 }
 
 func (h *PublicHandler) CreateBooking(w http.ResponseWriter, r *http.Request) {
-	var req model.Booking
+	var req struct {
+		BarberID    string    `json:"barber_id"`
+		ServiceID   string    `json:"service_id"`
+		ClientName  string    `json:"client_name"`
+		ClientPhone string    `json:"client_phone"`
+		TimeStart   time.Time `json:"time_start"`
+	}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid request body")
+	if !decodeBody(w, r, &req) {
 		return
 	}
 
-	if err := validateBookingRequest(req); err != nil {
-		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", err.Error())
+	if err := validateBarberID(req.BarberID); err != nil {
+		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid barber_id")
+		return
+	}
+	if err := validateServiceID(req.ServiceID); err != nil {
+		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid service_id")
+		return
+	}
+	if err := validateClientName(req.ClientName); err != nil {
+		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "client_name is required")
+		return
+	}
+	if err := validateClientPhone(req.ClientPhone); err != nil {
+		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid client_phone")
+		return
+	}
+	if err := validateTime(req.TimeStart); err != nil {
+		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid time_start")
 		return
 	}
 

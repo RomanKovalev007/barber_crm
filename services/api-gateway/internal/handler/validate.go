@@ -5,31 +5,11 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/RomanKovalev007/barber_crm/services/api-gateway/internal/model"
 	"github.com/google/uuid"
 )
 
 var weekRegex = regexp.MustCompile(`^\d{4}-W(0[1-9]|[1-4]\d|5[0-3])$`)
 var phoneRegex = regexp.MustCompile(`^\+7\d{10}$`)
-
-func validateBookingRequest(req model.Booking) error {
-	if err := validateBarberID(req.BarberID); err != nil {
-		return errors.New("invalid barber_id")
-	}
-	if err := validateServiceID(req.ServiceID); err != nil {
-		return errors.New("invalid service_id")
-	}
-	if err := validateClientName(req.ClientName); err != nil {
-		return errors.New("invalid client_name")
-	}
-	if err := validateClientPhone(req.ClientPhone); err != nil {
-		return errors.New("invalid client_phone")
-	}
-	if err := validateTime(req.TimeStart); err != nil {
-		return errors.New("invalid time_start")
-	}
-	return nil
-}
 
 func validateBarberID(barberID string) error {
 	if barberID == "" {

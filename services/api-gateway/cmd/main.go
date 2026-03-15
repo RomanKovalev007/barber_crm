@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	analyticsv1 "github.com/RomanKovalev007/barber_crm/api/proto/analytics/v1"
 	bookingv1 "github.com/RomanKovalev007/barber_crm/api/proto/booking/v1"
 	clientv1 "github.com/RomanKovalev007/barber_crm/api/proto/client/v1"
@@ -81,6 +82,13 @@ func main() {
 	r.Use(chiMiddleware.RequestID)
 	r.Use(middleware.Logger(log))
 	r.Use(middleware.BodyLimit)
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
 
 	// Health check — без таймаута и аутентификации
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
