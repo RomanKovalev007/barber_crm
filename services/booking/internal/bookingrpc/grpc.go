@@ -3,6 +3,7 @@ package bookingrpc
 import (
 	"context"
 	"errors"
+	"regexp"
 	"time"
 
 	pb "github.com/RomanKovalev007/barber_crm/api/proto/booking/v1"
@@ -36,8 +37,14 @@ func (s *bookingServer) CreateBooking(ctx context.Context, req *pb.CreateBooking
 	if req.ClientName == "" || req.BarberId == "" || req.ServiceId == "" || req.ClientPhone == "" {
 		return nil, status.Error(codes.InvalidArgument, "client_name, client_phone, barber_id and service_id are required")
 	}
+	if !isValidPhone(req.ClientPhone) {
+		return nil, status.Error(codes.InvalidArgument, "client_phone must be 10–15 digits, optionally starting with +")
+	}
 	if req.TimeStart == nil {
 		return nil, status.Error(codes.InvalidArgument, "time_start is required")
+	}
+	if !req.TimeStart.AsTime().After(time.Now()) {
+		return nil, status.Error(codes.InvalidArgument, "time_start must be in the future")
 	}
 
 	b := &model.Booking{
@@ -234,4 +241,10 @@ func bookingStatusFromProto(s pb.BookingStatus) (string, error) {
 
 func parseDate(s string) (time.Time, error) {
 	return time.Parse("2006-01-02", s)
+}
+
+var phoneRe = regexp.MustCompile(`^\+?[0-9]{10,15}$`)
+
+func isValidPhone(phone string) bool {
+	return phoneRe.MatchString(phone)
 }
