@@ -35,28 +35,28 @@ func main() {
 
 	staffConn, err := grpc.NewClient(cfg.StaffAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Error("failed to connect to staff service", "error", err)
+		log.Error("invalid staff service address", "addr", cfg.StaffAddr, "error", err)
 		os.Exit(1)
 	}
 	defer staffConn.Close()
 
 	bookingConn, err := grpc.NewClient(cfg.BookingAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Error("failed to connect to booking service", "error", err)
+		log.Error("invalid booking service address", "addr", cfg.BookingAddr, "error", err)
 		os.Exit(1)
 	}
 	defer bookingConn.Close()
 
 	analyticsConn, err := grpc.NewClient(cfg.AnalyticsAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Error("failed to connect to analytics service", "error", err)
+		log.Error("invalid analytics service address", "addr", cfg.AnalyticsAddr, "error", err)
 		os.Exit(1)
 	}
 	defer analyticsConn.Close()
 
 	clientConn, err := grpc.NewClient(cfg.ClientAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Error("failed to connect to client service", "error", err)
+		log.Error("invalid client service address", "addr", cfg.ClientAddr, "error", err)
 		os.Exit(1)
 	}
 	defer clientConn.Close()
@@ -81,47 +81,63 @@ func main() {
 	r.Use(chiMiddleware.RequestID)
 	r.Use(middleware.Logger(log))
 	r.Use(middleware.BodyLimit)
-	r.Use(chiMiddleware.Timeout(10 * time.Second))
+
+	// Health check — без таймаута и аутентификации
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
 
 	r.Route("/api/v1", func(r chi.Router) {
-		// Public
-		r.Get("/barbers", publicHandler.ListBarbers)
-		r.Get("/barbers/{barber_id}/services", publicHandler.ListServicesByBarber)
-		r.Get("/barbers/{barber_id}/free-slots", publicHandler.FreeSlotsByBarber)
-		r.Post("/bookings", publicHandler.CreateBooking)
+		// Public — 5s достаточно для простых запросов
+		r.Group(func(r chi.Router) {
+			r.Use(chiMiddleware.Timeout(5 * time.Second))
+			r.Get("/barbers", publicHandler.ListBarbers)
+			r.Get("/barbers/{barber_id}/services", publicHandler.ListServicesByBarber)
+			r.Get("/barbers/{barber_id}/free-slots", publicHandler.FreeSlotsByBarber)
+			r.Post("/bookings", publicHandler.CreateBooking)
+		})
 
-		// Auth
-		r.Post("/auth/login", authHandler.Login)
-		r.Post("/auth/refresh", authHandler.Refresh)
-		r.With(middleware.Auth(cfg.JWTSecret)).Post("/auth/logout", authHandler.Logout)
+		// Auth — 5s
+		r.Group(func(r chi.Router) {
+			r.Use(chiMiddleware.Timeout(5 * time.Second))
+			r.Post("/auth/login", authHandler.Login)
+			r.Post("/auth/refresh", authHandler.Refresh)
+			r.With(middleware.Auth(cfg.JWTSecret)).Post("/auth/logout", authHandler.Logout)
+		})
 
-		// Staff (all require JWT)
+		// Staff (все требуют JWT)
 		r.Route("/staff", func(r chi.Router) {
 			r.Use(middleware.Auth(cfg.JWTSecret))
 
-			r.Get("/barber", staffHandler.GetBarber)
+			// Стандартные операции — 10s
+			r.Group(func(r chi.Router) {
+				r.Use(chiMiddleware.Timeout(10 * time.Second))
 
-			r.Get("/services", staffHandler.ListServices)
-			r.Post("/services", staffHandler.CreateService)
-			r.Put("/services/{service_id}", staffHandler.UpdateService)
-			r.Delete("/services/{service_id}", staffHandler.DeleteService)
+				r.Get("/barber", staffHandler.GetBarber)
 
-			r.Get("/schedule", staffHandler.GetSchedule)
-			r.Put("/schedule/{date}", staffHandler.UpsertSchedule)
-			r.Delete("/schedule/{date}", staffHandler.DeleteSchedule)
-			r.Get("/slots", staffHandler.GetSlots)
+				r.Get("/services", staffHandler.ListServices)
+				r.Post("/services", staffHandler.CreateService)
+				r.Put("/services/{service_id}", staffHandler.UpdateService)
+				r.Delete("/services/{service_id}", staffHandler.DeleteService)
 
-			r.Post("/bookings", staffHandler.CreateBooking)
-			r.Get("/bookings/{booking_id}", staffHandler.GetBooking)
-			r.Put("/bookings/{booking_id}", staffHandler.UpdateBooking)
-			r.Patch("/bookings/{booking_id}", staffHandler.UpdateBookingStatus)
-			r.Delete("/bookings/{booking_id}", staffHandler.DeleteBooking)
+				r.Get("/schedule", staffHandler.GetSchedule)
+				r.Put("/schedule/{date}", staffHandler.UpsertSchedule)
+				r.Delete("/schedule/{date}", staffHandler.DeleteSchedule)
+				r.Get("/slots", staffHandler.GetSlots)
 
-			r.Get("/clients", staffHandler.ListClients)
-			r.Get("/clients/{client_id}", staffHandler.GetClient)
-			r.Put("/clients/{client_id}", staffHandler.UpdateClient)
+				r.Post("/bookings", staffHandler.CreateBooking)
+				r.Get("/bookings/{booking_id}", staffHandler.GetBooking)
+				r.Put("/bookings/{booking_id}", staffHandler.UpdateBooking)
+				r.Patch("/bookings/{booking_id}", staffHandler.UpdateBookingStatus)
+				r.Delete("/bookings/{booking_id}", staffHandler.DeleteBooking)
 
-			r.Get("/analytics", staffHandler.GetAnalytics)
+				r.Get("/clients", staffHandler.ListClients)
+				r.Get("/clients/{client_id}", staffHandler.GetClient)
+				r.Put("/clients/{client_id}", staffHandler.UpdateClient)
+			})
+
+			// Аналитика — 30s (тяжёлые запросы к ClickHouse)
+			r.With(chiMiddleware.Timeout(30 * time.Second)).Get("/analytics", staffHandler.GetAnalytics)
 		})
 	})
 

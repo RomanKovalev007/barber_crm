@@ -39,6 +39,7 @@ func Logger(log *slog.Logger) func(http.Handler) http.Handler {
 				"status", rec.status,
 				"duration_ms", time.Since(start).Milliseconds(),
 				"request_id", chiMiddleware.GetReqID(r.Context()),
+				"ip", r.RemoteAddr,
 			)
 		})
 	}
