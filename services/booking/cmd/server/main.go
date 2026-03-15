@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"syscall"
 
 	pb "github.com/RomanKovalev007/barber_crm/api/proto/booking/v1"
@@ -19,8 +20,10 @@ import (
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/services"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/staffclient"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/status"
 )
 
 func main() {
@@ -65,7 +68,17 @@ func main() {
 	bookingService := services.New(bookingRepo, redisClient, ttl, cfg.JWTSecret, log, staffClient, producer)
 	srv := bookingrpc.NewServer(bookingService)
 
-	grpcServer := grpc.NewServer()
+	recoveryInterceptor := grpc.UnaryInterceptor(func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Error("panic recovered", "method", info.FullMethod, "panic", r, "stack", string(debug.Stack()))
+				err = status.Error(codes.Internal, "internal error")
+			}
+		}()
+		return handler(ctx, req)
+	})
+
+	grpcServer := grpc.NewServer(recoveryInterceptor)
 	pb.RegisterBookingServiceServer(grpcServer, srv)
 	healthSrv := health.NewServer()
 	grpc_health_v1.RegisterHealthServer(grpcServer, healthSrv)

@@ -6,13 +6,16 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"strings"
 	"syscall"
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/status"
 
 	pb "github.com/RomanKovalev007/barber_crm/api/proto/client/v1"
 	"github.com/RomanKovalev007/barber_crm/pkg/config"
@@ -50,7 +53,17 @@ func main() {
 	srv := clientgrpc.NewServer(svc)
 
 	// ── gRPC ─────────────────────────────────────────────────────────────────
-	grpcServer := grpc.NewServer()
+	recoveryInterceptor := grpc.UnaryInterceptor(func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Error("panic recovered", "method", info.FullMethod, "panic", r, "stack", string(debug.Stack()))
+				err = status.Error(codes.Internal, "internal error")
+			}
+		}()
+		return handler(ctx, req)
+	})
+
+	grpcServer := grpc.NewServer(recoveryInterceptor)
 	pb.RegisterClientServiceServer(grpcServer, srv)
 	healthSrv := health.NewServer()
 	grpc_health_v1.RegisterHealthServer(grpcServer, healthSrv)
