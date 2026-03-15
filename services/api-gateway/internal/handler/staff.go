@@ -467,13 +467,14 @@ func (h *StaffHandler) ListClients(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *StaffHandler) GetClient(w http.ResponseWriter, r *http.Request) {
+	barberID := middleware.BarberIDFromCtx(r.Context())
 	clientID := chi.URLParam(r, "client_id")
 	if err := validateClientID(clientID); err != nil {
 		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid client_id")
 		return
 	}
 
-	resp, err := h.client.GetClient(r.Context(), &clientv1.GetClientRequest{ClientId: clientID})
+	resp, err := h.client.GetClient(r.Context(), &clientv1.GetClientRequest{ClientId: clientID, BarberId: barberID})
 	if err != nil {
 		response.GrpcErrorToHttp(w, err)
 		return
@@ -483,6 +484,7 @@ func (h *StaffHandler) GetClient(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *StaffHandler) UpdateClient(w http.ResponseWriter, r *http.Request) {
+	barberID := middleware.BarberIDFromCtx(r.Context())
 	clientID := chi.URLParam(r, "client_id")
 	if err := validateClientID(clientID); err != nil {
 		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid client_id")
@@ -499,6 +501,7 @@ func (h *StaffHandler) UpdateClient(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.client.UpdateClient(r.Context(), &clientv1.UpdateClientRequest{
 		ClientId: clientID,
+		BarberId: barberID,
 		Name:     req.Name,
 		Notes:    req.Notes,
 	})

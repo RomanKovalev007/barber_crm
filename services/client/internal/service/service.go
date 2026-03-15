@@ -37,7 +37,7 @@ func (s *Service) UpsertByBooking(ctx context.Context, barberID, phone, name, bo
 	return nil
 }
 
-func (s *Service) GetClient(ctx context.Context, id string) (*model.Client, error) {
+func (s *Service) GetClient(ctx context.Context, id, barberID string) (*model.Client, error) {
 	if id == "" {
 		return nil, apperr.InvalidArgument("client_id is required")
 	}
@@ -48,6 +48,10 @@ func (s *Service) GetClient(ctx context.Context, id string) (*model.Client, erro
 		}
 		s.logger.Error("get client", "client_id", id, "error", err)
 		return nil, apperr.Internal("failed to get client")
+	}
+	if c.BarberID != barberID {
+		s.logger.Warn("get client: ownership mismatch", "client_id", id, "barber_id", barberID)
+		return nil, apperr.NotFound("client not found")
 	}
 	return c, nil
 }
@@ -79,12 +83,24 @@ func (s *Service) ListClients(ctx context.Context, barberID, search string) ([]m
 	return clients, nil
 }
 
-func (s *Service) UpdateClient(ctx context.Context, id, name, notes string) (*model.Client, error) {
+func (s *Service) UpdateClient(ctx context.Context, id, barberID, name, notes string) (*model.Client, error) {
 	if id == "" {
 		return nil, apperr.InvalidArgument("client_id is required")
 	}
 	if name == "" {
 		return nil, apperr.InvalidArgument("name is required")
+	}
+	existing, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, apperr.NotFound("client not found")
+		}
+		s.logger.Error("update client: get", "client_id", id, "error", err)
+		return nil, apperr.Internal("failed to get client")
+	}
+	if existing.BarberID != barberID {
+		s.logger.Warn("update client: ownership mismatch", "client_id", id, "barber_id", barberID)
+		return nil, apperr.NotFound("client not found")
 	}
 	c, err := s.repo.Update(ctx, id, name, notes)
 	if err != nil {
@@ -94,6 +110,6 @@ func (s *Service) UpdateClient(ctx context.Context, id, name, notes string) (*mo
 		s.logger.Error("update client", "client_id", id, "error", err)
 		return nil, apperr.Internal("failed to update client")
 	}
-	s.logger.Info("client updated", "client_id", id)
+	s.logger.Info("client updated", "client_id", id, "barber_id", barberID)
 	return c, nil
 }

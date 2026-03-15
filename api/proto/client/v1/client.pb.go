@@ -221,6 +221,7 @@ func (x *ListClientsResponse) GetClients() []*Client {
 type GetClientRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ClientId      string                 `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	BarberId      string                 `protobuf:"bytes,2,opt,name=barber_id,json=barberId,proto3" json:"barber_id,omitempty"` // для проверки владения
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -258,6 +259,13 @@ func (*GetClientRequest) Descriptor() ([]byte, []int) {
 func (x *GetClientRequest) GetClientId() string {
 	if x != nil {
 		return x.ClientId
+	}
+	return ""
+}
+
+func (x *GetClientRequest) GetBarberId() string {
+	if x != nil {
+		return x.BarberId
 	}
 	return ""
 }
@@ -361,8 +369,9 @@ func (x *ClientResponse) GetClient() *Client {
 type UpdateClientRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ClientId      string                 `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Notes         string                 `protobuf:"bytes,3,opt,name=notes,proto3" json:"notes,omitempty"`
+	BarberId      string                 `protobuf:"bytes,2,opt,name=barber_id,json=barberId,proto3" json:"barber_id,omitempty"` // для проверки владения
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Notes         string                 `protobuf:"bytes,4,opt,name=notes,proto3" json:"notes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -404,6 +413,13 @@ func (x *UpdateClientRequest) GetClientId() string {
 	return ""
 }
 
+func (x *UpdateClientRequest) GetBarberId() string {
+	if x != nil {
+		return x.BarberId
+	}
+	return ""
+}
+
 func (x *UpdateClientRequest) GetName() string {
 	if x != nil {
 		return x.Name
@@ -438,18 +454,20 @@ const file_client_v1_client_proto_rawDesc = "" +
 	"\tbarber_id\x18\x01 \x01(\tR\bbarberId\x12\x16\n" +
 	"\x06search\x18\x02 \x01(\tR\x06search\"B\n" +
 	"\x13ListClientsResponse\x12+\n" +
-	"\aclients\x18\x01 \x03(\v2\x11.client.v1.ClientR\aclients\"/\n" +
+	"\aclients\x18\x01 \x03(\v2\x11.client.v1.ClientR\aclients\"L\n" +
 	"\x10GetClientRequest\x12\x1b\n" +
-	"\tclient_id\x18\x01 \x01(\tR\bclientId\"L\n" +
+	"\tclient_id\x18\x01 \x01(\tR\bclientId\x12\x1b\n" +
+	"\tbarber_id\x18\x02 \x01(\tR\bbarberId\"L\n" +
 	"\x17GetClientByPhoneRequest\x12\x1b\n" +
 	"\tbarber_id\x18\x01 \x01(\tR\bbarberId\x12\x14\n" +
 	"\x05phone\x18\x02 \x01(\tR\x05phone\";\n" +
 	"\x0eClientResponse\x12)\n" +
-	"\x06client\x18\x01 \x01(\v2\x11.client.v1.ClientR\x06client\"\\\n" +
+	"\x06client\x18\x01 \x01(\v2\x11.client.v1.ClientR\x06client\"y\n" +
 	"\x13UpdateClientRequest\x12\x1b\n" +
-	"\tclient_id\x18\x01 \x01(\tR\bclientId\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
-	"\x05notes\x18\x03 \x01(\tR\x05notes2\xc0\x02\n" +
+	"\tclient_id\x18\x01 \x01(\tR\bclientId\x12\x1b\n" +
+	"\tbarber_id\x18\x02 \x01(\tR\bbarberId\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12\x14\n" +
+	"\x05notes\x18\x04 \x01(\tR\x05notes2\xc0\x02\n" +
 	"\rClientService\x12L\n" +
 	"\vListClients\x12\x1d.client.v1.ListClientsRequest\x1a\x1e.client.v1.ListClientsResponse\x12C\n" +
 	"\tGetClient\x12\x1b.client.v1.GetClientRequest\x1a\x19.client.v1.ClientResponse\x12Q\n" +

@@ -15,9 +15,9 @@ import (
 
 type clientService interface {
 	ListClients(ctx context.Context, barberID, search string) ([]model.Client, error)
-	GetClient(ctx context.Context, id string) (*model.Client, error)
+	GetClient(ctx context.Context, id, barberID string) (*model.Client, error)
 	GetClientByPhone(ctx context.Context, barberID, phone string) (*model.Client, error)
-	UpdateClient(ctx context.Context, id, name, notes string) (*model.Client, error)
+	UpdateClient(ctx context.Context, id, barberID, name, notes string) (*model.Client, error)
 }
 
 type Server struct {
@@ -45,10 +45,10 @@ func (s *Server) ListClients(ctx context.Context, req *pb.ListClientsRequest) (*
 }
 
 func (s *Server) GetClient(ctx context.Context, req *pb.GetClientRequest) (*pb.ClientResponse, error) {
-	if req.ClientId == "" {
-		return nil, status.Error(codes.InvalidArgument, "client_id is required")
+	if req.ClientId == "" || req.BarberId == "" {
+		return nil, status.Error(codes.InvalidArgument, "client_id and barber_id are required")
 	}
-	c, err := s.svc.GetClient(ctx, req.ClientId)
+	c, err := s.svc.GetClient(ctx, req.ClientId, req.BarberId)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
@@ -67,13 +67,13 @@ func (s *Server) GetClientByPhone(ctx context.Context, req *pb.GetClientByPhoneR
 }
 
 func (s *Server) UpdateClient(ctx context.Context, req *pb.UpdateClientRequest) (*pb.ClientResponse, error) {
-	if req.ClientId == "" {
-		return nil, status.Error(codes.InvalidArgument, "client_id is required")
+	if req.ClientId == "" || req.BarberId == "" {
+		return nil, status.Error(codes.InvalidArgument, "client_id and barber_id are required")
 	}
 	if req.Name == "" {
 		return nil, status.Error(codes.InvalidArgument, "name is required")
 	}
-	c, err := s.svc.UpdateClient(ctx, req.ClientId, req.Name, req.Notes)
+	c, err := s.svc.UpdateClient(ctx, req.ClientId, req.BarberId, req.Name, req.Notes)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

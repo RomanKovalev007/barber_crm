@@ -99,15 +99,26 @@ func TestGetClient_Success(t *testing.T) {
 	r := new(MockRepo)
 	r.On("GetByID", ctx, "cl-1").Return(testClient, nil)
 
-	c, err := newSvc(r).GetClient(ctx, "cl-1")
+	c, err := newSvc(r).GetClient(ctx, "cl-1", "b-1")
 
 	require.NoError(t, err)
 	assert.Equal(t, testClient, c)
 	r.AssertExpectations(t)
 }
 
+func TestGetClient_OwnershipMismatch(t *testing.T) {
+	r := new(MockRepo)
+	r.On("GetByID", ctx, "cl-1").Return(testClient, nil)
+
+	_, err := newSvc(r).GetClient(ctx, "cl-1", "b-2")
+
+	var appErr *apperr.AppError
+	require.ErrorAs(t, err, &appErr)
+	assert.Equal(t, apperr.CodeNotFound, appErr.Code)
+}
+
 func TestGetClient_EmptyID(t *testing.T) {
-	_, err := newSvc(new(MockRepo)).GetClient(ctx, "")
+	_, err := newSvc(new(MockRepo)).GetClient(ctx, "", "b-1")
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
@@ -118,7 +129,7 @@ func TestGetClient_NotFound(t *testing.T) {
 	r := new(MockRepo)
 	r.On("GetByID", ctx, "cl-x").Return(nil, repository.ErrNotFound)
 
-	_, err := newSvc(r).GetClient(ctx, "cl-x")
+	_, err := newSvc(r).GetClient(ctx, "cl-x", "b-1")
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
@@ -129,7 +140,7 @@ func TestGetClient_RepoError(t *testing.T) {
 	r := new(MockRepo)
 	r.On("GetByID", ctx, "cl-1").Return(nil, errors.New("db error"))
 
-	_, err := newSvc(r).GetClient(ctx, "cl-1")
+	_, err := newSvc(r).GetClient(ctx, "cl-1", "b-1")
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
@@ -232,19 +243,31 @@ func TestListClients_RepoError(t *testing.T) {
 // ─── UpdateClient ─────────────────────────────────────────────────────────────
 
 func TestUpdateClient_Success(t *testing.T) {
-	updated := &model.Client{ID: "cl-1", Name: "Petr", Notes: "updated"}
+	updated := &model.Client{ID: "cl-1", BarberID: "b-1", Name: "Petr", Notes: "updated"}
 	r := new(MockRepo)
+	r.On("GetByID", ctx, "cl-1").Return(testClient, nil)
 	r.On("Update", ctx, "cl-1", "Petr", "updated").Return(updated, nil)
 
-	c, err := newSvc(r).UpdateClient(ctx, "cl-1", "Petr", "updated")
+	c, err := newSvc(r).UpdateClient(ctx, "cl-1", "b-1", "Petr", "updated")
 
 	require.NoError(t, err)
 	assert.Equal(t, "Petr", c.Name)
 	r.AssertExpectations(t)
 }
 
+func TestUpdateClient_OwnershipMismatch(t *testing.T) {
+	r := new(MockRepo)
+	r.On("GetByID", ctx, "cl-1").Return(testClient, nil)
+
+	_, err := newSvc(r).UpdateClient(ctx, "cl-1", "b-2", "Petr", "")
+
+	var appErr *apperr.AppError
+	require.ErrorAs(t, err, &appErr)
+	assert.Equal(t, apperr.CodeNotFound, appErr.Code)
+}
+
 func TestUpdateClient_EmptyID(t *testing.T) {
-	_, err := newSvc(new(MockRepo)).UpdateClient(ctx, "", "Ivan", "")
+	_, err := newSvc(new(MockRepo)).UpdateClient(ctx, "", "b-1", "Ivan", "")
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
@@ -252,7 +275,7 @@ func TestUpdateClient_EmptyID(t *testing.T) {
 }
 
 func TestUpdateClient_EmptyName(t *testing.T) {
-	_, err := newSvc(new(MockRepo)).UpdateClient(ctx, "cl-1", "", "")
+	_, err := newSvc(new(MockRepo)).UpdateClient(ctx, "cl-1", "b-1", "", "")
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
@@ -261,9 +284,9 @@ func TestUpdateClient_EmptyName(t *testing.T) {
 
 func TestUpdateClient_NotFound(t *testing.T) {
 	r := new(MockRepo)
-	r.On("Update", ctx, "cl-x", "Ivan", "").Return(nil, repository.ErrNotFound)
+	r.On("GetByID", ctx, "cl-x").Return(nil, repository.ErrNotFound)
 
-	_, err := newSvc(r).UpdateClient(ctx, "cl-x", "Ivan", "")
+	_, err := newSvc(r).UpdateClient(ctx, "cl-x", "b-1", "Ivan", "")
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
@@ -272,9 +295,10 @@ func TestUpdateClient_NotFound(t *testing.T) {
 
 func TestUpdateClient_RepoError(t *testing.T) {
 	r := new(MockRepo)
+	r.On("GetByID", ctx, "cl-1").Return(testClient, nil)
 	r.On("Update", ctx, "cl-1", "Ivan", "").Return(nil, errors.New("db error"))
 
-	_, err := newSvc(r).UpdateClient(ctx, "cl-1", "Ivan", "")
+	_, err := newSvc(r).UpdateClient(ctx, "cl-1", "b-1", "Ivan", "")
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
