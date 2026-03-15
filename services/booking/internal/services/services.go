@@ -342,6 +342,11 @@ func (s *bookingService) buildSlots(ctx context.Context, barberID string, date t
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
+const (
+	publishMaxRetries = 3
+	publishBaseDelay  = time.Second
+)
+
 func (s *bookingService) publishEvent(ctx context.Context, b *model.Booking, status bookingpb.BookingStatus) {
 	event := &bookingpb.BookingEvent{
 		BookingId:   b.ID,
@@ -356,9 +361,32 @@ func (s *bookingService) publishEvent(ctx context.Context, b *model.Booking, sta
 		Status:      status,
 		OccurredAt:  timestamppb.New(time.Now()),
 	}
-	if err := s.producer.Publish(ctx, b.ID, event); err != nil {
-		s.log.Warn("publish booking event failed", "booking_id", b.ID, "status", status, "error", err)
+	if err := s.producer.Publish(ctx, b.ID, event); err == nil {
+		return
 	}
+	// Первая попытка не удалась — ретраим в фоне на background-контексте,
+	// чтобы не зависеть от отменённого request-контекста.
+	go s.retryPublish(b.ID, event, status)
+}
+
+func (s *bookingService) retryPublish(bookingID string, event *bookingpb.BookingEvent, status bookingpb.BookingStatus) {
+	delay := publishBaseDelay
+	for attempt := 1; attempt <= publishMaxRetries; attempt++ {
+		time.Sleep(delay)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		err := s.producer.Publish(ctx, bookingID, event)
+		cancel()
+		if err == nil {
+			s.log.Info("publish booking event succeeded after retry",
+				"booking_id", bookingID, "attempt", attempt)
+			return
+		}
+		s.log.Warn("publish booking event retry failed",
+			"booking_id", bookingID, "status", status, "attempt", attempt, "error", err)
+		delay *= 2
+	}
+	s.log.Error("publish booking event failed permanently",
+		"booking_id", bookingID, "status", status)
 }
 
 func bookingStatusToProto(s string) bookingpb.BookingStatus {
