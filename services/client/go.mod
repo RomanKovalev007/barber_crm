@@ -3,8 +3,8 @@ module github.com/RomanKovalev007/barber_crm/services/client
 go 1.24.3
 
 require (
-	github.com/RomanKovalev007/barber_crm/api v0.0.0
-	github.com/RomanKovalev007/barber_crm/pkg v0.0.0
+	github.com/RomanKovalev007/barber_crm/api v0.0.9
+	github.com/RomanKovalev007/barber_crm/pkg v0.0.7
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/segmentio/kafka-go v0.4.47
 	github.com/stretchr/testify v1.11.1
@@ -31,9 +31,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	olympos.io/encoding/edn v0.0.0-20201019073823-d3554ca0b0a3 // indirect
-)
-
-replace (
-	github.com/RomanKovalev007/barber_crm/api => ../../api
-	github.com/RomanKovalev007/barber_crm/pkg => ../../pkg
 )

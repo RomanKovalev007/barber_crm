@@ -3,8 +3,8 @@ module github.com/RomanKovalev007/barber_crm/services/booking
 go 1.24.3
 
 require (
-	github.com/RomanKovalev007/barber_crm/api v0.0.7
-	github.com/RomanKovalev007/barber_crm/pkg v0.0.3
+	github.com/RomanKovalev007/barber_crm/api v0.0.9
+	github.com/RomanKovalev007/barber_crm/pkg v0.0.7
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/redis/go-redis/v9 v9.18.0
@@ -39,9 +39,4 @@ require (
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	olympos.io/encoding/edn v0.0.0-20201019073823-d3554ca0b0a3 // indirect
-)
-
-replace (
-	github.com/RomanKovalev007/barber_crm/api => ../../api
-	github.com/RomanKovalev007/barber_crm/pkg => ../../pkg
 )

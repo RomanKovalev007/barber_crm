@@ -2,23 +2,17 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
-# Копируем общие модули (нужны replace-директивы в go.mod)
-COPY api/    api/
-COPY pkg/    pkg/
-
-# Копируем сервис
-COPY services/analytics/ services/analytics/
-
-WORKDIR /app/services/analytics
-
+COPY go.mod go.sum ./
 RUN go mod download
+
+COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o analytics ./cmd/main.go
 RUN CGO_ENABLED=0 GOOS=linux go build -o migrate    ./cmd/migrate/main.go
 
 FROM scratch
 
-COPY --from=builder /app/services/analytics/analytics /analytics
-COPY --from=builder /app/services/analytics/migrate   /migrate
+COPY --from=builder /app/analytics /analytics
+COPY --from=builder /app/migrate   /migrate
 
 # Запуск основного сервиса:
 #   docker run ... /analytics
