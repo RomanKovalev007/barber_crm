@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"runtime/debug"
 	"syscall"
+	"time"
 
 	pb "github.com/RomanKovalev007/barber_crm/api/proto/booking/v1"
 	"github.com/RomanKovalev007/barber_crm/pkg/config"
@@ -97,10 +98,25 @@ func main() {
 		}
 	}()
 
-	quiet := make(chan os.Signal, 1)
-	signal.Notify(quiet, syscall.SIGINT, syscall.SIGTERM)
-	<-quiet
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
 
 	log.Info("shutting down booking service")
-	grpcServer.GracefulStop()
+
+	stopped := make(chan struct{})
+	go func() {
+		grpcServer.GracefulStop()
+		close(stopped)
+	}()
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 25*time.Second)
+	defer shutdownCancel()
+	select {
+	case <-stopped:
+		log.Info("graceful shutdown complete")
+	case <-shutdownCtx.Done():
+		log.Warn("graceful shutdown timed out, forcing stop")
+		grpcServer.Stop()
+	}
 }
