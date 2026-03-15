@@ -236,18 +236,33 @@ func TestCreateBooking_RepoCreateError(t *testing.T) {
 
 func TestGetBooking_Success(t *testing.T) {
 	ctx := context.Background()
-	expected := &model.Booking{ID: "bk-1", ClientName: "Ivan"}
+	expected := &model.Booking{ID: "bk-1", BarberID: "b1", ClientName: "Ivan"}
 
 	r := new(MockRepo)
 	r.On("GetBooking", ctx, "bk-1").Return(expected, nil)
 
 	svc := newTestService(r, new(MockStaffClient))
 
-	b, err := svc.GetBooking(ctx, "bk-1")
+	b, err := svc.GetBooking(ctx, "bk-1", "b1")
 
 	require.NoError(t, err)
 	assert.Equal(t, expected, b)
 	r.AssertExpectations(t)
+}
+
+func TestGetBooking_OwnershipMismatch(t *testing.T) {
+	ctx := context.Background()
+
+	r := new(MockRepo)
+	r.On("GetBooking", ctx, "bk-1").Return(&model.Booking{ID: "bk-1", BarberID: "b1"}, nil)
+
+	svc := newTestService(r, new(MockStaffClient))
+
+	_, err := svc.GetBooking(ctx, "bk-1", "b2")
+
+	var appErr *apperr.AppError
+	require.ErrorAs(t, err, &appErr)
+	assert.Equal(t, apperr.CodeNotFound, appErr.Code)
 }
 
 func TestGetBooking_NotFound(t *testing.T) {
@@ -258,7 +273,7 @@ func TestGetBooking_NotFound(t *testing.T) {
 
 	svc := newTestService(r, new(MockStaffClient))
 
-	_, err := svc.GetBooking(ctx, "bk-x")
+	_, err := svc.GetBooking(ctx, "bk-x", "b1")
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
@@ -273,7 +288,7 @@ func TestGetBooking_RepoError(t *testing.T) {
 
 	svc := newTestService(r, new(MockStaffClient))
 
-	_, err := svc.GetBooking(ctx, "bk-1")
+	_, err := svc.GetBooking(ctx, "bk-1", "b1")
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
@@ -496,25 +511,41 @@ func TestDeleteBooking_Success(t *testing.T) {
 	ctx := context.Background()
 
 	r := new(MockRepo)
+	r.On("GetBooking", ctx, "bk-1").Return(&model.Booking{ID: "bk-1", BarberID: "b1"}, nil)
 	r.On("DeleteBooking", ctx, "bk-1").Return(nil)
 
 	svc := newTestService(r, new(MockStaffClient))
 
-	err := svc.DeleteBooking(ctx, "bk-1")
+	err := svc.DeleteBooking(ctx, "bk-1", "b1")
 
 	require.NoError(t, err)
 	r.AssertExpectations(t)
+}
+
+func TestDeleteBooking_OwnershipMismatch(t *testing.T) {
+	ctx := context.Background()
+
+	r := new(MockRepo)
+	r.On("GetBooking", ctx, "bk-1").Return(&model.Booking{ID: "bk-1", BarberID: "b1"}, nil)
+
+	svc := newTestService(r, new(MockStaffClient))
+
+	err := svc.DeleteBooking(ctx, "bk-1", "b2")
+
+	var appErr *apperr.AppError
+	require.ErrorAs(t, err, &appErr)
+	assert.Equal(t, apperr.CodeNotFound, appErr.Code)
 }
 
 func TestDeleteBooking_NotFound(t *testing.T) {
 	ctx := context.Background()
 
 	r := new(MockRepo)
-	r.On("DeleteBooking", ctx, "bk-x").Return(repo.ErrNotFound)
+	r.On("GetBooking", ctx, "bk-x").Return((*model.Booking)(nil), repo.ErrNotFound)
 
 	svc := newTestService(r, new(MockStaffClient))
 
-	err := svc.DeleteBooking(ctx, "bk-x")
+	err := svc.DeleteBooking(ctx, "bk-x", "b1")
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
@@ -525,11 +556,12 @@ func TestDeleteBooking_RepoError(t *testing.T) {
 	ctx := context.Background()
 
 	r := new(MockRepo)
+	r.On("GetBooking", ctx, "bk-1").Return(&model.Booking{ID: "bk-1", BarberID: "b1"}, nil)
 	r.On("DeleteBooking", ctx, "bk-1").Return(errors.New("db error"))
 
 	svc := newTestService(r, new(MockStaffClient))
 
-	err := svc.DeleteBooking(ctx, "bk-1")
+	err := svc.DeleteBooking(ctx, "bk-1", "b1")
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)

@@ -56,10 +56,10 @@ func (s *bookingServer) CreateBooking(ctx context.Context, req *pb.CreateBooking
 }
 
 func (s *bookingServer) GetBooking(ctx context.Context, req *pb.BookingIdRequest) (*pb.BookingResponse, error) {
-	if req.BookingId == "" {
-		return nil, status.Error(codes.InvalidArgument, "booking_id is required")
+	if req.BookingId == "" || req.BarberId == "" {
+		return nil, status.Error(codes.InvalidArgument, "booking_id and barber_id are required")
 	}
-	b, err := s.svc.GetBooking(ctx, req.BookingId)
+	b, err := s.svc.GetBooking(ctx, req.BookingId, req.BarberId)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
@@ -99,10 +99,10 @@ func (s *bookingServer) UpdateBookingStatus(ctx context.Context, req *pb.UpdateB
 }
 
 func (s *bookingServer) DeleteBooking(ctx context.Context, req *pb.BookingIdRequest) (*emptypb.Empty, error) {
-	if req.BookingId == "" {
-		return nil, status.Error(codes.InvalidArgument, "booking_id is required")
+	if req.BookingId == "" || req.BarberId == "" {
+		return nil, status.Error(codes.InvalidArgument, "booking_id and barber_id are required")
 	}
-	if err := s.svc.DeleteBooking(ctx, req.BookingId); err != nil {
+	if err := s.svc.DeleteBooking(ctx, req.BookingId, req.BarberId); err != nil {
 		return nil, toGRPCError(err)
 	}
 	return &emptypb.Empty{}, nil

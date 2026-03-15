@@ -337,13 +337,14 @@ func (h *StaffHandler) CreateBooking(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *StaffHandler) GetBooking(w http.ResponseWriter, r *http.Request) {
+	barberID := middleware.BarberIDFromCtx(r.Context())
 	bookingID := chi.URLParam(r, "booking_id")
 	if err := validateBookingID(bookingID); err != nil {
 		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid booking_id")
 		return
 	}
 
-	resp, err := h.booking.GetBooking(r.Context(), &bookingv1.BookingIdRequest{BookingId: bookingID})
+	resp, err := h.booking.GetBooking(r.Context(), &bookingv1.BookingIdRequest{BookingId: bookingID, BarberId: barberID})
 	if err != nil {
 		response.GrpcErrorToHttp(w, err)
 		return
@@ -426,13 +427,14 @@ func (h *StaffHandler) UpdateBookingStatus(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *StaffHandler) DeleteBooking(w http.ResponseWriter, r *http.Request) {
+	barberID := middleware.BarberIDFromCtx(r.Context())
 	bookingID := chi.URLParam(r, "booking_id")
 	if err := validateBookingID(bookingID); err != nil {
 		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid booking_id")
 		return
 	}
 
-	_, err := h.booking.DeleteBooking(r.Context(), &bookingv1.BookingIdRequest{BookingId: bookingID})
+	_, err := h.booking.DeleteBooking(r.Context(), &bookingv1.BookingIdRequest{BookingId: bookingID, BarberId: barberID})
 	if err != nil {
 		response.GrpcErrorToHttp(w, err)
 		return

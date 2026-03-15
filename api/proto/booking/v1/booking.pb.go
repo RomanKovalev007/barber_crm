@@ -337,6 +337,7 @@ func (x *UpdateBookingStatusRequest) GetStatus() BookingStatus {
 type BookingIdRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	BookingId     string                 `protobuf:"bytes,1,opt,name=booking_id,json=bookingId,proto3" json:"booking_id,omitempty"`
+	BarberId      string                 `protobuf:"bytes,2,opt,name=barber_id,json=barberId,proto3" json:"barber_id,omitempty"` // для проверки владения
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -374,6 +375,13 @@ func (*BookingIdRequest) Descriptor() ([]byte, []int) {
 func (x *BookingIdRequest) GetBookingId() string {
 	if x != nil {
 		return x.BookingId
+	}
+	return ""
+}
+
+func (x *BookingIdRequest) GetBarberId() string {
+	if x != nil {
+		return x.BarberId
 	}
 	return ""
 }
@@ -1059,10 +1067,11 @@ const file_booking_v1_booking_proto_rawDesc = "" +
 	"\n" +
 	"booking_id\x18\x01 \x01(\tR\tbookingId\x12\x1b\n" +
 	"\tbarber_id\x18\x02 \x01(\tR\bbarberId\x121\n" +
-	"\x06status\x18\x03 \x01(\x0e2\x19.booking.v1.BookingStatusR\x06status\"1\n" +
+	"\x06status\x18\x03 \x01(\x0e2\x19.booking.v1.BookingStatusR\x06status\"N\n" +
 	"\x10BookingIdRequest\x12\x1d\n" +
 	"\n" +
-	"booking_id\x18\x01 \x01(\tR\tbookingId\"\x86\x03\n" +
+	"booking_id\x18\x01 \x01(\tR\tbookingId\x12\x1b\n" +
+	"\tbarber_id\x18\x02 \x01(\tR\bbarberId\"\x86\x03\n" +
 	"\aBooking\x12\x1d\n" +
 	"\n" +
 	"booking_id\x18\x01 \x01(\tR\tbookingId\x12\x1b\n" +

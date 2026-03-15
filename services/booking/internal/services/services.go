@@ -43,10 +43,10 @@ const slotDuration = 60 * time.Minute
 
 type BookingIntr interface {
 	CreateBooking(ctx context.Context, b *model.Booking) (*model.Booking, error)
-	GetBooking(ctx context.Context, id string) (*model.Booking, error)
+	GetBooking(ctx context.Context, id, barberID string) (*model.Booking, error)
 	UpdateBookingDetails(ctx context.Context, bookingID, barberID, serviceID string, timeStart time.Time) (*model.Booking, error)
 	UpdateBookingStatus(ctx context.Context, bookingID, barberID, newStatus string) (*model.Booking, error)
-	DeleteBooking(ctx context.Context, id string) error
+	DeleteBooking(ctx context.Context, id, barberID string) error
 	GetSlots(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error)
 	GetFreeSlots(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error)
 }
@@ -118,7 +118,7 @@ func (s *bookingService) CreateBooking(ctx context.Context, b *model.Booking) (*
 	return b, nil
 }
 
-func (s *bookingService) GetBooking(ctx context.Context, id string) (*model.Booking, error) {
+func (s *bookingService) GetBooking(ctx context.Context, id, barberID string) (*model.Booking, error) {
 	b, err := s.repo.GetBooking(ctx, id)
 	if err != nil {
 		if errors.Is(err, repo.ErrNotFound) {
@@ -126,6 +126,10 @@ func (s *bookingService) GetBooking(ctx context.Context, id string) (*model.Book
 		}
 		s.log.Error("get booking: failed", "booking_id", id, "error", err)
 		return nil, apperr.Internal("failed to get booking")
+	}
+	if b.BarberID != barberID {
+		s.log.Warn("get booking: ownership mismatch", "booking_id", id, "barber_id", barberID)
+		return nil, apperr.NotFound("booking not found")
 	}
 	return b, nil
 }
@@ -226,7 +230,19 @@ func (s *bookingService) UpdateBookingStatus(ctx context.Context, bookingID, bar
 	return updated, nil
 }
 
-func (s *bookingService) DeleteBooking(ctx context.Context, id string) error {
+func (s *bookingService) DeleteBooking(ctx context.Context, id, barberID string) error {
+	existing, err := s.repo.GetBooking(ctx, id)
+	if err != nil {
+		if errors.Is(err, repo.ErrNotFound) {
+			return apperr.NotFound("booking not found")
+		}
+		s.log.Error("delete booking: failed to get booking", "booking_id", id, "error", err)
+		return apperr.Internal("failed to get booking")
+	}
+	if existing.BarberID != barberID {
+		s.log.Warn("delete booking: ownership mismatch", "booking_id", id, "barber_id", barberID)
+		return apperr.NotFound("booking not found")
+	}
 	if err := s.repo.DeleteBooking(ctx, id); err != nil {
 		if errors.Is(err, repo.ErrNotFound) {
 			return apperr.NotFound("booking not found")
@@ -234,7 +250,7 @@ func (s *bookingService) DeleteBooking(ctx context.Context, id string) error {
 		s.log.Error("delete booking: failed", "booking_id", id, "error", err)
 		return apperr.Internal("failed to delete booking")
 	}
-	s.log.Info("booking deleted", "booking_id", id)
+	s.log.Info("booking deleted", "booking_id", id, "barber_id", barberID)
 	return nil
 }
 
