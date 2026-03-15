@@ -2,6 +2,7 @@ package response
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 
 	"google.golang.org/grpc/codes"
@@ -11,34 +12,33 @@ import (
 func WriteJSON(w http.ResponseWriter, statusCode int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(v)
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		slog.Error("failed to encode response", "error", err)
+	}
 }
 
-type Error struct{
-	Code string `json:"code"`
+type Error struct {
+	Code    string `json:"code"`
 	Message string `json:"message"`
 }
 
-func ErrorJSON(w http.ResponseWriter, statusCode int, code, msg string){
+func ErrorJSON(w http.ResponseWriter, statusCode int, code, msg string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(
-		Error{
-			Code: code,
-			Message: msg,
-		},
-	)
+	if err := json.NewEncoder(w).Encode(Error{Code: code, Message: msg}); err != nil {
+		slog.Error("failed to encode error response", "error", err)
+	}
 }
 
 // clientFacingCodes — коды, сообщение которых безопасно отдавать клиенту:
 // они описывают ошибку запроса, а не внутреннее состояние сервиса.
 var clientFacingCodes = map[codes.Code]bool{
-	codes.InvalidArgument:   true,
-	codes.NotFound:          true,
-	codes.AlreadyExists:     true,
-	codes.PermissionDenied:  true,
-	codes.Unauthenticated:   true,
-	codes.ResourceExhausted: true,
+	codes.InvalidArgument:    true,
+	codes.NotFound:           true,
+	codes.AlreadyExists:      true,
+	codes.PermissionDenied:   true,
+	codes.Unauthenticated:    true,
+	codes.ResourceExhausted:  true,
 	codes.FailedPrecondition: true,
 }
 

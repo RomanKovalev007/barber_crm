@@ -26,7 +26,14 @@ func Logger(log *slog.Logger) func(http.Handler) http.Handler {
 
 			next.ServeHTTP(rec, r)
 
-			log.Info("request",
+			logFn := log.Info
+			if rec.status >= 500 {
+				logFn = log.Error
+			} else if rec.status >= 400 {
+				logFn = log.Warn
+			}
+
+			logFn("request",
 				"method", r.Method,
 				"path", r.URL.Path,
 				"status", rec.status,

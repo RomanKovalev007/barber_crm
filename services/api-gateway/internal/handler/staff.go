@@ -414,8 +414,7 @@ func (h *StaffHandler) UpdateBookingStatus(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	allowedStatuses := map[string]bool{"cancelled": true, "completed": true, "no_show": true}
-	if !allowedStatuses[req.Status] {
+	if !allowedBookingStatuses[req.Status] {
 		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "status must be one of: cancelled, completed, no_show")
 		return
 	}
@@ -579,4 +578,10 @@ var periodPresets = map[string]analyticsv1.PredefinedPeriod{
 	"week":  analyticsv1.PredefinedPeriod_PERIOD_WEEK,
 	"month": analyticsv1.PredefinedPeriod_PERIOD_MONTH,
 	"all":   analyticsv1.PredefinedPeriod_PERIOD_ALL,
+}
+
+var allowedBookingStatuses = map[string]bool{
+	"cancelled": true,
+	"completed": true,
+	"no_show":   true,
 }
