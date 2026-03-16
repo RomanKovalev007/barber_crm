@@ -1,5 +1,9 @@
 github.com/BurntSushi/toml v1.2.1 h1:9F2/+DoOYIOksmaJFPw1tGFy1eDnIJXg+UHjuD8lTak=
 github.com/BurntSushi/toml v1.2.1/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
+github.com/RomanKovalev007/barber_crm/api v0.0.9 h1:/PNZ26vOGyiLcFNvSwy1L8Ec8vQZsgI38Oi86djBNxY=
+github.com/RomanKovalev007/barber_crm/api v0.0.9/go.mod h1:KCyOEkDh3N7qN1c4qeD5/F7lzaAaWnNA0DsgH9jSCmw=
+github.com/RomanKovalev007/barber_crm/pkg v0.0.7 h1:4+U8b6TKdUrKcbOHMtCntPHBxUiJhYxAa/6UjyP55GY=
+github.com/RomanKovalev007/barber_crm/pkg v0.0.7/go.mod h1:j/T5a/hUHYK311hD97gcCcaigc8kw9bTZcsXQcw8h4o=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
