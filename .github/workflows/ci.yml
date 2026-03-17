@@ -43,7 +43,7 @@ jobs:
           go-version-file: services/${{ matrix.service }}/go.mod
           cache-dependency-path: services/${{ matrix.service }}/go.sum
 
-      - uses: golangci/golangci-lint-action@v6
+      - uses: golangci/golangci-lint-action@v7
         with:
           version: v2.11.3
           working-directory: services/${{ matrix.service }}
