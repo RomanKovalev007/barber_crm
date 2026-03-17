@@ -78,11 +78,14 @@ func main() {
 
 	// ── Router ────────────────────────────────────────────────────────────────
 
+	rateLimiter := middleware.NewRateLimiter(10, 30)
+
 	r := chi.NewRouter()
 	r.Use(chiMiddleware.Recoverer)
 	r.Use(chiMiddleware.RequestID)
 	r.Use(middleware.Logger(log))
 	r.Use(middleware.BodyLimit)
+	r.Use(rateLimiter.Middleware)
 	r.Use(middleware.Metrics)
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},
