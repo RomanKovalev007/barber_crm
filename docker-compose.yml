@@ -150,6 +150,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       KAFKA_BROKERS: kafka:9092
+      METRICS_PORT: ":9091"
     depends_on:
       staff-migrate:
         condition: service_completed_successfully
@@ -159,6 +160,7 @@ services:
         condition: service_healthy
     ports:
       - "50051:50051"
+      - "9091:9091"
 
   booking:
     build:
@@ -174,6 +176,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       KAFKA_BROKERS: kafka:9092
+      METRICS_PORT: ":9092"
     depends_on:
       booking-migrate:
         condition: service_completed_successfully
@@ -185,6 +188,7 @@ services:
         condition: service_healthy
     ports:
       - "50052:50051"
+      - "9092:9092"
 
   analytics:
     build:
@@ -195,6 +199,7 @@ services:
       CLICKHOUSE_DATABASE: analytics
       CLICKHOUSE_PASSWORD: clickhouse
       KAFKA_BROKERS: kafka:9092
+      METRICS_PORT: ":9093"
     depends_on:
       analytics-migrate:
         condition: service_completed_successfully
@@ -202,6 +207,7 @@ services:
         condition: service_healthy
     ports:
       - "50053:50051"
+      - "9093:9093"
 
   client:
     build:
@@ -213,6 +219,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       KAFKA_BROKERS: kafka:9092
+      METRICS_PORT: ":9094"
     depends_on:
       client-migrate:
         condition: service_completed_successfully
@@ -220,6 +227,7 @@ services:
         condition: service_healthy
     ports:
       - "50054:50051"
+      - "9094:9094"
 
   api-gateway:
     build:
@@ -239,7 +247,43 @@ services:
     ports:
       - "8080:8080"
 
+  # ─── Observability ────────────────────────────────────────────────────────
+
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    depends_on:
+      - api-gateway
+      - staff
+      - booking
+      - analytics
+      - client
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_PROVISIONING_PATH: /etc/grafana/provisioning
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
 volumes:
   postgres_data:
   kafka_data:
   clickhouse_data:
+  prometheus_data:
+  grafana_data:

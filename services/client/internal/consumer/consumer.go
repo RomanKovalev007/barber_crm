@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/segmentio/kafka-go"
 	"google.golang.org/protobuf/proto"
 
@@ -17,6 +18,18 @@ const (
 	retryBaseWait  = 500 * time.Millisecond
 	kafkaRetryWait = 5 * time.Second
 )
+
+var msgsProcessed = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "client_kafka_messages_processed_total",
+		Help: "Total Kafka booking events processed by client service",
+	},
+	[]string{"status"},
+)
+
+func init() {
+	prometheus.MustRegister(msgsProcessed)
+}
 
 type clientRepo interface {
 	UpsertByBooking(ctx context.Context, barberID, phone, name, bookingID string, lastVisit time.Time) error
@@ -78,6 +91,7 @@ func (c *Consumer) consume(ctx context.Context) {
 
 		// Обрабатываем только завершённые визиты
 		if event.Status != bookingpb.BookingStatus_BOOKING_STATUS_COMPLETED {
+			msgsProcessed.WithLabelValues("skipped").Inc()
 			c.commitOrLog(ctx, msg)
 			continue
 		}
@@ -92,7 +106,9 @@ func (c *Consumer) consume(ctx context.Context) {
 			)
 		}, event.BookingId)
 		if !ok {
-			// poison message — пропускаем, коммитим
+			msgsProcessed.WithLabelValues("error").Inc()
+		} else {
+			msgsProcessed.WithLabelValues("ok").Inc()
 		}
 		c.commitOrLog(ctx, msg)
 	}

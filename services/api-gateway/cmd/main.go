@@ -19,6 +19,7 @@ import (
 	"github.com/RomanKovalev007/barber_crm/pkg/logger"
 	"github.com/RomanKovalev007/barber_crm/services/api-gateway/internal/handler"
 	"github.com/RomanKovalev007/barber_crm/services/api-gateway/internal/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -82,6 +83,7 @@ func main() {
 	r.Use(chiMiddleware.RequestID)
 	r.Use(middleware.Logger(log))
 	r.Use(middleware.BodyLimit)
+	r.Use(middleware.Metrics)
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
@@ -89,6 +91,9 @@ func main() {
 		AllowCredentials: false,
 		MaxAge:           300,
 	}))
+
+	// Metrics — без аутентификации и таймаута
+	r.Handle("/metrics", promhttp.Handler())
 
 	// Health check — без таймаута и аутентификации
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {

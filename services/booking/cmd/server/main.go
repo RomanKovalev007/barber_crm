@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"runtime/debug"
@@ -20,6 +21,8 @@ import (
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/repo"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/services"
 	"github.com/RomanKovalev007/barber_crm/services/booking/internal/staffclient"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health"
@@ -69,7 +72,7 @@ func main() {
 	bookingService := services.New(bookingRepo, redisClient, ttl, cfg.JWTSecret, log, staffClient, producer)
 	srv := bookingrpc.NewServer(bookingService)
 
-	recoveryInterceptor := grpc.UnaryInterceptor(func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+	recoveryFn := func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		defer func() {
 			if r := recover(); r != nil {
 				log.Error("panic recovered", "method", info.FullMethod, "panic", r, "stack", string(debug.Stack()))
@@ -77,19 +80,38 @@ func main() {
 			}
 		}()
 		return handler(ctx, req)
-	})
+	}
 
-	grpcServer := grpc.NewServer(recoveryInterceptor)
+	grpc_prometheus.EnableHandlingTimeHistogram()
+
+	grpcServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(grpc_prometheus.UnaryServerInterceptor, recoveryFn),
+	)
 	pb.RegisterBookingServiceServer(grpcServer, srv)
 	healthSrv := health.NewServer()
 	grpc_health_v1.RegisterHealthServer(grpcServer, healthSrv)
 	healthSrv.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
+
+	grpc_prometheus.Register(grpcServer)
 
 	lis, err := net.Listen("tcp", cfg.GRPCPort)
 	if err != nil {
 		log.Error("failed to listen", "error", err)
 		os.Exit(1)
 	}
+
+	metricsPort := os.Getenv("METRICS_PORT")
+	if metricsPort == "" {
+		metricsPort = ":9092"
+	}
+	go func() {
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", promhttp.Handler())
+		log.Info("metrics server started", "port", metricsPort)
+		if err := http.ListenAndServe(metricsPort, mux); err != nil {
+			log.Error("metrics server failed", "error", err)
+		}
+	}()
 
 	go func() {
 		log.Info("booking service started", slog.String("port", cfg.GRPCPort))

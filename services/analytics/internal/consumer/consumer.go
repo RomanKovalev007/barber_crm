@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/segmentio/kafka-go"
 	"google.golang.org/protobuf/proto"
 
@@ -15,10 +16,22 @@ import (
 )
 
 const (
-	maxRetries      = 5
-	retryBaseWait   = 500 * time.Millisecond
-	kafkaRetryWait  = 5 * time.Second
+	maxRetries     = 5
+	retryBaseWait  = 500 * time.Millisecond
+	kafkaRetryWait = 5 * time.Second
 )
+
+var msgsProcessed = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "analytics_kafka_messages_processed_total",
+		Help: "Total Kafka events processed by analytics service",
+	},
+	[]string{"status"},
+)
+
+func init() {
+	prometheus.MustRegister(msgsProcessed)
+}
 
 type analyticsRepo interface {
 	InsertBooking(ctx context.Context, b *model.Booking) error
@@ -90,9 +103,11 @@ func (c *Consumer) consumeBookings(ctx context.Context) {
 		b := bookingEventToModel(&event)
 
 		if !c.retryInsert(ctx, func() error { return c.repo.InsertBooking(ctx, b) }, "booking", b.BookingID) {
+			msgsProcessed.WithLabelValues("error").Inc()
 			continue
 		}
 
+		msgsProcessed.WithLabelValues("ok").Inc()
 		c.commitOrLog(ctx, c.bookingReader, msg, "booking")
 	}
 }
@@ -124,9 +139,11 @@ func (c *Consumer) consumeSchedule(ctx context.Context) {
 		s := scheduleEventToModel(&event)
 
 		if !c.retryInsert(ctx, func() error { return c.repo.InsertSchedule(ctx, s) }, "schedule", s.ScheduleID) {
+			msgsProcessed.WithLabelValues("error").Inc()
 			continue
 		}
 
+		msgsProcessed.WithLabelValues("ok").Inc()
 		c.commitOrLog(ctx, c.scheduleReader, msg, "schedule")
 	}
 }

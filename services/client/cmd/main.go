@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"runtime/debug"
@@ -25,6 +26,8 @@ import (
 	clientgrpc "github.com/RomanKovalev007/barber_crm/services/client/internal/grpc"
 	"github.com/RomanKovalev007/barber_crm/services/client/internal/repository"
 	"github.com/RomanKovalev007/barber_crm/services/client/internal/service"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -53,7 +56,7 @@ func main() {
 	srv := clientgrpc.NewServer(svc)
 
 	// ── gRPC ─────────────────────────────────────────────────────────────────
-	recoveryInterceptor := grpc.UnaryInterceptor(func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+	recoveryFn := func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		defer func() {
 			if r := recover(); r != nil {
 				log.Error("panic recovered", "method", info.FullMethod, "panic", r, "stack", string(debug.Stack()))
@@ -61,19 +64,38 @@ func main() {
 			}
 		}()
 		return handler(ctx, req)
-	})
+	}
 
-	grpcServer := grpc.NewServer(recoveryInterceptor)
+	grpc_prometheus.EnableHandlingTimeHistogram()
+
+	grpcServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(grpc_prometheus.UnaryServerInterceptor, recoveryFn),
+	)
 	pb.RegisterClientServiceServer(grpcServer, srv)
 	healthSrv := health.NewServer()
 	grpc_health_v1.RegisterHealthServer(grpcServer, healthSrv)
 	healthSrv.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
+
+	grpc_prometheus.Register(grpcServer)
 
 	lis, err := net.Listen("tcp", cfg.GRPCPort)
 	if err != nil {
 		log.Error("failed to listen", "error", err)
 		os.Exit(1)
 	}
+
+	metricsPort := os.Getenv("METRICS_PORT")
+	if metricsPort == "" {
+		metricsPort = ":9094"
+	}
+	go func() {
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", promhttp.Handler())
+		log.Info("metrics server started", "port", metricsPort)
+		if err := http.ListenAndServe(metricsPort, mux); err != nil {
+			log.Error("metrics server failed", "error", err)
+		}
+	}()
 
 	go func() {
 		log.Info("client service started", slog.String("port", cfg.GRPCPort))
