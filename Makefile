@@ -14,13 +14,13 @@ proto:
 test:
 	@for svc in $(SERVICES); do \
 		echo "==> testing $$svc"; \
-		cd services/$$svc && go test ./... -race -count=1 && cd ../..; \
+		(cd services/$$svc && go test ./... -race -count=1) || exit 1; \
 	done
 
 lint:
 	@for svc in $(SERVICES); do \
 		echo "==> linting $$svc"; \
-		cd services/$$svc && golangci-lint run ./... && cd ../..; \
+		(cd services/$$svc && golangci-lint run ./...) || exit 1; \
 	done
 
 build:

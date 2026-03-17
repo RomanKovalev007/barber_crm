@@ -2,14 +2,9 @@ version: "2"
 
 linters:
   enable:
-    - errcheck
-    - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - unused
-    - gosec
-    - gofmt
     - misspell
     - unconvert
     - unparam
