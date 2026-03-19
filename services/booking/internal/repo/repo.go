@@ -205,6 +205,31 @@ func (r *BookingRepo) DeleteBooking(ctx context.Context, id string) error {
 	return nil
 }
 
+func (r *BookingRepo) GetCompactSlotsEnabled(ctx context.Context, barberID string) (bool, error) {
+	var enabled bool
+	err := r.pool.QueryRow(ctx,
+		`SELECT compact_slots_enabled FROM barber_settings WHERE barber_id=$1`, barberID,
+	).Scan(&enabled)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, nil // настройка не задана → режим выключен по умолчанию
+		}
+		return false, err
+	}
+	return enabled, nil
+}
+
+func (r *BookingRepo) SetCompactSlotsEnabled(ctx context.Context, barberID string, enabled bool) error {
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO barber_settings (barber_id, compact_slots_enabled, updated_at)
+		VALUES ($1, $2, NOW())
+		ON CONFLICT (barber_id) DO UPDATE
+		SET compact_slots_enabled=$2, updated_at=NOW()`,
+		barberID, enabled,
+	)
+	return err
+}
+
 func (r *BookingRepo) GetBookingsByBarberAndDate(ctx context.Context, barberID string, date time.Time) ([]model.Booking, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT id, client_name, client_phone, barber_id, service_id, service_name, price,

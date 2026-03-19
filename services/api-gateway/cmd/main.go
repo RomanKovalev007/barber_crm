@@ -150,6 +150,9 @@ func main() {
 				r.Get("/clients", staffHandler.ListClients)
 				r.Get("/clients/{client_id}", staffHandler.GetClient)
 				r.Put("/clients/{client_id}", staffHandler.UpdateClient)
+
+				r.Get("/booking-settings", staffHandler.GetBookingSettings)
+				r.Patch("/booking-settings/compact-slots", staffHandler.SetCompactSlots)
 			})
 
 			// Аналитика — 30s (тяжёлые запросы к ClickHouse)

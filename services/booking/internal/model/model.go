@@ -60,3 +60,8 @@ type SlotsResult struct {
 	Date     string // YYYY-MM-DD
 	Slots    []Slot
 }
+
+type BarberSettings struct {
+	BarberID            string
+	CompactSlotsEnabled bool
+}

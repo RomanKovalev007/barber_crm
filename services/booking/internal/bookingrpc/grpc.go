@@ -153,6 +153,34 @@ func (s *bookingServer) GetFreeSlots(ctx context.Context, req *pb.FreeSlotsReque
 	return toFreeSlotsProto(result), nil
 }
 
+func (s *bookingServer) GetBarberSettings(ctx context.Context, req *pb.BarberSettingsRequest) (*pb.BarberSettingsResponse, error) {
+	if req.BarberId == "" {
+		return nil, status.Error(codes.InvalidArgument, "barber_id is required")
+	}
+	settings, err := s.svc.GetBarberSettings(ctx, req.BarberId)
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+	return &pb.BarberSettingsResponse{
+		BarberId:            settings.BarberID,
+		CompactSlotsEnabled: settings.CompactSlotsEnabled,
+	}, nil
+}
+
+func (s *bookingServer) SetCompactSlots(ctx context.Context, req *pb.SetCompactSlotsRequest) (*pb.BarberSettingsResponse, error) {
+	if req.BarberId == "" {
+		return nil, status.Error(codes.InvalidArgument, "barber_id is required")
+	}
+	settings, err := s.svc.SetCompactSlots(ctx, req.BarberId, req.Enabled)
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+	return &pb.BarberSettingsResponse{
+		BarberId:            settings.BarberID,
+		CompactSlotsEnabled: settings.CompactSlotsEnabled,
+	}, nil
+}
+
 // helpers
 
 func toProto(b *model.Booking) *pb.Booking {

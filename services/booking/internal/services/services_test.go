@@ -45,6 +45,13 @@ func (m *MockRepo) GetBookingsByBarberAndDate(ctx context.Context, barberID stri
 	args := m.Called(ctx, barberID, date)
 	return args.Get(0).([]model.Booking), args.Error(1)
 }
+func (m *MockRepo) GetCompactSlotsEnabled(ctx context.Context, barberID string) (bool, error) {
+	args := m.Called(ctx, barberID)
+	return args.Bool(0), args.Error(1)
+}
+func (m *MockRepo) SetCompactSlotsEnabled(ctx context.Context, barberID string, enabled bool) error {
+	return m.Called(ctx, barberID, enabled).Error(0)
+}
 
 type MockStaffClient struct {
 	mock.Mock
@@ -609,9 +616,11 @@ func TestGetSlots_Success(t *testing.T) {
 	result, err := svc.GetSlots(ctx, "b1", date)
 
 	require.NoError(t, err)
-	assert.Len(t, result.Slots, 2) // 09:00-10:00, 10:00-11:00
+	assert.Len(t, result.Slots, 8) // 09:00..11:00 по 15 мин = 8 слотов
 	assert.Equal(t, model.SlotFree, result.Slots[0].Status)
 	assert.Nil(t, result.Slots[0].Booking)
+	assert.Equal(t, time.Date(2026, 3, 16, 9, 0, 0, 0, time.UTC), result.Slots[0].TimeStart)
+	assert.Equal(t, time.Date(2026, 3, 16, 9, 15, 0, 0, time.UTC), result.Slots[0].TimeEnd)
 }
 
 func TestGetSlots_WithBookedSlot(t *testing.T) {
@@ -647,12 +656,15 @@ func TestGetSlots_WithBookedSlot(t *testing.T) {
 
 	result, err := svc.GetSlots(ctx, "b1", date)
 
+	// 09:00..11:00 по 15 мин = 8 слотов; бронь 09:00-10:00 занимает первые 4
 	require.NoError(t, err)
-	require.Len(t, result.Slots, 2)
+	require.Len(t, result.Slots, 8)
 	assert.Equal(t, model.SlotBooked, result.Slots[0].Status)
 	require.NotNil(t, result.Slots[0].Booking)
 	assert.Equal(t, "bk-1", result.Slots[0].Booking.BookingID)
-	assert.Equal(t, model.SlotFree, result.Slots[1].Status)
+	assert.Equal(t, model.SlotBooked, result.Slots[3].Status)
+	assert.Equal(t, model.SlotFree, result.Slots[4].Status)
+	assert.Nil(t, result.Slots[4].Booking)
 }
 
 func TestGetSlots_GetScheduleError(t *testing.T) {
@@ -711,6 +723,7 @@ func TestGetFreeSlots_ReturnsOnlyFreeSlots(t *testing.T) {
 	}, nil)
 
 	r := new(MockRepo)
+	r.On("GetCompactSlotsEnabled", ctx, "b1").Return(false, nil)
 	r.On("GetBookingsByBarberAndDate", ctx, "b1", dateTrunc).Return([]model.Booking{booking}, nil)
 
 	svc := newTestService(r, sc)

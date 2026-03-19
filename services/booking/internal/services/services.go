@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sort"
 	"strings"
 	"time"
 
@@ -27,6 +28,8 @@ type bookingRepo interface {
 	UpdateBookingStatus(ctx context.Context, id, status string) error
 	DeleteBooking(ctx context.Context, id string) error
 	GetBookingsByBarberAndDate(ctx context.Context, barberID string, date time.Time) ([]model.Booking, error)
+	GetCompactSlotsEnabled(ctx context.Context, barberID string) (bool, error)
+	SetCompactSlotsEnabled(ctx context.Context, barberID string, enabled bool) error
 }
 
 type staffClientIntr interface {
@@ -39,7 +42,10 @@ type eventProducer interface {
 	Publish(ctx context.Context, key string, msg proto.Message) error
 }
 
-const slotDuration = 60 * time.Minute
+const (
+	slotDuration   = 60 * time.Minute
+	barberSlotStep = 15 * time.Minute
+)
 
 type BookingIntr interface {
 	CreateBooking(ctx context.Context, b *model.Booking) (*model.Booking, error)
@@ -49,6 +55,8 @@ type BookingIntr interface {
 	DeleteBooking(ctx context.Context, id, barberID string) error
 	GetSlots(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error)
 	GetFreeSlots(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error)
+	GetBarberSettings(ctx context.Context, barberID string) (*model.BarberSettings, error)
+	SetCompactSlots(ctx context.Context, barberID string, enabled bool) (*model.BarberSettings, error)
 }
 
 type bookingService struct {
@@ -255,14 +263,40 @@ func (s *bookingService) DeleteBooking(ctx context.Context, id, barberID string)
 }
 
 func (s *bookingService) GetSlots(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error) {
-	return s.buildSlots(ctx, barberID, date, false)
+	return s.buildSlots(ctx, barberID, date, false, barberSlotStep)
 }
 
 func (s *bookingService) GetFreeSlots(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error) {
-	return s.buildSlots(ctx, barberID, date, true)
+	enabled, err := s.repo.GetCompactSlotsEnabled(ctx, barberID)
+	if err != nil {
+		s.log.Error("get free slots: failed to get barber settings", "barber_id", barberID, "error", err)
+		return nil, apperr.Internal("failed to get barber settings")
+	}
+	if enabled {
+		return s.buildCompactSlots(ctx, barberID, date)
+	}
+	return s.buildSlots(ctx, barberID, date, true, slotDuration)
 }
 
-func (s *bookingService) buildSlots(ctx context.Context, barberID string, date time.Time, onlyFree bool) (*model.SlotsResult, error) {
+func (s *bookingService) GetBarberSettings(ctx context.Context, barberID string) (*model.BarberSettings, error) {
+	enabled, err := s.repo.GetCompactSlotsEnabled(ctx, barberID)
+	if err != nil {
+		s.log.Error("get barber settings: failed", "barber_id", barberID, "error", err)
+		return nil, apperr.Internal("failed to get barber settings")
+	}
+	return &model.BarberSettings{BarberID: barberID, CompactSlotsEnabled: enabled}, nil
+}
+
+func (s *bookingService) SetCompactSlots(ctx context.Context, barberID string, enabled bool) (*model.BarberSettings, error) {
+	if err := s.repo.SetCompactSlotsEnabled(ctx, barberID, enabled); err != nil {
+		s.log.Error("set compact slots: failed", "barber_id", barberID, "error", err)
+		return nil, apperr.Internal("failed to update barber settings")
+	}
+	s.log.Info("compact slots setting updated", "barber_id", barberID, "enabled", enabled)
+	return &model.BarberSettings{BarberID: barberID, CompactSlotsEnabled: enabled}, nil
+}
+
+func (s *bookingService) buildSlots(ctx context.Context, barberID string, date time.Time, onlyFree bool, step time.Duration) (*model.SlotsResult, error) {
 	year, week := date.ISOWeek()
 	isoWeek := fmt.Sprintf("%d-W%02d", year, week)
 
@@ -304,7 +338,7 @@ func (s *bookingService) buildSlots(ctx context.Context, barberID string, date t
 	var slots []model.Slot
 	t := workStart
 	for t.Before(workEnd) {
-		slotEnd := t.Add(slotDuration)
+		slotEnd := t.Add(step)
 
 		status := model.SlotFree
 		var slotBooking *model.SlotBooking
@@ -338,6 +372,108 @@ func (s *bookingService) buildSlots(ctx context.Context, barberID string, date t
 		Date:     dateStr,
 		Slots:    slots,
 	}, nil
+}
+
+// buildCompactSlots строит слоты для клиента в режиме "компактной сетки":
+// - если броней нет → полная сетка по 60 минут в рабочем окне
+// - если брони есть → только слоты, примыкающие к существующим (±60 мин от каждой брони),
+//   в пределах рабочего окна и без пересечений с уже занятыми слотами.
+func (s *bookingService) buildCompactSlots(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error) {
+	year, week := date.ISOWeek()
+	isoWeek := fmt.Sprintf("%d-W%02d", year, week)
+
+	schedResp, err := s.staffClient.GetSchedule(ctx, barberID, isoWeek)
+	if err != nil {
+		s.log.Error("build compact slots: failed to get schedule", "barber_id", barberID, "week", isoWeek, "error", err)
+		return nil, apperr.Internal("failed to get schedule")
+	}
+
+	dateStr := date.Format("2006-01-02")
+	var workStart, workEnd time.Time
+	hasWork := false
+	for _, day := range schedResp.Days {
+		if day.Date == dateStr {
+			workStart, err = parseTimeOnDate(date, day.StartTime)
+			if err != nil {
+				return nil, apperr.Internal("failed to parse schedule start_time")
+			}
+			workEnd, err = parseTimeOnDate(date, day.EndTime)
+			if err != nil {
+				return nil, apperr.Internal("failed to parse schedule end_time")
+			}
+			hasWork = true
+			break
+		}
+	}
+
+	if !hasWork {
+		s.log.Info("build compact slots: no working day found", "barber_id", barberID, "date", dateStr)
+		return &model.SlotsResult{BarberID: barberID, Date: dateStr}, nil
+	}
+
+	bookings, err := s.repo.GetBookingsByBarberAndDate(ctx, barberID, date.UTC().Truncate(24*time.Hour))
+	if err != nil {
+		s.log.Error("build compact slots: failed to get bookings", "barber_id", barberID, "date", dateStr, "error", err)
+		return nil, apperr.Internal("failed to get bookings")
+	}
+
+	// Нет броней → полная сетка.
+	if len(bookings) == 0 {
+		var slots []model.Slot
+		for t := workStart; t.Before(workEnd); t = t.Add(slotDuration) {
+			slots = append(slots, model.Slot{
+				Status:    model.SlotFree,
+				TimeStart: t,
+				TimeEnd:   t.Add(slotDuration),
+			})
+		}
+		return &model.SlotsResult{BarberID: barberID, Date: dateStr, Slots: slots}, nil
+	}
+
+	// Есть брони → собираем кандидатов: B.Start ± slotDuration для каждой брони.
+	seen := make(map[time.Time]bool)
+	var candidates []time.Time
+	for _, b := range bookings {
+		for _, candidate := range []time.Time{
+			b.TimeStart.Add(-slotDuration),
+			b.TimeStart.Add(slotDuration),
+		} {
+			if seen[candidate] {
+				continue
+			}
+			seen[candidate] = true
+
+			slotEnd := candidate.Add(slotDuration)
+			// Вне рабочего окна?
+			if candidate.Before(workStart) || slotEnd.After(workEnd) {
+				continue
+			}
+			// Пересекается с существующей бронью?
+			conflict := false
+			for _, bk := range bookings {
+				if candidate.Before(bk.TimeEnd) && slotEnd.After(bk.TimeStart) {
+					conflict = true
+					break
+				}
+			}
+			if !conflict {
+				candidates = append(candidates, candidate)
+			}
+		}
+	}
+
+	sort.Slice(candidates, func(i, j int) bool { return candidates[i].Before(candidates[j]) })
+
+	slots := make([]model.Slot, 0, len(candidates))
+	for _, t := range candidates {
+		slots = append(slots, model.Slot{
+			Status:    model.SlotFree,
+			TimeStart: t,
+			TimeEnd:   t.Add(slotDuration),
+		})
+	}
+
+	return &model.SlotsResult{BarberID: barberID, Date: dateStr, Slots: slots}, nil
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────

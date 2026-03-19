@@ -513,6 +513,48 @@ func (h *StaffHandler) UpdateClient(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, clientToModel(resp.Client))
 }
 
+// ─── Booking Settings ─────────────────────────────────────────────────────────
+
+func (h *StaffHandler) GetBookingSettings(w http.ResponseWriter, r *http.Request) {
+	barberID := middleware.BarberIDFromCtx(r.Context())
+
+	resp, err := h.booking.GetBarberSettings(r.Context(), &bookingv1.BarberSettingsRequest{
+		BarberId: barberID,
+	})
+	if err != nil {
+		response.GrpcErrorToHttp(w, err)
+		return
+	}
+
+	response.WriteJSON(w, http.StatusOK, map[string]any{
+		"compact_slots_enabled": resp.CompactSlotsEnabled,
+	})
+}
+
+func (h *StaffHandler) SetCompactSlots(w http.ResponseWriter, r *http.Request) {
+	barberID := middleware.BarberIDFromCtx(r.Context())
+
+	var req struct {
+		Enabled bool `json:"enabled"`
+	}
+	if !decodeBody(w, r, &req) {
+		return
+	}
+
+	resp, err := h.booking.SetCompactSlots(r.Context(), &bookingv1.SetCompactSlotsRequest{
+		BarberId: barberID,
+		Enabled:  req.Enabled,
+	})
+	if err != nil {
+		response.GrpcErrorToHttp(w, err)
+		return
+	}
+
+	response.WriteJSON(w, http.StatusOK, map[string]any{
+		"compact_slots_enabled": resp.CompactSlotsEnabled,
+	})
+}
+
 // ─── Analytics ────────────────────────────────────────────────────────────────
 
 func (h *StaffHandler) GetAnalytics(w http.ResponseWriter, r *http.Request) {
