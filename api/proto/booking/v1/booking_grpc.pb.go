@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.0
 // - protoc             v3.21.12
-// source: booking/v1/booking.proto
+// source: booking.proto
 
 package bookingv1
 
@@ -27,6 +27,8 @@ const (
 	BookingService_DeleteBooking_FullMethodName       = "/booking.v1.BookingService/DeleteBooking"
 	BookingService_GetSlots_FullMethodName            = "/booking.v1.BookingService/GetSlots"
 	BookingService_GetFreeSlots_FullMethodName        = "/booking.v1.BookingService/GetFreeSlots"
+	BookingService_GetBarberSettings_FullMethodName   = "/booking.v1.BookingService/GetBarberSettings"
+	BookingService_SetCompactSlots_FullMethodName     = "/booking.v1.BookingService/SetCompactSlots"
 )
 
 // BookingServiceClient is the client API for BookingService service.
@@ -40,6 +42,8 @@ type BookingServiceClient interface {
 	DeleteBooking(ctx context.Context, in *BookingIdRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetSlots(ctx context.Context, in *SlotsRequest, opts ...grpc.CallOption) (*SlotsResponse, error)
 	GetFreeSlots(ctx context.Context, in *FreeSlotsRequest, opts ...grpc.CallOption) (*FreeSlotsResponse, error)
+	GetBarberSettings(ctx context.Context, in *BarberSettingsRequest, opts ...grpc.CallOption) (*BarberSettingsResponse, error)
+	SetCompactSlots(ctx context.Context, in *SetCompactSlotsRequest, opts ...grpc.CallOption) (*BarberSettingsResponse, error)
 }
 
 type bookingServiceClient struct {
@@ -120,6 +124,26 @@ func (c *bookingServiceClient) GetFreeSlots(ctx context.Context, in *FreeSlotsRe
 	return out, nil
 }
 
+func (c *bookingServiceClient) GetBarberSettings(ctx context.Context, in *BarberSettingsRequest, opts ...grpc.CallOption) (*BarberSettingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BarberSettingsResponse)
+	err := c.cc.Invoke(ctx, BookingService_GetBarberSettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bookingServiceClient) SetCompactSlots(ctx context.Context, in *SetCompactSlotsRequest, opts ...grpc.CallOption) (*BarberSettingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BarberSettingsResponse)
+	err := c.cc.Invoke(ctx, BookingService_SetCompactSlots_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BookingServiceServer is the server API for BookingService service.
 // All implementations must embed UnimplementedBookingServiceServer
 // for forward compatibility.
@@ -131,6 +155,8 @@ type BookingServiceServer interface {
 	DeleteBooking(context.Context, *BookingIdRequest) (*emptypb.Empty, error)
 	GetSlots(context.Context, *SlotsRequest) (*SlotsResponse, error)
 	GetFreeSlots(context.Context, *FreeSlotsRequest) (*FreeSlotsResponse, error)
+	GetBarberSettings(context.Context, *BarberSettingsRequest) (*BarberSettingsResponse, error)
+	SetCompactSlots(context.Context, *SetCompactSlotsRequest) (*BarberSettingsResponse, error)
 	mustEmbedUnimplementedBookingServiceServer()
 }
 
@@ -161,6 +187,12 @@ func (UnimplementedBookingServiceServer) GetSlots(context.Context, *SlotsRequest
 }
 func (UnimplementedBookingServiceServer) GetFreeSlots(context.Context, *FreeSlotsRequest) (*FreeSlotsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetFreeSlots not implemented")
+}
+func (UnimplementedBookingServiceServer) GetBarberSettings(context.Context, *BarberSettingsRequest) (*BarberSettingsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetBarberSettings not implemented")
+}
+func (UnimplementedBookingServiceServer) SetCompactSlots(context.Context, *SetCompactSlotsRequest) (*BarberSettingsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetCompactSlots not implemented")
 }
 func (UnimplementedBookingServiceServer) mustEmbedUnimplementedBookingServiceServer() {}
 func (UnimplementedBookingServiceServer) testEmbeddedByValue()                        {}
@@ -309,6 +341,42 @@ func _BookingService_GetFreeSlots_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BookingService_GetBarberSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BarberSettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BookingServiceServer).GetBarberSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BookingService_GetBarberSettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BookingServiceServer).GetBarberSettings(ctx, req.(*BarberSettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BookingService_SetCompactSlots_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetCompactSlotsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BookingServiceServer).SetCompactSlots(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BookingService_SetCompactSlots_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BookingServiceServer).SetCompactSlots(ctx, req.(*SetCompactSlotsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BookingService_ServiceDesc is the grpc.ServiceDesc for BookingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -344,7 +412,15 @@ var BookingService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "GetFreeSlots",
 			Handler:    _BookingService_GetFreeSlots_Handler,
 		},
+		{
+			MethodName: "GetBarberSettings",
+			Handler:    _BookingService_GetBarberSettings_Handler,
+		},
+		{
+			MethodName: "SetCompactSlots",
+			Handler:    _BookingService_SetCompactSlots_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "booking/v1/booking.proto",
+	Metadata: "booking.proto",
 }

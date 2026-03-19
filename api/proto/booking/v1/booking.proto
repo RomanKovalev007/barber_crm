@@ -15,6 +15,8 @@ service BookingService {
   rpc DeleteBooking(BookingIdRequest) returns (google.protobuf.Empty);
   rpc GetSlots(SlotsRequest) returns (SlotsResponse);
   rpc GetFreeSlots(FreeSlotsRequest) returns (FreeSlotsResponse);
+  rpc GetBarberSettings(BarberSettingsRequest) returns (BarberSettingsResponse);
+  rpc SetCompactSlots(SetCompactSlotsRequest) returns (BarberSettingsResponse);
 }
 
 // ─── Booking ─────────────────────────────────────────────────────────────────
@@ -112,6 +114,22 @@ message Slot {
   google.protobuf.Timestamp time_start = 2;
   google.protobuf.Timestamp time_end   = 3;
   SlotBooking               booking    = 4; // заполнено только если status = BOOKED
+}
+
+// ─── Barber Settings ──────────────────────────────────────────────────────────
+
+message BarberSettingsRequest {
+  string barber_id = 1;
+}
+
+message BarberSettingsResponse {
+  string barber_id             = 1;
+  bool   compact_slots_enabled = 2;
+}
+
+message SetCompactSlotsRequest {
+  string barber_id = 1;
+  bool   enabled   = 2;
 }
 
 // ─── Kafka Events ─────────────────────────────────────────────────────────────
