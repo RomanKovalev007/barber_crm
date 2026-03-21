@@ -39,6 +39,7 @@ type staffRepo interface {
 	DeleteSchedule(ctx context.Context, barberID, date string) (string, error)
 	GetSchedule(ctx context.Context, barberID string, week string) ([]model.ScheduleDay, error)
 
+	GetService(ctx context.Context, id, barberID string) (*model.Service, error)
 	CreateService(ctx context.Context, s *model.Service) error
 	UpdateService(ctx context.Context, s *model.Service) error
 	DeleteService(ctx context.Context, id string, barberID string) error
@@ -176,6 +177,18 @@ func (s *Service) ListBarbers(ctx context.Context, limit, offset int) ([]model.B
 }
 
 // services
+
+func (s *Service) GetService(ctx context.Context, id, barberID string) (*model.Service, error) {
+	svc, err := s.repo.GetService(ctx, id, barberID)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, apperr.NotFound("service not found")
+		}
+		s.logger.Error("get service: failed", "service_id", id, "barber_id", barberID, "error", err)
+		return nil, apperr.Internal("failed to get service")
+	}
+	return svc, nil
+}
 
 func (s *Service) CreateService(ctx context.Context, svc *model.Service) error {
 	if svc.BarberID == "" {

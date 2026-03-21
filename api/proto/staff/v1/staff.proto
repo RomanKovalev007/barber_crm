@@ -23,6 +23,7 @@ service StaffService {
   rpc DeleteSchedule(DeleteScheduleRequest) returns (google.protobuf.Empty);
 
   // Services
+  rpc GetService(GetServiceRequest) returns (ServiceResponse);
   rpc ListServices(ListServicesRequest) returns (ListServicesResponse);
   rpc CreateService(CreateServiceRequest) returns (ServiceResponse);
   rpc UpdateService(UpdateServiceRequest) returns (ServiceResponse);
@@ -129,6 +130,11 @@ message DeleteScheduleRequest {
 }
 
 // ─── Services ───────────────────────────────────────────────────────────────
+
+message GetServiceRequest {
+  string service_id = 1;
+  string barber_id  = 2;
+}
 
 message ListServicesRequest {
   string barber_id        = 1;

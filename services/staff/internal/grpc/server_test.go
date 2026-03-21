@@ -52,6 +52,10 @@ func (m *mockStaffSvc) GetSchedule(ctx context.Context, barberID, week string) (
 	args := m.Called(ctx, barberID, week)
 	return args.Get(0).([]model.ScheduleDay), args.Error(1)
 }
+func (m *mockStaffSvc) GetService(ctx context.Context, id, barberID string) (*model.Service, error) {
+	args := m.Called(ctx, id, barberID)
+	return args.Get(0).(*model.Service), args.Error(1)
+}
 func (m *mockStaffSvc) ListServices(ctx context.Context, barberID string, includeInactive bool, limit, offset int) ([]model.Service, int, error) {
 	args := m.Called(ctx, barberID, includeInactive, limit, offset)
 	return args.Get(0).([]model.Service), args.Int(1), args.Error(2)

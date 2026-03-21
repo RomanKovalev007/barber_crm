@@ -39,6 +39,13 @@ func (c *Client) GetSchedule(ctx context.Context, barberID, week string) (*staff
 	})
 }
 
+func (c *Client) GetService(ctx context.Context, serviceID, barberID string) (*staffv1.ServiceResponse, error) {
+	return c.client.GetService(ctx, &staffv1.GetServiceRequest{
+		ServiceId: serviceID,
+		BarberId:  barberID,
+	})
+}
+
 func (c *Client) ListServices(ctx context.Context, barberID string, includeInactive bool) (*staffv1.ListServicesResponse, error) {
 	return c.client.ListServices(ctx, &staffv1.ListServicesRequest{
 		BarberId:        barberID,

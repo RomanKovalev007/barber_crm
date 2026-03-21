@@ -25,6 +25,7 @@ type staffService interface {
 	DeleteSchedule(ctx context.Context, barberID, date string) error
 	GetSchedule(ctx context.Context, barberID string, week string) ([]model.ScheduleDay, error)
 
+	GetService(ctx context.Context, id, barberID string) (*model.Service, error)
 	ListServices(ctx context.Context, barberID string, includeInactive bool, limit, offset int) ([]model.Service, int, error)
 	CreateService(ctx context.Context, svc *model.Service) error
 	DeleteService(ctx context.Context, id string, barberID string) error
@@ -159,6 +160,17 @@ func (s *Server) DeleteSchedule(ctx context.Context, req *pb.DeleteScheduleReque
 }
 
 // services
+
+func (s *Server) GetService(ctx context.Context, req *pb.GetServiceRequest) (*pb.ServiceResponse, error) {
+	if req.ServiceId == "" || req.BarberId == "" {
+		return nil, status.Error(codes.InvalidArgument, "service_id and barber_id are required")
+	}
+	svc, err := s.svc.GetService(ctx, req.ServiceId, req.BarberId)
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+	return serviceToProto(svc), nil
+}
 
 func (s *Server) ListServices(ctx context.Context, req *pb.ListServicesRequest) (*pb.ListServicesResponse, error) {
 	services, total, err := s.svc.ListServices(ctx, req.BarberId, req.IncludeInactive, int(req.Limit), int(req.Offset))

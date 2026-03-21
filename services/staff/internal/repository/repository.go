@@ -217,6 +217,21 @@ func (r *Repository) ListServices(ctx context.Context, barberID string, includeI
 	return services, len(services), nil
 }
 
+func (r *Repository) GetService(ctx context.Context, id, barberID string) (*model.Service, error) {
+	var s model.Service
+	err := r.db.QueryRow(ctx,
+		`SELECT id, barber_id, name, price, duration_minutes, is_active
+		 FROM services WHERE id = $1 AND barber_id = $2`,
+		id, barberID).Scan(&s.ID, &s.BarberID, &s.Name, &s.Price, &s.DurationMinutes, &s.IsActive)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return &s, nil
+}
+
 func (r *Repository) CreateService(ctx context.Context, s *model.Service) error {
 	return r.db.QueryRow(ctx,
 		`INSERT INTO services (barber_id, name, price, duration_minutes)

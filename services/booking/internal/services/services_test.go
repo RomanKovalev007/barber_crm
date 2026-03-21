@@ -65,6 +65,10 @@ func (m *MockStaffClient) GetBarber(ctx context.Context, barberID string) (*staf
 	args := m.Called(ctx, barberID)
 	return args.Get(0).(*staffv1.BarberResponse), args.Error(1)
 }
+func (m *MockStaffClient) GetService(ctx context.Context, serviceID, barberID string) (*staffv1.ServiceResponse, error) {
+	args := m.Called(ctx, serviceID, barberID)
+	return args.Get(0).(*staffv1.ServiceResponse), args.Error(1)
+}
 func (m *MockStaffClient) ListServices(ctx context.Context, barberID string, includeInactive bool) (*staffv1.ListServicesResponse, error) {
 	args := m.Called(ctx, barberID, includeInactive)
 	return args.Get(0).(*staffv1.ListServicesResponse), args.Error(1)
@@ -727,9 +731,7 @@ func TestGetFreeSlots_ReturnsOnlyFreeSlots(t *testing.T) {
 	}
 
 	sc := new(MockStaffClient)
-	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{
-		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-1", DurationMinutes: 60}},
-	}, nil)
+	sc.On("GetService", ctx, "svc-1", "b1").Return(&staffv1.ServiceResponse{ServiceId: "svc-1", DurationMinutes: 60}, nil)
 	sc.On("GetSchedule", ctx, "b1", isoWeek(date)).Return(&staffv1.GetScheduleResponse{
 		Days: []*staffv1.ScheduleDay{{Date: "2026-03-16", StartTime: "09:00", EndTime: "11:00"}},
 	}, nil)

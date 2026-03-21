@@ -35,6 +35,7 @@ type bookingRepo interface {
 
 type staffClientIntr interface {
 	GetBarber(ctx context.Context, barberID string) (*staffv1.BarberResponse, error)
+	GetService(ctx context.Context, serviceID, barberID string) (*staffv1.ServiceResponse, error)
 	ListServices(ctx context.Context, barberID string, includeInactive bool) (*staffv1.ListServicesResponse, error)
 	GetSchedule(ctx context.Context, barberID, week string) (*staffv1.GetScheduleResponse, error)
 }
@@ -273,21 +274,14 @@ func (s *bookingService) GetFreeSlots(ctx context.Context, barberID, serviceID s
 		return nil, apperr.InvalidArgument("service_id is required")
 	}
 
-	svcResp, err := s.staffClient.ListServices(ctx, barberID, false)
+	svc, err := s.staffClient.GetService(ctx, serviceID, barberID)
 	if err != nil {
-		s.log.Error("get free slots: failed to get services", "barber_id", barberID, "error", err)
-		return nil, apperr.Internal("failed to get services")
-	}
-	var window time.Duration
-	for _, svc := range svcResp.Services {
-		if svc.ServiceId == serviceID {
-			window = time.Duration(svc.DurationMinutes) * time.Minute
-			break
-		}
-	}
-	if window == 0 {
-		s.log.Warn("get free slots: service not found", "service_id", serviceID, "barber_id", barberID)
+		s.log.Warn("get free slots: service not found", "service_id", serviceID, "barber_id", barberID, "error", err)
 		return nil, apperr.NotFound("service not found")
+	}
+	window := time.Duration(svc.DurationMinutes) * time.Minute
+	if window == 0 {
+		window = slotDuration
 	}
 
 	enabled, err := s.repo.GetCompactSlotsEnabled(ctx, barberID)

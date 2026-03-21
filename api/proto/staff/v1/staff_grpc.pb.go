@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.0
 // - protoc             v3.21.12
-// source: api/proto/staff/v1/staff.proto
+// source: proto/staff/v1/staff.proto
 
 package staffv1
 
@@ -29,6 +29,7 @@ const (
 	StaffService_UpsertSchedule_FullMethodName     = "/staff.v1.StaffService/UpsertSchedule"
 	StaffService_UpsertWeekSchedule_FullMethodName = "/staff.v1.StaffService/UpsertWeekSchedule"
 	StaffService_DeleteSchedule_FullMethodName     = "/staff.v1.StaffService/DeleteSchedule"
+	StaffService_GetService_FullMethodName         = "/staff.v1.StaffService/GetService"
 	StaffService_ListServices_FullMethodName       = "/staff.v1.StaffService/ListServices"
 	StaffService_CreateService_FullMethodName      = "/staff.v1.StaffService/CreateService"
 	StaffService_UpdateService_FullMethodName      = "/staff.v1.StaffService/UpdateService"
@@ -52,6 +53,7 @@ type StaffServiceClient interface {
 	UpsertWeekSchedule(ctx context.Context, in *UpsertWeekScheduleRequest, opts ...grpc.CallOption) (*UpsertWeekScheduleResponse, error)
 	DeleteSchedule(ctx context.Context, in *DeleteScheduleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Services
+	GetService(ctx context.Context, in *GetServiceRequest, opts ...grpc.CallOption) (*ServiceResponse, error)
 	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
 	CreateService(ctx context.Context, in *CreateServiceRequest, opts ...grpc.CallOption) (*ServiceResponse, error)
 	UpdateService(ctx context.Context, in *UpdateServiceRequest, opts ...grpc.CallOption) (*ServiceResponse, error)
@@ -156,6 +158,16 @@ func (c *staffServiceClient) DeleteSchedule(ctx context.Context, in *DeleteSched
 	return out, nil
 }
 
+func (c *staffServiceClient) GetService(ctx context.Context, in *GetServiceRequest, opts ...grpc.CallOption) (*ServiceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ServiceResponse)
+	err := c.cc.Invoke(ctx, StaffService_GetService_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *staffServiceClient) ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListServicesResponse)
@@ -213,6 +225,7 @@ type StaffServiceServer interface {
 	UpsertWeekSchedule(context.Context, *UpsertWeekScheduleRequest) (*UpsertWeekScheduleResponse, error)
 	DeleteSchedule(context.Context, *DeleteScheduleRequest) (*emptypb.Empty, error)
 	// Services
+	GetService(context.Context, *GetServiceRequest) (*ServiceResponse, error)
 	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
 	CreateService(context.Context, *CreateServiceRequest) (*ServiceResponse, error)
 	UpdateService(context.Context, *UpdateServiceRequest) (*ServiceResponse, error)
@@ -253,6 +266,9 @@ func (UnimplementedStaffServiceServer) UpsertWeekSchedule(context.Context, *Upse
 }
 func (UnimplementedStaffServiceServer) DeleteSchedule(context.Context, *DeleteScheduleRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteSchedule not implemented")
+}
+func (UnimplementedStaffServiceServer) GetService(context.Context, *GetServiceRequest) (*ServiceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetService not implemented")
 }
 func (UnimplementedStaffServiceServer) ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListServices not implemented")
@@ -449,6 +465,24 @@ func _StaffService_DeleteSchedule_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StaffService_GetService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StaffServiceServer).GetService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StaffService_GetService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StaffServiceServer).GetService(ctx, req.(*GetServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _StaffService_ListServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListServicesRequest)
 	if err := dec(in); err != nil {
@@ -565,6 +599,10 @@ var StaffService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _StaffService_DeleteSchedule_Handler,
 		},
 		{
+			MethodName: "GetService",
+			Handler:    _StaffService_GetService_Handler,
+		},
+		{
 			MethodName: "ListServices",
 			Handler:    _StaffService_ListServices_Handler,
 		},
@@ -582,5 +620,5 @@ var StaffService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/proto/staff/v1/staff.proto",
+	Metadata: "proto/staff/v1/staff.proto",
 }

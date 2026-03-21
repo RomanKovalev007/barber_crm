@@ -54,6 +54,10 @@ func (m *MockRepo) GetSchedule(ctx context.Context, barberID, week string) ([]mo
 	args := m.Called(ctx, barberID, week)
 	return args.Get(0).([]model.ScheduleDay), args.Error(1)
 }
+func (m *MockRepo) GetService(ctx context.Context, id, barberID string) (*model.Service, error) {
+	args := m.Called(ctx, id, barberID)
+	return args.Get(0).(*model.Service), args.Error(1)
+}
 func (m *MockRepo) CreateService(ctx context.Context, s *model.Service) error {
 	return m.Called(ctx, s).Error(0)
 }
