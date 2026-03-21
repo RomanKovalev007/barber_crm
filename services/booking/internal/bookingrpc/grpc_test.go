@@ -55,6 +55,10 @@ func (m *mockSvc) SetCompactSlots(ctx context.Context, barberID string, enabled 
 	args := m.Called(ctx, barberID, enabled)
 	return args.Get(0).(*model.BarberSettings), args.Error(1)
 }
+func (m *mockSvc) GetClientBookings(ctx context.Context, barberID, clientPhone string, limit, offset int) ([]model.Booking, int, error) {
+	args := m.Called(ctx, barberID, clientPhone, limit, offset)
+	return args.Get(0).([]model.Booking), args.Int(1), args.Error(2)
+}
 
 func newServer() (*bookingServer, *mockSvc) {
 	svc := &mockSvc{}

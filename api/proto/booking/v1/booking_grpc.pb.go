@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.0
 // - protoc             v3.21.12
-// source: booking.proto
+// source: api/proto/booking/v1/booking.proto
 
 package bookingv1
 
@@ -29,6 +29,7 @@ const (
 	BookingService_GetFreeSlots_FullMethodName        = "/booking.v1.BookingService/GetFreeSlots"
 	BookingService_GetBarberSettings_FullMethodName   = "/booking.v1.BookingService/GetBarberSettings"
 	BookingService_SetCompactSlots_FullMethodName     = "/booking.v1.BookingService/SetCompactSlots"
+	BookingService_GetClientBookings_FullMethodName   = "/booking.v1.BookingService/GetClientBookings"
 )
 
 // BookingServiceClient is the client API for BookingService service.
@@ -44,6 +45,7 @@ type BookingServiceClient interface {
 	GetFreeSlots(ctx context.Context, in *FreeSlotsRequest, opts ...grpc.CallOption) (*FreeSlotsResponse, error)
 	GetBarberSettings(ctx context.Context, in *BarberSettingsRequest, opts ...grpc.CallOption) (*BarberSettingsResponse, error)
 	SetCompactSlots(ctx context.Context, in *SetCompactSlotsRequest, opts ...grpc.CallOption) (*BarberSettingsResponse, error)
+	GetClientBookings(ctx context.Context, in *GetClientBookingsRequest, opts ...grpc.CallOption) (*GetClientBookingsResponse, error)
 }
 
 type bookingServiceClient struct {
@@ -144,6 +146,16 @@ func (c *bookingServiceClient) SetCompactSlots(ctx context.Context, in *SetCompa
 	return out, nil
 }
 
+func (c *bookingServiceClient) GetClientBookings(ctx context.Context, in *GetClientBookingsRequest, opts ...grpc.CallOption) (*GetClientBookingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetClientBookingsResponse)
+	err := c.cc.Invoke(ctx, BookingService_GetClientBookings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BookingServiceServer is the server API for BookingService service.
 // All implementations must embed UnimplementedBookingServiceServer
 // for forward compatibility.
@@ -157,6 +169,7 @@ type BookingServiceServer interface {
 	GetFreeSlots(context.Context, *FreeSlotsRequest) (*FreeSlotsResponse, error)
 	GetBarberSettings(context.Context, *BarberSettingsRequest) (*BarberSettingsResponse, error)
 	SetCompactSlots(context.Context, *SetCompactSlotsRequest) (*BarberSettingsResponse, error)
+	GetClientBookings(context.Context, *GetClientBookingsRequest) (*GetClientBookingsResponse, error)
 	mustEmbedUnimplementedBookingServiceServer()
 }
 
@@ -193,6 +206,9 @@ func (UnimplementedBookingServiceServer) GetBarberSettings(context.Context, *Bar
 }
 func (UnimplementedBookingServiceServer) SetCompactSlots(context.Context, *SetCompactSlotsRequest) (*BarberSettingsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetCompactSlots not implemented")
+}
+func (UnimplementedBookingServiceServer) GetClientBookings(context.Context, *GetClientBookingsRequest) (*GetClientBookingsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetClientBookings not implemented")
 }
 func (UnimplementedBookingServiceServer) mustEmbedUnimplementedBookingServiceServer() {}
 func (UnimplementedBookingServiceServer) testEmbeddedByValue()                        {}
@@ -377,6 +393,24 @@ func _BookingService_SetCompactSlots_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BookingService_GetClientBookings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetClientBookingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BookingServiceServer).GetClientBookings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BookingService_GetClientBookings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BookingServiceServer).GetClientBookings(ctx, req.(*GetClientBookingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BookingService_ServiceDesc is the grpc.ServiceDesc for BookingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -420,7 +454,11 @@ var BookingService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "SetCompactSlots",
 			Handler:    _BookingService_SetCompactSlots_Handler,
 		},
+		{
+			MethodName: "GetClientBookings",
+			Handler:    _BookingService_GetClientBookings_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "booking.proto",
+	Metadata: "api/proto/booking/v1/booking.proto",
 }

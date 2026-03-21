@@ -181,6 +181,32 @@ func (s *bookingServer) SetCompactSlots(ctx context.Context, req *pb.SetCompactS
 	}, nil
 }
 
+func (s *bookingServer) GetClientBookings(ctx context.Context, req *pb.GetClientBookingsRequest) (*pb.GetClientBookingsResponse, error) {
+	if req.BarberId == "" {
+		return nil, status.Error(codes.InvalidArgument, "barber_id is required")
+	}
+	if !isValidPhone(req.ClientPhone) {
+		return nil, status.Error(codes.InvalidArgument, "client_phone is required and must be valid")
+	}
+
+	limit := int(req.Limit)
+	offset := int(req.Offset)
+
+	bookings, total, err := s.svc.GetClientBookings(ctx, req.BarberId, req.ClientPhone, limit, offset)
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+
+	pbBookings := make([]*pb.Booking, 0, len(bookings))
+	for i := range bookings {
+		pbBookings = append(pbBookings, toProto(&bookings[i]))
+	}
+	return &pb.GetClientBookingsResponse{
+		Bookings: pbBookings,
+		Total:    int32(total),
+	}, nil
+}
+
 // helpers
 
 func toProto(b *model.Booking) *pb.Booking {

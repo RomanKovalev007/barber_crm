@@ -575,6 +575,42 @@ func (h *StaffHandler) UpdateClient(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, clientToModel(resp.Client))
 }
 
+// ─── Client Booking History ───────────────────────────────────────────────────
+
+func (h *StaffHandler) GetClientBookings(w http.ResponseWriter, r *http.Request) {
+	barberID := middleware.BarberIDFromCtx(r.Context())
+	phone := r.URL.Query().Get("phone")
+	if err := validateClientPhone(phone); err != nil {
+		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid phone, expected format +7XXXXXXXXXX")
+		return
+	}
+
+	limit, offset := parsePagination(r, 20, 100)
+
+	resp, err := h.booking.GetClientBookings(r.Context(), &bookingv1.GetClientBookingsRequest{
+		BarberId:    barberID,
+		ClientPhone: phone,
+		Limit:       int32(limit),
+		Offset:      int32(offset),
+	})
+	if err != nil {
+		response.GrpcErrorToHttp(w, err)
+		return
+	}
+
+	bookings := make([]model.Booking, 0, len(resp.Bookings))
+	for _, b := range resp.Bookings {
+		bookings = append(bookings, bookingToModel(b))
+	}
+
+	response.WriteJSON(w, http.StatusOK, map[string]any{
+		"bookings": bookings,
+		"total":    resp.Total,
+		"limit":    limit,
+		"offset":   offset,
+	})
+}
+
 // ─── Booking Settings ─────────────────────────────────────────────────────────
 
 func (h *StaffHandler) GetBookingSettings(w http.ResponseWriter, r *http.Request) {

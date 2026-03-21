@@ -2,7 +2,9 @@ package handler
 
 import (
 	"errors"
+	"net/http"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -87,5 +89,22 @@ func validateDate(date string) error {
 
 func isValidWeek(week string) bool {
 	return weekRegex.MatchString(week)
+}
+
+// parsePagination читает limit и offset из query-параметров.
+// defaultLimit используется если limit не задан или <= 0.
+// maxLimit ограничивает максимальное значение limit.
+func parsePagination(r *http.Request, defaultLimit, maxLimit int) (limit, offset int) {
+	limit = defaultLimit
+	if v, err := strconv.Atoi(r.URL.Query().Get("limit")); err == nil && v > 0 {
+		limit = v
+	}
+	if limit > maxLimit {
+		limit = maxLimit
+	}
+	if v, err := strconv.Atoi(r.URL.Query().Get("offset")); err == nil && v >= 0 {
+		offset = v
+	}
+	return limit, offset
 }
 

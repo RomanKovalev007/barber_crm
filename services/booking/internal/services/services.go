@@ -28,6 +28,7 @@ type bookingRepo interface {
 	UpdateBookingStatus(ctx context.Context, id, status string) error
 	DeleteBooking(ctx context.Context, id string) error
 	GetBookingsByBarberAndDate(ctx context.Context, barberID string, date time.Time) ([]model.Booking, error)
+	GetClientBookings(ctx context.Context, barberID, clientPhone string, limit, offset int) ([]model.Booking, int, error)
 	GetCompactSlotsEnabled(ctx context.Context, barberID string) (bool, error)
 	SetCompactSlotsEnabled(ctx context.Context, barberID string, enabled bool) error
 }
@@ -57,6 +58,7 @@ type BookingIntr interface {
 	GetFreeSlots(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error)
 	GetBarberSettings(ctx context.Context, barberID string) (*model.BarberSettings, error)
 	SetCompactSlots(ctx context.Context, barberID string, enabled bool) (*model.BarberSettings, error)
+	GetClientBookings(ctx context.Context, barberID, clientPhone string, limit, offset int) ([]model.Booking, int, error)
 }
 
 type bookingService struct {
@@ -286,6 +288,21 @@ func (s *bookingService) GetBarberSettings(ctx context.Context, barberID string)
 		return nil, apperr.Internal("failed to get barber settings")
 	}
 	return &model.BarberSettings{BarberID: barberID, CompactSlotsEnabled: enabled}, nil
+}
+
+func (s *bookingService) GetClientBookings(ctx context.Context, barberID, clientPhone string, limit, offset int) ([]model.Booking, int, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	bookings, total, err := s.repo.GetClientBookings(ctx, barberID, clientPhone, limit, offset)
+	if err != nil {
+		s.log.Error("get client bookings: failed", "barber_id", barberID, "client_phone", clientPhone, "error", err)
+		return nil, 0, apperr.Internal("failed to get client bookings")
+	}
+	return bookings, total, nil
 }
 
 func (s *bookingService) SetCompactSlots(ctx context.Context, barberID string, enabled bool) (*model.BarberSettings, error) {

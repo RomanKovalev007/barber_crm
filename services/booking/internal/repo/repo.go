@@ -230,6 +230,45 @@ func (r *BookingRepo) SetCompactSlotsEnabled(ctx context.Context, barberID strin
 	return err
 }
 
+// GetClientBookings возвращает записи клиента в финальных статусах (completed, cancelled, no_show)
+// для конкретного барбера, отсортированные по дате убывания, с пагинацией.
+// Второе возвращаемое значение — общее число записей (без учёта лимита/оффсета).
+func (r *BookingRepo) GetClientBookings(ctx context.Context, barberID, clientPhone string, limit, offset int) ([]model.Booking, int, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, client_name, client_phone, barber_id, service_id, service_name, price,
+		       date, time_start, time_end, status, created_at, updated_at,
+		       COUNT(*) OVER() AS total
+		FROM bookings
+		WHERE barber_id = $1
+		  AND client_phone = $2
+		  AND status IN ($3, $4, $5)
+		ORDER BY date DESC, time_start DESC
+		LIMIT $6 OFFSET $7`,
+		barberID, clientPhone,
+		model.StatusCompleted, model.StatusCancelled, model.StatusNoShow,
+		limit, offset,
+	)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var bookings []model.Booking
+	var total int
+	for rows.Next() {
+		var b model.Booking
+		if err := rows.Scan(
+			&b.ID, &b.ClientName, &b.ClientPhone, &b.BarberID, &b.ServiceID, &b.ServiceName, &b.Price,
+			&b.Date, &b.TimeStart, &b.TimeEnd, &b.Status, &b.CreatedAt, &b.UpdatedAt,
+			&total,
+		); err != nil {
+			return nil, 0, fmt.Errorf("scan client booking: %w", err)
+		}
+		bookings = append(bookings, b)
+	}
+	return bookings, total, rows.Err()
+}
+
 func (r *BookingRepo) GetBookingsByBarberAndDate(ctx context.Context, barberID string, date time.Time) ([]model.Booking, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT id, client_name, client_phone, barber_id, service_id, service_name, price,

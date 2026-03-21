@@ -17,6 +17,7 @@ service BookingService {
   rpc GetFreeSlots(FreeSlotsRequest) returns (FreeSlotsResponse);
   rpc GetBarberSettings(BarberSettingsRequest) returns (BarberSettingsResponse);
   rpc SetCompactSlots(SetCompactSlotsRequest) returns (BarberSettingsResponse);
+  rpc GetClientBookings(GetClientBookingsRequest) returns (GetClientBookingsResponse);
 }
 
 // ─── Booking ─────────────────────────────────────────────────────────────────
@@ -130,6 +131,20 @@ message BarberSettingsResponse {
 message SetCompactSlotsRequest {
   string barber_id = 1;
   bool   enabled   = 2;
+}
+
+// ─── Client Bookings ──────────────────────────────────────────────────────────
+
+message GetClientBookingsRequest {
+  string barber_id     = 1;
+  string client_phone  = 2;
+  int32  limit         = 3;
+  int32  offset        = 4;
+}
+
+message GetClientBookingsResponse {
+  repeated Booking bookings = 1;
+  int32            total    = 2;
 }
 
 // ─── Kafka Events ─────────────────────────────────────────────────────────────

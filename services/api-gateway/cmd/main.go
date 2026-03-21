@@ -149,6 +149,7 @@ func main() {
 				r.Delete("/bookings/{booking_id}", staffHandler.DeleteBooking)
 
 				r.Get("/clients", staffHandler.ListClients)
+				r.Get("/clients/bookings", staffHandler.GetClientBookings)
 				r.Get("/clients/{client_id}", staffHandler.GetClient)
 				r.Put("/clients/{client_id}", staffHandler.UpdateClient)
 
