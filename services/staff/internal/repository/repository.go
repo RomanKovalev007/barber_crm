@@ -166,7 +166,7 @@ func (r *Repository) ListServices(ctx context.Context, barberID string, includeI
 		if !includeInactive {
 			query += ` AND is_active = true`
 		}
-		query += fmt.Sprintf(` ORDER BY name LIMIT $2 OFFSET $3`)
+		query += ` ORDER BY name LIMIT $2 OFFSET $3`
 
 		rows, err := r.db.Query(ctx, query, barberID, limit, offset)
 		if err != nil {
