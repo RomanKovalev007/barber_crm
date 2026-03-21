@@ -3,7 +3,7 @@ module github.com/RomanKovalev007/barber_crm/services/booking
 go 1.24.3
 
 require (
-	github.com/RomanKovalev007/barber_crm/api v0.0.12
+	github.com/RomanKovalev007/barber_crm/api v0.0.13
 	github.com/RomanKovalev007/barber_crm/pkg v0.0.7
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
