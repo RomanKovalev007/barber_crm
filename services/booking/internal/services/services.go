@@ -55,7 +55,7 @@ type BookingIntr interface {
 	UpdateBookingStatus(ctx context.Context, bookingID, barberID, newStatus string) (*model.Booking, error)
 	DeleteBooking(ctx context.Context, id, barberID string) error
 	GetSlots(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error)
-	GetFreeSlots(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error)
+	GetFreeSlots(ctx context.Context, barberID, serviceID string, date time.Time) (*model.SlotsResult, error)
 	GetBarberSettings(ctx context.Context, barberID string) (*model.BarberSettings, error)
 	SetCompactSlots(ctx context.Context, barberID string, enabled bool) (*model.BarberSettings, error)
 	GetClientBookings(ctx context.Context, barberID, clientPhone string, limit, offset int) ([]model.Booking, int, error)
@@ -265,19 +265,40 @@ func (s *bookingService) DeleteBooking(ctx context.Context, id, barberID string)
 }
 
 func (s *bookingService) GetSlots(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error) {
-	return s.buildSlots(ctx, barberID, date, false, barberSlotStep)
+	return s.buildSlots(ctx, barberID, date, false, barberSlotStep, barberSlotStep)
 }
 
-func (s *bookingService) GetFreeSlots(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error) {
+func (s *bookingService) GetFreeSlots(ctx context.Context, barberID, serviceID string, date time.Time) (*model.SlotsResult, error) {
+	if serviceID == "" {
+		return nil, apperr.InvalidArgument("service_id is required")
+	}
+
+	svcResp, err := s.staffClient.ListServices(ctx, barberID, false)
+	if err != nil {
+		s.log.Error("get free slots: failed to get services", "barber_id", barberID, "error", err)
+		return nil, apperr.Internal("failed to get services")
+	}
+	var window time.Duration
+	for _, svc := range svcResp.Services {
+		if svc.ServiceId == serviceID {
+			window = time.Duration(svc.DurationMinutes) * time.Minute
+			break
+		}
+	}
+	if window == 0 {
+		s.log.Warn("get free slots: service not found", "service_id", serviceID, "barber_id", barberID)
+		return nil, apperr.NotFound("service not found")
+	}
+
 	enabled, err := s.repo.GetCompactSlotsEnabled(ctx, barberID)
 	if err != nil {
 		s.log.Error("get free slots: failed to get barber settings", "barber_id", barberID, "error", err)
 		return nil, apperr.Internal("failed to get barber settings")
 	}
 	if enabled {
-		return s.buildCompactSlots(ctx, barberID, date)
+		return s.buildCompactSlots(ctx, barberID, date, window)
 	}
-	return s.buildSlots(ctx, barberID, date, true, slotDuration)
+	return s.buildSlots(ctx, barberID, date, true, barberSlotStep, window)
 }
 
 func (s *bookingService) GetBarberSettings(ctx context.Context, barberID string) (*model.BarberSettings, error) {
@@ -313,7 +334,7 @@ func (s *bookingService) SetCompactSlots(ctx context.Context, barberID string, e
 	return &model.BarberSettings{BarberID: barberID, CompactSlotsEnabled: enabled}, nil
 }
 
-func (s *bookingService) buildSlots(ctx context.Context, barberID string, date time.Time, onlyFree bool, step time.Duration) (*model.SlotsResult, error) {
+func (s *bookingService) buildSlots(ctx context.Context, barberID string, date time.Time, onlyFree bool, step, window time.Duration) (*model.SlotsResult, error) {
 	year, week := date.ISOWeek()
 	isoWeek := fmt.Sprintf("%d-W%02d", year, week)
 
@@ -355,7 +376,10 @@ func (s *bookingService) buildSlots(ctx context.Context, barberID string, date t
 	var slots []model.Slot
 	t := workStart
 	for t.Before(workEnd) {
-		slotEnd := t.Add(step)
+		slotEnd := t.Add(window)
+		if slotEnd.After(workEnd) {
+			break // window doesn't fit in work hours
+		}
 
 		status := model.SlotFree
 		var slotBooking *model.SlotBooking
@@ -381,7 +405,7 @@ func (s *bookingService) buildSlots(ctx context.Context, barberID string, date t
 				Booking:   slotBooking,
 			})
 		}
-		t = slotEnd
+		t = t.Add(step)
 	}
 
 	return &model.SlotsResult{
@@ -392,10 +416,10 @@ func (s *bookingService) buildSlots(ctx context.Context, barberID string, date t
 }
 
 // buildCompactSlots строит слоты для клиента в режиме "компактной сетки":
-// - если броней нет → полная сетка по 60 минут в рабочем окне
-// - если брони есть → только слоты, примыкающие к существующим (±60 мин от каждой брони),
+// - если броней нет → полная сетка с шагом window в рабочем окне
+// - если брони есть → только слоты, примыкающие к существующим (±window от каждой брони),
 //   в пределах рабочего окна и без пересечений с уже занятыми слотами.
-func (s *bookingService) buildCompactSlots(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error) {
+func (s *bookingService) buildCompactSlots(ctx context.Context, barberID string, date time.Time, window time.Duration) (*model.SlotsResult, error) {
 	year, week := date.ISOWeek()
 	isoWeek := fmt.Sprintf("%d-W%02d", year, week)
 
@@ -434,33 +458,33 @@ func (s *bookingService) buildCompactSlots(ctx context.Context, barberID string,
 		return nil, apperr.Internal("failed to get bookings")
 	}
 
-	// Нет броней → полная сетка.
+	// Нет броней → полная сетка с шагом window.
 	if len(bookings) == 0 {
 		var slots []model.Slot
-		for t := workStart; t.Before(workEnd); t = t.Add(slotDuration) {
+		for t := workStart; !t.Add(window).After(workEnd); t = t.Add(window) {
 			slots = append(slots, model.Slot{
 				Status:    model.SlotFree,
 				TimeStart: t,
-				TimeEnd:   t.Add(slotDuration),
+				TimeEnd:   t.Add(window),
 			})
 		}
 		return &model.SlotsResult{BarberID: barberID, Date: dateStr, Slots: slots}, nil
 	}
 
-	// Есть брони → собираем кандидатов: B.Start ± slotDuration для каждой брони.
+	// Есть брони → собираем кандидатов: B.Start ± window для каждой брони.
 	seen := make(map[time.Time]bool)
 	var candidates []time.Time
 	for _, b := range bookings {
 		for _, candidate := range []time.Time{
-			b.TimeStart.Add(-slotDuration),
-			b.TimeStart.Add(slotDuration),
+			b.TimeStart.Add(-window),
+			b.TimeStart.Add(window),
 		} {
 			if seen[candidate] {
 				continue
 			}
 			seen[candidate] = true
 
-			slotEnd := candidate.Add(slotDuration)
+			slotEnd := candidate.Add(window)
 			// Вне рабочего окна?
 			if candidate.Before(workStart) || slotEnd.After(workEnd) {
 				continue

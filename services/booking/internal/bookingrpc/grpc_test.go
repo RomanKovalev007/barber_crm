@@ -43,8 +43,8 @@ func (m *mockSvc) GetSlots(ctx context.Context, barberID string, date time.Time)
 	args := m.Called(ctx, barberID, date)
 	return args.Get(0).(*model.SlotsResult), args.Error(1)
 }
-func (m *mockSvc) GetFreeSlots(ctx context.Context, barberID string, date time.Time) (*model.SlotsResult, error) {
-	args := m.Called(ctx, barberID, date)
+func (m *mockSvc) GetFreeSlots(ctx context.Context, barberID, serviceID string, date time.Time) (*model.SlotsResult, error) {
+	args := m.Called(ctx, barberID, serviceID, date)
 	return args.Get(0).(*model.SlotsResult), args.Error(1)
 }
 func (m *mockSvc) GetBarberSettings(ctx context.Context, barberID string) (*model.BarberSettings, error) {
@@ -347,9 +347,9 @@ func TestGetFreeSlots_InvalidDate(t *testing.T) {
 func TestGetFreeSlots_DefaultDate(t *testing.T) {
 	srv, svc := newServer()
 	result := &model.SlotsResult{BarberID: "b", Date: "2026-03-16", Slots: []model.Slot{}}
-	svc.On("GetFreeSlots", mock.Anything, "b", mock.Anything).Return(result, nil)
+	svc.On("GetFreeSlots", mock.Anything, "b", "svc-1", mock.Anything).Return(result, nil)
 
-	resp, err := srv.GetFreeSlots(context.Background(), &pb.FreeSlotsRequest{BarberId: "b"})
+	resp, err := srv.GetFreeSlots(context.Background(), &pb.FreeSlotsRequest{BarberId: "b", ServiceId: "svc-1"})
 	require.NoError(t, err)
 	assert.Equal(t, "b", resp.BarberId)
 }
@@ -357,9 +357,9 @@ func TestGetFreeSlots_DefaultDate(t *testing.T) {
 func TestGetFreeSlots_WithDate(t *testing.T) {
 	srv, svc := newServer()
 	result := &model.SlotsResult{BarberID: "b", Date: "2026-03-20", Slots: []model.Slot{}}
-	svc.On("GetFreeSlots", mock.Anything, "b", mock.Anything).Return(result, nil)
+	svc.On("GetFreeSlots", mock.Anything, "b", "svc-1", mock.Anything).Return(result, nil)
 
-	resp, err := srv.GetFreeSlots(context.Background(), &pb.FreeSlotsRequest{BarberId: "b", Date: "2026-03-20"})
+	resp, err := srv.GetFreeSlots(context.Background(), &pb.FreeSlotsRequest{BarberId: "b", ServiceId: "svc-1", Date: "2026-03-20"})
 	require.NoError(t, err)
 	assert.Equal(t, "b", resp.BarberId)
 }

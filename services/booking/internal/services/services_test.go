@@ -723,10 +723,13 @@ func TestGetFreeSlots_ReturnsOnlyFreeSlots(t *testing.T) {
 	booking := model.Booking{
 		ID:        "bk-1",
 		TimeStart: slotStart,
-		TimeEnd:   slotStart.Add(slotDuration),
+		TimeEnd:   slotStart.Add(60 * time.Minute),
 	}
 
 	sc := new(MockStaffClient)
+	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{
+		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-1", DurationMinutes: 60}},
+	}, nil)
 	sc.On("GetSchedule", ctx, "b1", isoWeek(date)).Return(&staffv1.GetScheduleResponse{
 		Days: []*staffv1.ScheduleDay{{Date: "2026-03-16", StartTime: "09:00", EndTime: "11:00"}},
 	}, nil)
@@ -737,10 +740,20 @@ func TestGetFreeSlots_ReturnsOnlyFreeSlots(t *testing.T) {
 
 	svc := newTestService(r, sc)
 
-	result, err := svc.GetFreeSlots(ctx, "b1", date)
+	result, err := svc.GetFreeSlots(ctx, "b1", "svc-1", date)
 
 	require.NoError(t, err)
-	require.Len(t, result.Slots, 1) // only the 10:00-11:00 slot
-	assert.Equal(t, model.SlotFree, result.Slots[0].Status)
-	assert.Equal(t, time.Date(2026, 3, 16, 10, 0, 0, 0, time.UTC), result.Slots[0].TimeStart)
+	// With 15-min step and 60-min window in a 09:00-11:00 window:
+	// 09:00-10:00 conflicts, 09:15-10:15 conflicts, ..., 10:00-11:00 free
+	freeSlots := result.Slots
+	require.NotEmpty(t, freeSlots)
+	assert.Equal(t, model.SlotFree, freeSlots[0].Status)
+	assert.Equal(t, time.Date(2026, 3, 16, 10, 0, 0, 0, time.UTC), freeSlots[0].TimeStart)
+}
+
+func TestGetFreeSlots_MissingServiceID(t *testing.T) {
+	ctx := context.Background()
+	svc := newTestService(new(MockRepo), new(MockStaffClient))
+	_, err := svc.GetFreeSlots(ctx, "b1", "", testDate)
+	require.Error(t, err)
 }

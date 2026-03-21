@@ -146,7 +146,7 @@ func (s *bookingServer) GetFreeSlots(ctx context.Context, req *pb.FreeSlotsReque
 		date = time.Now().UTC().Truncate(24 * time.Hour)
 	}
 
-	result, err := s.svc.GetFreeSlots(ctx, req.BarberId, date)
+	result, err := s.svc.GetFreeSlots(ctx, req.BarberId, req.ServiceId, date)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
