@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -244,6 +245,67 @@ func (h *StaffHandler) UpsertSchedule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.WriteJSON(w, http.StatusOK, scheduleDayToModel(resp))
+}
+
+func (h *StaffHandler) UpsertWeekSchedule(w http.ResponseWriter, r *http.Request) {
+	barberID := middleware.BarberIDFromCtx(r.Context())
+
+	var req struct {
+		Days []struct {
+			Date      string `json:"date"`
+			StartTime string `json:"start_time"`
+			EndTime   string `json:"end_time"`
+			PartOfDay string `json:"part_of_day"`
+		} `json:"days"`
+	}
+	if !decodeBody(w, r, &req) {
+		return
+	}
+	if len(req.Days) == 0 || len(req.Days) > 7 {
+		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "days must contain 1 to 7 entries")
+		return
+	}
+	for i, d := range req.Days {
+		if err := validateDate(d.Date); err != nil {
+			response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", fmt.Sprintf("invalid date at index %d", i))
+			return
+		}
+		if d.StartTime == "" || d.EndTime == "" {
+			response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", fmt.Sprintf("start_time and end_time are required at index %d", i))
+			return
+		}
+		if d.PartOfDay != "am" && d.PartOfDay != "pm" {
+			response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", fmt.Sprintf("part_of_day must be 'am' or 'pm' at index %d", i))
+			return
+		}
+	}
+
+	pbDays := make([]*staffv1.UpsertScheduleRequest, 0, len(req.Days))
+	for _, d := range req.Days {
+		pbDays = append(pbDays, &staffv1.UpsertScheduleRequest{
+			BarberId:  barberID,
+			Date:      d.Date,
+			StartTime: d.StartTime,
+			EndTime:   d.EndTime,
+			PartOfDay: partOfDayToProto(d.PartOfDay),
+		})
+	}
+
+	resp, err := h.staff.UpsertWeekSchedule(r.Context(), &staffv1.UpsertWeekScheduleRequest{
+		BarberId: barberID,
+		Days:     pbDays,
+	})
+	if err != nil {
+		response.GrpcErrorToHttp(w, err)
+		return
+	}
+
+	result := make([]model.ScheduleDay, 0, len(resp.Days))
+	for _, d := range resp.Days {
+		result = append(result, scheduleDayToModel(d))
+	}
+
+	response.WriteJSON(w, http.StatusOK, map[string]any{"days": result})
 }
 
 func (h *StaffHandler) DeleteSchedule(w http.ResponseWriter, r *http.Request) {

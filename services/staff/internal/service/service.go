@@ -35,6 +35,7 @@ type staffRepo interface {
 	ListBarbers(ctx context.Context) ([]model.Barber, error)
 
 	UpsertSchedule(ctx context.Context, barberID string, day *model.ScheduleDay) (*model.ScheduleDay, error)
+	UpsertWeekSchedule(ctx context.Context, barberID string, days []*model.ScheduleDay) ([]*model.ScheduleDay, error)
 	DeleteSchedule(ctx context.Context, barberID, date string) (string, error)
 	GetSchedule(ctx context.Context, barberID string, week string) ([]model.ScheduleDay, error)
 
@@ -303,6 +304,56 @@ func (s *Service) UpsertSchedule(ctx context.Context, barberID string, day *mode
 	}
 	if err := s.producer.Publish(ctx, kafka.TopicScheduleEvents, barberID, event); err != nil {
 		s.logger.Warn("failed to publish schedule.added event", "error", err)
+	}
+	return result, nil
+}
+
+func (s *Service) UpsertWeekSchedule(ctx context.Context, barberID string, days []*model.ScheduleDay) ([]*model.ScheduleDay, error) {
+	if barberID == "" {
+		return nil, apperr.InvalidArgument("barber_id is empty")
+	}
+	if len(days) == 0 || len(days) > 7 {
+		return nil, apperr.InvalidArgument("days must contain 1 to 7 entries")
+	}
+	for _, day := range days {
+		if !datePattern.MatchString(day.Date) {
+			return nil, apperr.InvalidArgument("date must be in format YYYY-MM-DD")
+		}
+		if !timePattern.MatchString(day.StartTime) {
+			return nil, apperr.InvalidArgument("start_time must be in format HH:MM")
+		}
+		if !timePattern.MatchString(day.EndTime) {
+			return nil, apperr.InvalidArgument("end_time must be in format HH:MM")
+		}
+		if day.StartTime >= day.EndTime {
+			return nil, apperr.InvalidArgument("start_time must be before end_time")
+		}
+		if day.PartOfDay != model.PartOfDayAM && day.PartOfDay != model.PartOfDayPM {
+			return nil, apperr.InvalidArgument("part_of_day must be 'am' or 'pm'")
+		}
+	}
+
+	result, err := s.repo.UpsertWeekSchedule(ctx, barberID, days)
+	if err != nil {
+		s.logger.Error("failed to upsert week schedule", "barber_id", barberID, "error", err)
+		return nil, apperr.Internal("failed to upsert week schedule")
+	}
+	s.logger.Info("week schedule upserted", "barber_id", barberID, "days", len(result))
+
+	for _, d := range result {
+		event := &staffpb.ScheduleEvent{
+			ScheduleId: d.ID,
+			BarberId:   barberID,
+			Date:       d.Date,
+			StartTime:  d.StartTime,
+			EndTime:    d.EndTime,
+			PartOfDay:  partOfDayToProto(d.PartOfDay),
+			EventType:  staffpb.ScheduleEventType_SCHEDULE_EVENT_ADDED,
+			OccurredAt: timestamppb.Now(),
+		}
+		if err := s.producer.Publish(ctx, kafka.TopicScheduleEvents, barberID, event); err != nil {
+			s.logger.Warn("failed to publish schedule.added event", "date", d.Date, "error", err)
+		}
 	}
 	return result, nil
 }

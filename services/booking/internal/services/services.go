@@ -93,6 +93,7 @@ func (s *bookingService) CreateBooking(ctx context.Context, b *model.Booking) (*
 		if svc.ServiceId == b.ServiceID {
 			b.ServiceName = svc.Name
 			b.Price = svc.Price
+			//b.TimeEnd = b.TimeStart.Add(time.Duration(svc.DurationMinutes))
 			foundSvc = true
 			break
 		}

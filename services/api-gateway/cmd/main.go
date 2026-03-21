@@ -137,6 +137,7 @@ func main() {
 				r.Delete("/services/{service_id}", staffHandler.DeleteService)
 
 				r.Get("/schedule", staffHandler.GetSchedule)
+				r.Put("/schedule", staffHandler.UpsertWeekSchedule)
 				r.Put("/schedule/{date}", staffHandler.UpsertSchedule)
 				r.Delete("/schedule/{date}", staffHandler.DeleteSchedule)
 				r.Get("/slots", staffHandler.GetSlots)

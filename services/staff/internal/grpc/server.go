@@ -21,6 +21,7 @@ type staffService interface {
 	ListBarbers(ctx context.Context) ([]model.Barber, error)
 
 	UpsertSchedule(ctx context.Context, barberID string, day *model.ScheduleDay) (*model.ScheduleDay, error)
+	UpsertWeekSchedule(ctx context.Context, barberID string, days []*model.ScheduleDay) ([]*model.ScheduleDay, error)
 	DeleteSchedule(ctx context.Context, barberID, date string) error
 	GetSchedule(ctx context.Context, barberID string, week string) ([]model.ScheduleDay, error)
 
@@ -126,6 +127,28 @@ func (s *Server) UpsertSchedule(ctx context.Context, req *pb.UpsertScheduleReque
 		return nil, toGRPCError(err)
 	}
 	return scheduleToProto(result), nil
+}
+
+func (s *Server) UpsertWeekSchedule(ctx context.Context, req *pb.UpsertWeekScheduleRequest) (*pb.UpsertWeekScheduleResponse, error) {
+	days := make([]*model.ScheduleDay, 0, len(req.Days))
+	for _, d := range req.Days {
+		days = append(days, &model.ScheduleDay{
+			BarberID:  req.BarberId,
+			Date:      d.Date,
+			StartTime: d.StartTime,
+			EndTime:   d.EndTime,
+			PartOfDay: partOfDayFromProto(d.PartOfDay),
+		})
+	}
+	result, err := s.svc.UpsertWeekSchedule(ctx, req.BarberId, days)
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+	pbDays := make([]*pb.ScheduleDay, 0, len(result))
+	for _, d := range result {
+		pbDays = append(pbDays, scheduleToProto(d))
+	}
+	return &pb.UpsertWeekScheduleResponse{Days: pbDays}, nil
 }
 
 func (s *Server) DeleteSchedule(ctx context.Context, req *pb.DeleteScheduleRequest) (*emptypb.Empty, error) {

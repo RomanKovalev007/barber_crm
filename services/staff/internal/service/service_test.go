@@ -42,6 +42,10 @@ func (m *MockRepo) UpsertSchedule(ctx context.Context, barberID string, day *mod
 	args := m.Called(ctx, barberID, day)
 	return args.Get(0).(*model.ScheduleDay), args.Error(1)
 }
+func (m *MockRepo) UpsertWeekSchedule(ctx context.Context, barberID string, days []*model.ScheduleDay) ([]*model.ScheduleDay, error) {
+	args := m.Called(ctx, barberID, days)
+	return args.Get(0).([]*model.ScheduleDay), args.Error(1)
+}
 func (m *MockRepo) DeleteSchedule(ctx context.Context, barberID, date string) (string, error) {
 	args := m.Called(ctx, barberID, date)
 	return args.String(0), args.Error(1)

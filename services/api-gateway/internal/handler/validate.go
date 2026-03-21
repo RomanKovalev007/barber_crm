@@ -88,3 +88,4 @@ func validateDate(date string) error {
 func isValidWeek(week string) bool {
 	return weekRegex.MatchString(week)
 }
+

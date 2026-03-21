@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -202,6 +203,44 @@ func (r *Repository) UpsertSchedule(ctx context.Context, barberID string, day *m
 	}
 	day.BarberID = barberID
 	return day, nil
+}
+
+func (r *Repository) UpsertWeekSchedule(ctx context.Context, barberID string, days []*model.ScheduleDay) ([]*model.ScheduleDay, error) {
+	// Строим один INSERT ... VALUES ($1,$2,$3,$4,$5), ($6,...) ON CONFLICT DO UPDATE
+	args := make([]any, 0, len(days)*5)
+	valueClauses := make([]string, 0, len(days))
+	for i, d := range days {
+		base := i * 5
+		valueClauses = append(valueClauses, fmt.Sprintf("($%d,$%d,$%d,$%d,$%d)", base+1, base+2, base+3, base+4, base+5))
+		args = append(args, barberID, d.Date, d.StartTime, d.EndTime, d.PartOfDay)
+	}
+	query := `INSERT INTO schedule (barber_id, date, start_time, end_time, part_of_day)
+		VALUES ` + strings.Join(valueClauses, ",") + `
+		ON CONFLICT (barber_id, date) DO UPDATE SET
+		  start_time = EXCLUDED.start_time,
+		  end_time   = EXCLUDED.end_time,
+		  part_of_day = EXCLUDED.part_of_day
+		RETURNING id, barber_id, date::text, start_time::text, end_time::text, part_of_day
+		ORDER BY date`
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []*model.ScheduleDay
+	for rows.Next() {
+		var d model.ScheduleDay
+		if err := rows.Scan(&d.ID, &d.BarberID, &d.Date, &d.StartTime, &d.EndTime, &d.PartOfDay); err != nil {
+			return nil, err
+		}
+		result = append(result, &d)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (r *Repository) DeleteSchedule(ctx context.Context, barberID, date string) (string, error) {

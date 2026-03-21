@@ -41,6 +41,10 @@ func (m *mockStaffSvc) UpsertSchedule(ctx context.Context, barberID string, day 
 	args := m.Called(ctx, barberID, day)
 	return args.Get(0).(*model.ScheduleDay), args.Error(1)
 }
+func (m *mockStaffSvc) UpsertWeekSchedule(ctx context.Context, barberID string, days []*model.ScheduleDay) ([]*model.ScheduleDay, error) {
+	args := m.Called(ctx, barberID, days)
+	return args.Get(0).([]*model.ScheduleDay), args.Error(1)
+}
 func (m *mockStaffSvc) DeleteSchedule(ctx context.Context, barberID, date string) error {
 	return m.Called(ctx, barberID, date).Error(0)
 }
