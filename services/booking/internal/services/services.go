@@ -221,9 +221,8 @@ func (s *bookingService) UpdateBookingStatus(ctx context.Context, bookingID, bar
 		s.log.Warn("update booking status: ownership mismatch", "booking_id", bookingID, "barber_id", barberID)
 		return nil, apperr.NotFound("booking not found")
 	}
-	if model.FinalStatuses[existing.Status] {
-		s.log.Warn("update booking status: invalid transition", "booking_id", bookingID, "current_status", existing.Status, "new_status", newStatus)
-		return nil, apperr.FailedPrecondition("booking is already in a final status")
+	if existing.Status == newStatus {
+		return existing, nil
 	}
 
 	if err := s.repo.UpdateBookingStatus(ctx, bookingID, newStatus); err != nil {

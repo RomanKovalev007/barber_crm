@@ -483,20 +483,25 @@ func TestUpdateBookingStatus_OwnershipMismatch(t *testing.T) {
 	assert.Equal(t, apperr.CodeNotFound, appErr.Code)
 }
 
-func TestUpdateBookingStatus_FinalStatus(t *testing.T) {
+func TestUpdateBookingStatus_FinalToFinal(t *testing.T) {
 	ctx := context.Background()
 
-	for _, finalStatus := range []string{model.StatusCancelled, model.StatusCompleted, model.StatusNoShow} {
+	// переход между финальными статусами разрешён (барбер мог ошибиться)
+	transitions := [][2]string{
+		{model.StatusCompleted, model.StatusCancelled},
+		{model.StatusCancelled, model.StatusNoShow},
+		{model.StatusNoShow, model.StatusCompleted},
+	}
+	for _, tr := range transitions {
+		from, to := tr[0], tr[1]
 		r := new(MockRepo)
-		r.On("GetBooking", ctx, "bk-1").Return(&model.Booking{ID: "bk-1", BarberID: "b1", Status: finalStatus}, nil)
+		r.On("GetBooking", ctx, "bk-1").Return(&model.Booking{ID: "bk-1", BarberID: "b1", Status: from}, nil)
+		r.On("UpdateBookingStatus", ctx, "bk-1", to).Return(nil)
+		r.On("GetBooking", ctx, "bk-1").Return(&model.Booking{ID: "bk-1", BarberID: "b1", Status: to}, nil).Maybe()
 
 		svc := newTestService(r, new(MockStaffClient))
-
-		_, err := svc.UpdateBookingStatus(ctx, "bk-1", "b1", model.StatusCancelled)
-
-		var appErr *apperr.AppError
-		require.ErrorAs(t, err, &appErr, "final status: %s", finalStatus)
-		assert.Equal(t, apperr.CodeFailedPrecondition, appErr.Code, "final status: %s", finalStatus)
+		_, err := svc.UpdateBookingStatus(ctx, "bk-1", "b1", to)
+		assert.NoError(t, err, "transition %s → %s should be allowed", from, to)
 	}
 }
 
