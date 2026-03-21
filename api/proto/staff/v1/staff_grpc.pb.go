@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.0
 // - protoc             v3.21.12
-// source: staff/v1/staff.proto
+// source: api/proto/staff/v1/staff.proto
 
 package staffv1
 
@@ -20,18 +20,19 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	StaffService_Login_FullMethodName          = "/staff.v1.StaffService/Login"
-	StaffService_Logout_FullMethodName         = "/staff.v1.StaffService/Logout"
-	StaffService_RefreshToken_FullMethodName   = "/staff.v1.StaffService/RefreshToken"
-	StaffService_GetBarber_FullMethodName      = "/staff.v1.StaffService/GetBarber"
-	StaffService_ListBarbers_FullMethodName    = "/staff.v1.StaffService/ListBarbers"
-	StaffService_GetSchedule_FullMethodName    = "/staff.v1.StaffService/GetSchedule"
-	StaffService_UpsertSchedule_FullMethodName = "/staff.v1.StaffService/UpsertSchedule"
-	StaffService_DeleteSchedule_FullMethodName = "/staff.v1.StaffService/DeleteSchedule"
-	StaffService_ListServices_FullMethodName   = "/staff.v1.StaffService/ListServices"
-	StaffService_CreateService_FullMethodName  = "/staff.v1.StaffService/CreateService"
-	StaffService_UpdateService_FullMethodName  = "/staff.v1.StaffService/UpdateService"
-	StaffService_DeleteService_FullMethodName  = "/staff.v1.StaffService/DeleteService"
+	StaffService_Login_FullMethodName              = "/staff.v1.StaffService/Login"
+	StaffService_Logout_FullMethodName             = "/staff.v1.StaffService/Logout"
+	StaffService_RefreshToken_FullMethodName       = "/staff.v1.StaffService/RefreshToken"
+	StaffService_GetBarber_FullMethodName          = "/staff.v1.StaffService/GetBarber"
+	StaffService_ListBarbers_FullMethodName        = "/staff.v1.StaffService/ListBarbers"
+	StaffService_GetSchedule_FullMethodName        = "/staff.v1.StaffService/GetSchedule"
+	StaffService_UpsertSchedule_FullMethodName     = "/staff.v1.StaffService/UpsertSchedule"
+	StaffService_UpsertWeekSchedule_FullMethodName = "/staff.v1.StaffService/UpsertWeekSchedule"
+	StaffService_DeleteSchedule_FullMethodName     = "/staff.v1.StaffService/DeleteSchedule"
+	StaffService_ListServices_FullMethodName       = "/staff.v1.StaffService/ListServices"
+	StaffService_CreateService_FullMethodName      = "/staff.v1.StaffService/CreateService"
+	StaffService_UpdateService_FullMethodName      = "/staff.v1.StaffService/UpdateService"
+	StaffService_DeleteService_FullMethodName      = "/staff.v1.StaffService/DeleteService"
 )
 
 // StaffServiceClient is the client API for StaffService service.
@@ -48,6 +49,7 @@ type StaffServiceClient interface {
 	// Schedule
 	GetSchedule(ctx context.Context, in *GetScheduleRequest, opts ...grpc.CallOption) (*GetScheduleResponse, error)
 	UpsertSchedule(ctx context.Context, in *UpsertScheduleRequest, opts ...grpc.CallOption) (*ScheduleDay, error)
+	UpsertWeekSchedule(ctx context.Context, in *UpsertWeekScheduleRequest, opts ...grpc.CallOption) (*UpsertWeekScheduleResponse, error)
 	DeleteSchedule(ctx context.Context, in *DeleteScheduleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Services
 	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
@@ -134,6 +136,16 @@ func (c *staffServiceClient) UpsertSchedule(ctx context.Context, in *UpsertSched
 	return out, nil
 }
 
+func (c *staffServiceClient) UpsertWeekSchedule(ctx context.Context, in *UpsertWeekScheduleRequest, opts ...grpc.CallOption) (*UpsertWeekScheduleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpsertWeekScheduleResponse)
+	err := c.cc.Invoke(ctx, StaffService_UpsertWeekSchedule_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *staffServiceClient) DeleteSchedule(ctx context.Context, in *DeleteScheduleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
@@ -198,6 +210,7 @@ type StaffServiceServer interface {
 	// Schedule
 	GetSchedule(context.Context, *GetScheduleRequest) (*GetScheduleResponse, error)
 	UpsertSchedule(context.Context, *UpsertScheduleRequest) (*ScheduleDay, error)
+	UpsertWeekSchedule(context.Context, *UpsertWeekScheduleRequest) (*UpsertWeekScheduleResponse, error)
 	DeleteSchedule(context.Context, *DeleteScheduleRequest) (*emptypb.Empty, error)
 	// Services
 	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
@@ -234,6 +247,9 @@ func (UnimplementedStaffServiceServer) GetSchedule(context.Context, *GetSchedule
 }
 func (UnimplementedStaffServiceServer) UpsertSchedule(context.Context, *UpsertScheduleRequest) (*ScheduleDay, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpsertSchedule not implemented")
+}
+func (UnimplementedStaffServiceServer) UpsertWeekSchedule(context.Context, *UpsertWeekScheduleRequest) (*UpsertWeekScheduleResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpsertWeekSchedule not implemented")
 }
 func (UnimplementedStaffServiceServer) DeleteSchedule(context.Context, *DeleteScheduleRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteSchedule not implemented")
@@ -397,6 +413,24 @@ func _StaffService_UpsertSchedule_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StaffService_UpsertWeekSchedule_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertWeekScheduleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StaffServiceServer).UpsertWeekSchedule(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StaffService_UpsertWeekSchedule_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StaffServiceServer).UpsertWeekSchedule(ctx, req.(*UpsertWeekScheduleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _StaffService_DeleteSchedule_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteScheduleRequest)
 	if err := dec(in); err != nil {
@@ -523,6 +557,10 @@ var StaffService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _StaffService_UpsertSchedule_Handler,
 		},
 		{
+			MethodName: "UpsertWeekSchedule",
+			Handler:    _StaffService_UpsertWeekSchedule_Handler,
+		},
+		{
 			MethodName: "DeleteSchedule",
 			Handler:    _StaffService_DeleteSchedule_Handler,
 		},
@@ -544,5 +582,5 @@ var StaffService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "staff/v1/staff.proto",
+	Metadata: "api/proto/staff/v1/staff.proto",
 }

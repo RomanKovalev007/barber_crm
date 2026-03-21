@@ -19,6 +19,7 @@ service StaffService {
   // Schedule
   rpc GetSchedule(GetScheduleRequest) returns (GetScheduleResponse);
   rpc UpsertSchedule(UpsertScheduleRequest) returns (ScheduleDay);
+  rpc UpsertWeekSchedule(UpsertWeekScheduleRequest) returns (UpsertWeekScheduleResponse);
   rpc DeleteSchedule(DeleteScheduleRequest) returns (google.protobuf.Empty);
 
   // Services
@@ -107,6 +108,15 @@ message UpsertScheduleRequest {
   string    start_time  = 3; // HH:MM
   string    end_time    = 4; // HH:MM
   PartOfDay part_of_day = 5;
+}
+
+message UpsertWeekScheduleRequest {
+  string                    barber_id = 1;
+  repeated UpsertScheduleRequest days = 2;
+}
+
+message UpsertWeekScheduleResponse {
+  repeated ScheduleDay days = 1;
 }
 
 message DeleteScheduleRequest {
