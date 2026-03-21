@@ -160,7 +160,6 @@ services:
         condition: service_healthy
     ports:
       - "50051:50051"
-      - "9091:9091"
 
   booking:
     build:
@@ -188,7 +187,6 @@ services:
         condition: service_healthy
     ports:
       - "50052:50051"
-      - "9092:9092"
 
   analytics:
     build:
@@ -207,7 +205,6 @@ services:
         condition: service_healthy
     ports:
       - "50053:50051"
-      - "9093:9093"
 
   client:
     build:
@@ -227,13 +224,13 @@ services:
         condition: service_healthy
     ports:
       - "50054:50051"
-      - "9094:9094"
 
   api-gateway:
     build:
       context: ./services/api-gateway
     environment:
       HTTP_PORT: ":8080"
+      METRICS_PORT: ":9095"
       JWT_SECRET: dev-jwt-secret-change-in-prod
       STAFF_ADDR: staff:50051
       BOOKING_ADDR: booking:50051

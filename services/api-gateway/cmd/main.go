@@ -95,9 +95,6 @@ func main() {
 		MaxAge:           300,
 	}))
 
-	// Metrics — без аутентификации и таймаута
-	r.Handle("/metrics", promhttp.Handler())
-
 	// Health check — без таймаута и аутентификации
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -161,6 +158,21 @@ func main() {
 			r.With(chiMiddleware.Timeout(30 * time.Second)).Get("/analytics", staffHandler.GetAnalytics)
 		})
 	})
+
+	// ── Metrics server (internal only, not mapped to host) ────────────────────
+
+	metricsMux := http.NewServeMux()
+	metricsMux.Handle("/metrics", promhttp.Handler())
+	metricsSrv := &http.Server{
+		Addr:    cfg.MetricsPort,
+		Handler: metricsMux,
+	}
+	go func() {
+		log.Info("metrics server started", "port", cfg.MetricsPort)
+		if err := metricsSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Error("metrics server failed", "error", err)
+		}
+	}()
 
 	// ── HTTP server ───────────────────────────────────────────────────────────
 
