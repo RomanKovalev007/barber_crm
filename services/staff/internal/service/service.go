@@ -32,7 +32,7 @@ type redisStore interface {
 type staffRepo interface {
 	GetBarber(ctx context.Context, id string) (*model.Barber, error)
 	GetBarberByLogin(ctx context.Context, login string) (*model.Barber, error)
-	ListBarbers(ctx context.Context) ([]model.Barber, error)
+	ListBarbers(ctx context.Context, limit, offset int) ([]model.Barber, int, error)
 
 	UpsertSchedule(ctx context.Context, barberID string, day *model.ScheduleDay) (*model.ScheduleDay, error)
 	UpsertWeekSchedule(ctx context.Context, barberID string, days []*model.ScheduleDay) ([]*model.ScheduleDay, error)
@@ -42,7 +42,7 @@ type staffRepo interface {
 	CreateService(ctx context.Context, s *model.Service) error
 	UpdateService(ctx context.Context, s *model.Service) error
 	DeleteService(ctx context.Context, id string, barberID string) error
-	ListServices(ctx context.Context, barberID string, includeInactive bool) ([]model.Service, error)
+	ListServices(ctx context.Context, barberID string, includeInactive bool, limit, offset int) ([]model.Service, int, error)
 }
 
 type eventProducer interface {
@@ -167,12 +167,12 @@ func (s *Service) GetBarber(ctx context.Context, id string) (*model.Barber, erro
 	return barber, nil
 }
 
-func (s *Service) ListBarbers(ctx context.Context) ([]model.Barber, error) {
-	barbers, err := s.repo.ListBarbers(ctx)
+func (s *Service) ListBarbers(ctx context.Context, limit, offset int) ([]model.Barber, int, error) {
+	barbers, total, err := s.repo.ListBarbers(ctx, limit, offset)
 	if err != nil {
-		return nil, apperr.Internal("failed to list barbers")
+		return nil, 0, apperr.Internal("failed to list barbers")
 	}
-	return barbers, nil
+	return barbers, total, nil
 }
 
 // services
@@ -240,15 +240,15 @@ func (s *Service) DeleteService(ctx context.Context, id, barberID string) error 
 	return nil
 }
 
-func (s *Service) ListServices(ctx context.Context, barberID string, includeInactive bool) ([]model.Service, error) {
+func (s *Service) ListServices(ctx context.Context, barberID string, includeInactive bool, limit, offset int) ([]model.Service, int, error) {
 	if barberID == "" {
-		return nil, apperr.InvalidArgument("barber_id is empty")
+		return nil, 0, apperr.InvalidArgument("barber_id is empty")
 	}
-	services, err := s.repo.ListServices(ctx, barberID, includeInactive)
+	services, total, err := s.repo.ListServices(ctx, barberID, includeInactive, limit, offset)
 	if err != nil {
-		return nil, apperr.Internal("failed to list services")
+		return nil, 0, apperr.Internal("failed to list services")
 	}
-	return services, nil
+	return services, total, nil
 }
 
 // schedule

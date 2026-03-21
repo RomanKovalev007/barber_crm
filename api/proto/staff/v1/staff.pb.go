@@ -495,6 +495,8 @@ func (x *BarberResponse) GetServices() []*ServiceResponse {
 
 type ListBarbersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	Limit         int32                  `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
+	Offset        int32                  `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -529,9 +531,24 @@ func (*ListBarbersRequest) Descriptor() ([]byte, []int) {
 	return file_api_proto_staff_v1_staff_proto_rawDescGZIP(), []int{7}
 }
 
+func (x *ListBarbersRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ListBarbersRequest) GetOffset() int32 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
 type ListBarbersResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Barbers       []*BarberResponse      `protobuf:"bytes,1,rep,name=barbers,proto3" json:"barbers,omitempty"`
+	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -571,6 +588,13 @@ func (x *ListBarbersResponse) GetBarbers() []*BarberResponse {
 		return x.Barbers
 	}
 	return nil
+}
+
+func (x *ListBarbersResponse) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
 }
 
 type ScheduleDay struct {
@@ -989,6 +1013,8 @@ type ListServicesRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	BarberId        string                 `protobuf:"bytes,1,opt,name=barber_id,json=barberId,proto3" json:"barber_id,omitempty"`
 	IncludeInactive bool                   `protobuf:"varint,2,opt,name=include_inactive,json=includeInactive,proto3" json:"include_inactive,omitempty"`
+	Limit           int32                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
+	Offset          int32                  `protobuf:"varint,4,opt,name=offset,proto3" json:"offset,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1037,9 +1063,24 @@ func (x *ListServicesRequest) GetIncludeInactive() bool {
 	return false
 }
 
+func (x *ListServicesRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ListServicesRequest) GetOffset() int32 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
 type ListServicesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Services      []*ServiceResponse     `protobuf:"bytes,1,rep,name=services,proto3" json:"services,omitempty"`
+	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1079,6 +1120,13 @@ func (x *ListServicesResponse) GetServices() []*ServiceResponse {
 		return x.Services
 	}
 	return nil
+}
+
+func (x *ListServicesResponse) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
 }
 
 type CreateServiceRequest struct {
@@ -1490,10 +1538,13 @@ const file_api_proto_staff_v1_staff_proto_rawDesc = "" +
 	"\x0eBarberResponse\x12\x1b\n" +
 	"\tbarber_id\x18\x01 \x01(\tR\bbarberId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x125\n" +
-	"\bservices\x18\x03 \x03(\v2\x19.staff.v1.ServiceResponseR\bservices\"\x14\n" +
-	"\x12ListBarbersRequest\"I\n" +
+	"\bservices\x18\x03 \x03(\v2\x19.staff.v1.ServiceResponseR\bservices\"B\n" +
+	"\x12ListBarbersRequest\x12\x14\n" +
+	"\x05limit\x18\x01 \x01(\x05R\x05limit\x12\x16\n" +
+	"\x06offset\x18\x02 \x01(\x05R\x06offset\"_\n" +
 	"\x13ListBarbersResponse\x122\n" +
-	"\abarbers\x18\x01 \x03(\v2\x18.staff.v1.BarberResponseR\abarbers\"\xd5\x01\n" +
+	"\abarbers\x18\x01 \x03(\v2\x18.staff.v1.BarberResponseR\abarbers\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\"\xd5\x01\n" +
 	"\vScheduleDay\x12&\n" +
 	"\x0fschedule_day_id\x18\x01 \x01(\tR\rscheduleDayId\x12\x1b\n" +
 	"\tbarber_id\x18\x02 \x01(\tR\bbarberId\x12\x12\n" +
@@ -1522,12 +1573,15 @@ const file_api_proto_staff_v1_staff_proto_rawDesc = "" +
 	"\x04days\x18\x01 \x03(\v2\x15.staff.v1.ScheduleDayR\x04days\"H\n" +
 	"\x15DeleteScheduleRequest\x12\x1b\n" +
 	"\tbarber_id\x18\x01 \x01(\tR\bbarberId\x12\x12\n" +
-	"\x04date\x18\x02 \x01(\tR\x04date\"]\n" +
+	"\x04date\x18\x02 \x01(\tR\x04date\"\x8b\x01\n" +
 	"\x13ListServicesRequest\x12\x1b\n" +
 	"\tbarber_id\x18\x01 \x01(\tR\bbarberId\x12)\n" +
-	"\x10include_inactive\x18\x02 \x01(\bR\x0fincludeInactive\"M\n" +
+	"\x10include_inactive\x18\x02 \x01(\bR\x0fincludeInactive\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12\x16\n" +
+	"\x06offset\x18\x04 \x01(\x05R\x06offset\"c\n" +
 	"\x14ListServicesResponse\x125\n" +
-	"\bservices\x18\x01 \x03(\v2\x19.staff.v1.ServiceResponseR\bservices\"\x88\x01\n" +
+	"\bservices\x18\x01 \x03(\v2\x19.staff.v1.ServiceResponseR\bservices\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\"\x88\x01\n" +
 	"\x14CreateServiceRequest\x12\x1b\n" +
 	"\tbarber_id\x18\x01 \x01(\tR\bbarberId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +

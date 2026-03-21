@@ -57,6 +57,20 @@ func (s *Service) GetBarberStats(ctx context.Context, req *pb.GetBarberStatsRequ
 		return nil, apperr.Internal("failed to get daily breakdown")
 	}
 
+	// apply pagination to daily breakdown
+	dailyTotal := int32(len(daily))
+	if req.DailyBreakdownLimit > 0 {
+		offset := int(req.DailyBreakdownOffset)
+		if offset >= len(daily) {
+			daily = nil
+		} else {
+			daily = daily[offset:]
+			if int(req.DailyBreakdownLimit) < len(daily) {
+				daily = daily[:req.DailyBreakdownLimit]
+			}
+		}
+	}
+
 	hoursWorked := scheduleMinutes / 60.0
 
 	var averageCheck float64
@@ -89,8 +103,9 @@ func (s *Service) GetBarberStats(ctx context.Context, req *pb.GetBarberStatsRequ
 		BookingsCancelled: stats.BookingsCancelled,
 		BookingsNoShow:    stats.BookingsNoShow,
 		OccupancyRate:     occupancyRate,
-		TopServices:       toProtoTopServices(topServices),
-		DailyBreakdown:    toProtoDailyBreakdown(daily),
+		TopServices:          toProtoTopServices(topServices),
+		DailyBreakdown:       toProtoDailyBreakdown(daily),
+		DailyBreakdownTotal:  dailyTotal,
 	}, nil
 }
 

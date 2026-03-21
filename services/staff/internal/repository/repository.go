@@ -49,7 +49,7 @@ func (r *Repository) GetBarber(ctx context.Context, id string) (*model.Barber, e
 		}
 		return nil, err
 	}
-	services, err := r.ListServices(ctx, id, false)
+	services, _, err := r.ListServices(ctx, id, false, 0, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,63 @@ func (r *Repository) GetBarber(ctx context.Context, id string) (*model.Barber, e
 	return &b, nil
 }
 
-func (r *Repository) ListBarbers(ctx context.Context) ([]model.Barber, error) {
+func (r *Repository) ListBarbers(ctx context.Context, limit, offset int) ([]model.Barber, int, error) {
+	var total int
+
+	if limit > 0 {
+		// Get total count of active barbers
+		if err := r.db.QueryRow(ctx,
+			`SELECT COUNT(*) FROM barbers WHERE is_active = true`).Scan(&total); err != nil {
+			return nil, 0, err
+		}
+
+		// Paginated query using a subquery for barbers
+		rows, err := r.db.Query(ctx,
+			`SELECT b.id, b.name,
+			        s.id, s.barber_id, s.name, s.price, s.duration_minutes, s.is_active
+			 FROM (SELECT id, name FROM barbers WHERE is_active = true ORDER BY name LIMIT $1 OFFSET $2) b
+			 LEFT JOIN services s ON s.barber_id = b.id AND s.is_active = true
+			 ORDER BY b.name, s.name`,
+			limit, offset)
+		if err != nil {
+			return nil, 0, err
+		}
+		defer rows.Close()
+
+		var barbers []model.Barber
+		index := map[string]int{}
+		for rows.Next() {
+			var bID, bName string
+			var sID, sBarberID, sName *string
+			var sPrice, sDuration *int
+			var sIsActive *bool
+			if err := rows.Scan(&bID, &bName, &sID, &sBarberID, &sName, &sPrice, &sDuration, &sIsActive); err != nil {
+				return nil, 0, err
+			}
+			i, seen := index[bID]
+			if !seen {
+				barbers = append(barbers, model.Barber{ID: bID, Name: bName})
+				i = len(barbers) - 1
+				index[bID] = i
+			}
+			if sID != nil {
+				barbers[i].Services = append(barbers[i].Services, model.Service{
+					ID:              *sID,
+					BarberID:        *sBarberID,
+					Name:            *sName,
+					Price:           *sPrice,
+					DurationMinutes: *sDuration,
+					IsActive:        *sIsActive,
+				})
+			}
+		}
+		if err := rows.Err(); err != nil {
+			return nil, 0, err
+		}
+		return barbers, total, nil
+	}
+
+	// No pagination — return all
 	rows, err := r.db.Query(ctx,
 		`SELECT b.id, b.name,
 		        s.id, s.barber_id, s.name, s.price, s.duration_minutes, s.is_active
@@ -66,7 +122,7 @@ func (r *Repository) ListBarbers(ctx context.Context) ([]model.Barber, error) {
 		 WHERE b.is_active = true
 		 ORDER BY b.name, s.name`)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -78,7 +134,7 @@ func (r *Repository) ListBarbers(ctx context.Context) ([]model.Barber, error) {
 		var sPrice, sDuration *int
 		var sIsActive *bool
 		if err := rows.Scan(&bID, &bName, &sID, &sBarberID, &sName, &sPrice, &sDuration, &sIsActive); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		i, seen := index[bID]
 		if !seen {
@@ -98,12 +154,42 @@ func (r *Repository) ListBarbers(ctx context.Context) ([]model.Barber, error) {
 		}
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return barbers, nil
+	return barbers, len(barbers), nil
 }
 
-func (r *Repository) ListServices(ctx context.Context, barberID string, includeInactive bool) ([]model.Service, error) {
+func (r *Repository) ListServices(ctx context.Context, barberID string, includeInactive bool, limit, offset int) ([]model.Service, int, error) {
+	if limit > 0 {
+		query := `SELECT id, barber_id, name, price, duration_minutes, is_active, COUNT(*) OVER() as total
+		          FROM services WHERE barber_id = $1`
+		if !includeInactive {
+			query += ` AND is_active = true`
+		}
+		query += fmt.Sprintf(` ORDER BY name LIMIT $2 OFFSET $3`)
+
+		rows, err := r.db.Query(ctx, query, barberID, limit, offset)
+		if err != nil {
+			return nil, 0, err
+		}
+		defer rows.Close()
+
+		var services []model.Service
+		var total int
+		for rows.Next() {
+			var s model.Service
+			if err := rows.Scan(&s.ID, &s.BarberID, &s.Name, &s.Price, &s.DurationMinutes, &s.IsActive, &total); err != nil {
+				return nil, 0, err
+			}
+			services = append(services, s)
+		}
+		if err := rows.Err(); err != nil {
+			return nil, 0, err
+		}
+		return services, total, nil
+	}
+
+	// No pagination — return all
 	query := `SELECT id, barber_id, name, price, duration_minutes, is_active
 	          FROM services WHERE barber_id = $1`
 	if !includeInactive {
@@ -113,7 +199,7 @@ func (r *Repository) ListServices(ctx context.Context, barberID string, includeI
 
 	rows, err := r.db.Query(ctx, query, barberID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -121,14 +207,14 @@ func (r *Repository) ListServices(ctx context.Context, barberID string, includeI
 	for rows.Next() {
 		var s model.Service
 		if err := rows.Scan(&s.ID, &s.BarberID, &s.Name, &s.Price, &s.DurationMinutes, &s.IsActive); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		services = append(services, s)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return services, nil
+	return services, len(services), nil
 }
 
 func (r *Repository) CreateService(ctx context.Context, s *model.Service) error {

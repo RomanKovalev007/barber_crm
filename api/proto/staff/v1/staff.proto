@@ -69,10 +69,14 @@ message BarberResponse {
   repeated ServiceResponse services = 3;
 }
 
-message ListBarbersRequest {}
+message ListBarbersRequest {
+  int32 limit  = 1;
+  int32 offset = 2;
+}
 
 message ListBarbersResponse {
   repeated BarberResponse barbers = 1;
+  int32                   total   = 2;
 }
 
 // ─── Schedule ───────────────────────────────────────────────────────────────
@@ -129,10 +133,13 @@ message DeleteScheduleRequest {
 message ListServicesRequest {
   string barber_id        = 1;
   bool   include_inactive = 2;
+  int32  limit            = 3;
+  int32  offset           = 4;
 }
 
 message ListServicesResponse {
   repeated ServiceResponse services = 1;
+  int32                    total    = 2;
 }
 
 message CreateServiceRequest {

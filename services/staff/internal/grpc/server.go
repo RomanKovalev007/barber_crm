@@ -18,14 +18,14 @@ type staffService interface {
 	Logout(ctx context.Context, refreshToken string) error
 	RefreshToken(ctx context.Context, refreshTokenStr string) (string, string, error)
 	GetBarber(ctx context.Context, id string) (*model.Barber, error)
-	ListBarbers(ctx context.Context) ([]model.Barber, error)
+	ListBarbers(ctx context.Context, limit, offset int) ([]model.Barber, int, error)
 
 	UpsertSchedule(ctx context.Context, barberID string, day *model.ScheduleDay) (*model.ScheduleDay, error)
 	UpsertWeekSchedule(ctx context.Context, barberID string, days []*model.ScheduleDay) ([]*model.ScheduleDay, error)
 	DeleteSchedule(ctx context.Context, barberID, date string) error
 	GetSchedule(ctx context.Context, barberID string, week string) ([]model.ScheduleDay, error)
 
-	ListServices(ctx context.Context, barberID string, includeInactive bool) ([]model.Service, error)
+	ListServices(ctx context.Context, barberID string, includeInactive bool, limit, offset int) ([]model.Service, int, error)
 	CreateService(ctx context.Context, svc *model.Service) error
 	DeleteService(ctx context.Context, id string, barberID string) error
 	UpdateService(ctx context.Context, svc *model.Service) error
@@ -88,8 +88,8 @@ func (s *Server) GetBarber(ctx context.Context, req *pb.GetBarberRequest) (*pb.B
 	return barberToProto(barber), nil
 }
 
-func (s *Server) ListBarbers(ctx context.Context, _ *pb.ListBarbersRequest) (*pb.ListBarbersResponse, error) {
-	barbers, err := s.svc.ListBarbers(ctx)
+func (s *Server) ListBarbers(ctx context.Context, req *pb.ListBarbersRequest) (*pb.ListBarbersResponse, error) {
+	barbers, total, err := s.svc.ListBarbers(ctx, int(req.Limit), int(req.Offset))
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
@@ -97,7 +97,7 @@ func (s *Server) ListBarbers(ctx context.Context, _ *pb.ListBarbersRequest) (*pb
 	for _, b := range barbers {
 		pbBarbers = append(pbBarbers, barberToProto(&b))
 	}
-	return &pb.ListBarbersResponse{Barbers: pbBarbers}, nil
+	return &pb.ListBarbersResponse{Barbers: pbBarbers, Total: int32(total)}, nil
 }
 
 // schedule
@@ -161,7 +161,7 @@ func (s *Server) DeleteSchedule(ctx context.Context, req *pb.DeleteScheduleReque
 // services
 
 func (s *Server) ListServices(ctx context.Context, req *pb.ListServicesRequest) (*pb.ListServicesResponse, error) {
-	services, err := s.svc.ListServices(ctx, req.BarberId, req.IncludeInactive)
+	services, total, err := s.svc.ListServices(ctx, req.BarberId, req.IncludeInactive, int(req.Limit), int(req.Offset))
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
@@ -169,7 +169,7 @@ func (s *Server) ListServices(ctx context.Context, req *pb.ListServicesRequest) 
 	for _, svc := range services {
 		pbServices = append(pbServices, serviceToProto(&svc))
 	}
-	return &pb.ListServicesResponse{Services: pbServices}, nil
+	return &pb.ListServicesResponse{Services: pbServices, Total: int32(total)}, nil
 }
 
 func (s *Server) CreateService(ctx context.Context, req *pb.CreateServiceRequest) (*pb.ServiceResponse, error) {

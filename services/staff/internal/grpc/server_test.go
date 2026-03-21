@@ -33,9 +33,9 @@ func (m *mockStaffSvc) GetBarber(ctx context.Context, id string) (*model.Barber,
 	args := m.Called(ctx, id)
 	return args.Get(0).(*model.Barber), args.Error(1)
 }
-func (m *mockStaffSvc) ListBarbers(ctx context.Context) ([]model.Barber, error) {
-	args := m.Called(ctx)
-	return args.Get(0).([]model.Barber), args.Error(1)
+func (m *mockStaffSvc) ListBarbers(ctx context.Context, limit, offset int) ([]model.Barber, int, error) {
+	args := m.Called(ctx, limit, offset)
+	return args.Get(0).([]model.Barber), args.Int(1), args.Error(2)
 }
 func (m *mockStaffSvc) UpsertSchedule(ctx context.Context, barberID string, day *model.ScheduleDay) (*model.ScheduleDay, error) {
 	args := m.Called(ctx, barberID, day)
@@ -52,9 +52,9 @@ func (m *mockStaffSvc) GetSchedule(ctx context.Context, barberID, week string) (
 	args := m.Called(ctx, barberID, week)
 	return args.Get(0).([]model.ScheduleDay), args.Error(1)
 }
-func (m *mockStaffSvc) ListServices(ctx context.Context, barberID string, includeInactive bool) ([]model.Service, error) {
-	args := m.Called(ctx, barberID, includeInactive)
-	return args.Get(0).([]model.Service), args.Error(1)
+func (m *mockStaffSvc) ListServices(ctx context.Context, barberID string, includeInactive bool, limit, offset int) ([]model.Service, int, error) {
+	args := m.Called(ctx, barberID, includeInactive, limit, offset)
+	return args.Get(0).([]model.Service), args.Int(1), args.Error(2)
 }
 func (m *mockStaffSvc) CreateService(ctx context.Context, svc *model.Service) error {
 	return m.Called(ctx, svc).Error(0)
@@ -174,7 +174,7 @@ func TestGetBarber_NotFound(t *testing.T) {
 
 func TestListBarbers_Success(t *testing.T) {
 	srv, svc := newStaffServer()
-	svc.On("ListBarbers", mock.Anything).Return([]model.Barber{*sampleBarber()}, nil)
+	svc.On("ListBarbers", mock.Anything, 0, 0).Return([]model.Barber{*sampleBarber()}, 1, nil)
 
 	resp, err := srv.ListBarbers(context.Background(), &pb.ListBarbersRequest{})
 	require.NoError(t, err)
@@ -183,7 +183,7 @@ func TestListBarbers_Success(t *testing.T) {
 
 func TestListBarbers_Empty(t *testing.T) {
 	srv, svc := newStaffServer()
-	svc.On("ListBarbers", mock.Anything).Return([]model.Barber{}, nil)
+	svc.On("ListBarbers", mock.Anything, 0, 0).Return([]model.Barber{}, 0, nil)
 
 	resp, err := srv.ListBarbers(context.Background(), &pb.ListBarbersRequest{})
 	require.NoError(t, err)
@@ -269,7 +269,7 @@ func TestDeleteSchedule_NotFound(t *testing.T) {
 
 func TestListServices_Success(t *testing.T) {
 	srv, svc := newStaffServer()
-	svc.On("ListServices", mock.Anything, "b-1", true).Return([]model.Service{*sampleService()}, nil)
+	svc.On("ListServices", mock.Anything, "b-1", true, 0, 0).Return([]model.Service{*sampleService()}, 1, nil)
 
 	resp, err := srv.ListServices(context.Background(), &pb.ListServicesRequest{BarberId: "b-1", IncludeInactive: true})
 	require.NoError(t, err)
@@ -279,7 +279,7 @@ func TestListServices_Success(t *testing.T) {
 
 func TestListServices_Empty(t *testing.T) {
 	srv, svc := newStaffServer()
-	svc.On("ListServices", mock.Anything, "b-1", false).Return([]model.Service{}, nil)
+	svc.On("ListServices", mock.Anything, "b-1", false, 0, 0).Return([]model.Service{}, 0, nil)
 
 	resp, err := srv.ListServices(context.Background(), &pb.ListServicesRequest{BarberId: "b-1"})
 	require.NoError(t, err)

@@ -22,7 +22,12 @@ func NewPublicHandler(staff staffv1.StaffServiceClient, booking bookingv1.Bookin
 }
 
 func (h *PublicHandler) ListBarbers(w http.ResponseWriter, r *http.Request) {
-	resp, err := h.staff.ListBarbers(r.Context(), &staffv1.ListBarbersRequest{})
+	limit, offset := parsePagination(r, 0, 1000)
+
+	resp, err := h.staff.ListBarbers(r.Context(), &staffv1.ListBarbersRequest{
+		Limit:  int32(limit),
+		Offset: int32(offset),
+	})
 	if err != nil {
 		response.GrpcErrorToHttp(w, err)
 		return
@@ -33,7 +38,12 @@ func (h *PublicHandler) ListBarbers(w http.ResponseWriter, r *http.Request) {
 		barbers = append(barbers, barberToModel(b))
 	}
 
-	response.WriteJSON(w, http.StatusOK, map[string]any{"barbers": barbers})
+	response.WriteJSON(w, http.StatusOK, map[string]any{
+		"barbers": barbers,
+		"total":   resp.Total,
+		"limit":   limit,
+		"offset":  offset,
+	})
 }
 
 func (h *PublicHandler) ListServicesByBarber(w http.ResponseWriter, r *http.Request) {
@@ -43,9 +53,13 @@ func (h *PublicHandler) ListServicesByBarber(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	limit, offset := parsePagination(r, 0, 1000)
+
 	resp, err := h.staff.ListServices(r.Context(), &staffv1.ListServicesRequest{
 		BarberId:        barberID,
 		IncludeInactive: false,
+		Limit:           int32(limit),
+		Offset:          int32(offset),
 	})
 	if err != nil {
 		response.GrpcErrorToHttp(w, err)
@@ -57,7 +71,12 @@ func (h *PublicHandler) ListServicesByBarber(w http.ResponseWriter, r *http.Requ
 		services = append(services, serviceToModel(s))
 	}
 
-	response.WriteJSON(w, http.StatusOK, map[string]any{"services": services})
+	response.WriteJSON(w, http.StatusOK, map[string]any{
+		"services": services,
+		"total":    resp.Total,
+		"limit":    limit,
+		"offset":   offset,
+	})
 }
 
 func (h *PublicHandler) FreeSlotsByBarber(w http.ResponseWriter, r *http.Request) {

@@ -59,9 +59,13 @@ func (h *StaffHandler) ListServices(w http.ResponseWriter, r *http.Request) {
 	// default true (include inactive), unless explicitly set to false
 	includeInactive := r.URL.Query().Get("include_inactive") != "false"
 
+	limit, offset := parsePagination(r, 0, 1000)
+
 	resp, err := h.staff.ListServices(r.Context(), &staffv1.ListServicesRequest{
 		BarberId:        barberID,
 		IncludeInactive: includeInactive,
+		Limit:           int32(limit),
+		Offset:          int32(offset),
 	})
 	if err != nil {
 		response.GrpcErrorToHttp(w, err)
@@ -73,7 +77,12 @@ func (h *StaffHandler) ListServices(w http.ResponseWriter, r *http.Request) {
 		services = append(services, serviceToModel(s))
 	}
 
-	response.WriteJSON(w, http.StatusOK, map[string]any{"services": services})
+	response.WriteJSON(w, http.StatusOK, map[string]any{
+		"services": services,
+		"total":    resp.Total,
+		"limit":    limit,
+		"offset":   offset,
+	})
 }
 
 func (h *StaffHandler) CreateService(w http.ResponseWriter, r *http.Request) {
@@ -698,16 +707,39 @@ func (h *StaffHandler) GetAnalytics(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	dailyLimit, dailyOffset := parsePagination(r, 0, 1000)
+
 	resp, err := h.analytics.GetBarberStats(r.Context(), &analyticsv1.GetBarberStatsRequest{
-		BarberId: barberID,
-		Period:   analyticsperiod,
+		BarberId:             barberID,
+		Period:               analyticsperiod,
+		DailyBreakdownLimit:  int32(dailyLimit),
+		DailyBreakdownOffset: int32(dailyOffset),
 	})
 	if err != nil {
 		response.GrpcErrorToHttp(w, err)
 		return
 	}
 
-	response.WriteJSON(w, http.StatusOK, analyticsToModel(resp))
+	m := analyticsToModel(resp)
+	response.WriteJSON(w, http.StatusOK, map[string]any{
+		"barber_id":             m.BarberID,
+		"date_from":             m.DateFrom,
+		"date_to":               m.DateTo,
+		"clients_served":        m.ClientsServed,
+		"total_revenue":         m.TotalRevenue,
+		"hours_worked":          m.HoursWorked,
+		"average_check":         m.AverageCheck,
+		"bookings_total":        m.BookingsTotal,
+		"bookings_completed":    m.BookingsCompleted,
+		"bookings_cancelled":    m.BookingsCancelled,
+		"bookings_no_show":      m.BookingsNoShow,
+		"occupancy_rate":        m.OccupancyRate,
+		"top_services":          m.TopServices,
+		"daily_breakdown":       m.DailyBreakdown,
+		"daily_breakdown_total": resp.DailyBreakdownTotal,
+		"daily_limit":           dailyLimit,
+		"daily_offset":          dailyOffset,
+	})
 }
 
 var periodPresets = map[string]analyticsv1.PredefinedPeriod{

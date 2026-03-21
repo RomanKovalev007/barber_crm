@@ -11,8 +11,10 @@ service AnalyticsService {
 // ─── Request ─────────────────────────────────────────────────────────────────
 
 message GetBarberStatsRequest {
-  string barber_id = 1;
-  Period period    = 2;
+  string barber_id              = 1;
+  Period period                 = 2;
+  int32  daily_breakdown_limit  = 3;
+  int32  daily_breakdown_offset = 4;
 }
 
 message Period {
@@ -54,6 +56,7 @@ message BarberStatsResponse {
 
   repeated TopService top_services    = 13;
   repeated DayStat    daily_breakdown = 14;
+  int32  daily_breakdown_total = 15;
 }
 
 message TopService {

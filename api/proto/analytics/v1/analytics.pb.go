@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v3.21.12
-// source: analytics/v1/analytics.proto
+// source: api/proto/analytics/v1/analytics.proto
 
 package analyticsv1
 
@@ -60,11 +60,11 @@ func (x PredefinedPeriod) String() string {
 }
 
 func (PredefinedPeriod) Descriptor() protoreflect.EnumDescriptor {
-	return file_analytics_v1_analytics_proto_enumTypes[0].Descriptor()
+	return file_api_proto_analytics_v1_analytics_proto_enumTypes[0].Descriptor()
 }
 
 func (PredefinedPeriod) Type() protoreflect.EnumType {
-	return &file_analytics_v1_analytics_proto_enumTypes[0]
+	return &file_api_proto_analytics_v1_analytics_proto_enumTypes[0]
 }
 
 func (x PredefinedPeriod) Number() protoreflect.EnumNumber {
@@ -73,20 +73,22 @@ func (x PredefinedPeriod) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use PredefinedPeriod.Descriptor instead.
 func (PredefinedPeriod) EnumDescriptor() ([]byte, []int) {
-	return file_analytics_v1_analytics_proto_rawDescGZIP(), []int{0}
+	return file_api_proto_analytics_v1_analytics_proto_rawDescGZIP(), []int{0}
 }
 
 type GetBarberStatsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	BarberId      string                 `protobuf:"bytes,1,opt,name=barber_id,json=barberId,proto3" json:"barber_id,omitempty"`
-	Period        *Period                `protobuf:"bytes,2,opt,name=period,proto3" json:"period,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	BarberId             string                 `protobuf:"bytes,1,opt,name=barber_id,json=barberId,proto3" json:"barber_id,omitempty"`
+	Period               *Period                `protobuf:"bytes,2,opt,name=period,proto3" json:"period,omitempty"`
+	DailyBreakdownLimit  int32                  `protobuf:"varint,3,opt,name=daily_breakdown_limit,json=dailyBreakdownLimit,proto3" json:"daily_breakdown_limit,omitempty"`
+	DailyBreakdownOffset int32                  `protobuf:"varint,4,opt,name=daily_breakdown_offset,json=dailyBreakdownOffset,proto3" json:"daily_breakdown_offset,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *GetBarberStatsRequest) Reset() {
 	*x = GetBarberStatsRequest{}
-	mi := &file_analytics_v1_analytics_proto_msgTypes[0]
+	mi := &file_api_proto_analytics_v1_analytics_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -98,7 +100,7 @@ func (x *GetBarberStatsRequest) String() string {
 func (*GetBarberStatsRequest) ProtoMessage() {}
 
 func (x *GetBarberStatsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_analytics_v1_analytics_proto_msgTypes[0]
+	mi := &file_api_proto_analytics_v1_analytics_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -111,7 +113,7 @@ func (x *GetBarberStatsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetBarberStatsRequest.ProtoReflect.Descriptor instead.
 func (*GetBarberStatsRequest) Descriptor() ([]byte, []int) {
-	return file_analytics_v1_analytics_proto_rawDescGZIP(), []int{0}
+	return file_api_proto_analytics_v1_analytics_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *GetBarberStatsRequest) GetBarberId() string {
@@ -128,6 +130,20 @@ func (x *GetBarberStatsRequest) GetPeriod() *Period {
 	return nil
 }
 
+func (x *GetBarberStatsRequest) GetDailyBreakdownLimit() int32 {
+	if x != nil {
+		return x.DailyBreakdownLimit
+	}
+	return 0
+}
+
+func (x *GetBarberStatsRequest) GetDailyBreakdownOffset() int32 {
+	if x != nil {
+		return x.DailyBreakdownOffset
+	}
+	return 0
+}
+
 type Period struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Kind:
@@ -141,7 +157,7 @@ type Period struct {
 
 func (x *Period) Reset() {
 	*x = Period{}
-	mi := &file_analytics_v1_analytics_proto_msgTypes[1]
+	mi := &file_api_proto_analytics_v1_analytics_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -153,7 +169,7 @@ func (x *Period) String() string {
 func (*Period) ProtoMessage() {}
 
 func (x *Period) ProtoReflect() protoreflect.Message {
-	mi := &file_analytics_v1_analytics_proto_msgTypes[1]
+	mi := &file_api_proto_analytics_v1_analytics_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -166,7 +182,7 @@ func (x *Period) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Period.ProtoReflect.Descriptor instead.
 func (*Period) Descriptor() ([]byte, []int) {
-	return file_analytics_v1_analytics_proto_rawDescGZIP(), []int{1}
+	return file_api_proto_analytics_v1_analytics_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *Period) GetKind() isPeriod_Kind {
@@ -220,7 +236,7 @@ type DateRange struct {
 
 func (x *DateRange) Reset() {
 	*x = DateRange{}
-	mi := &file_analytics_v1_analytics_proto_msgTypes[2]
+	mi := &file_api_proto_analytics_v1_analytics_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -232,7 +248,7 @@ func (x *DateRange) String() string {
 func (*DateRange) ProtoMessage() {}
 
 func (x *DateRange) ProtoReflect() protoreflect.Message {
-	mi := &file_analytics_v1_analytics_proto_msgTypes[2]
+	mi := &file_api_proto_analytics_v1_analytics_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -245,7 +261,7 @@ func (x *DateRange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DateRange.ProtoReflect.Descriptor instead.
 func (*DateRange) Descriptor() ([]byte, []int) {
-	return file_analytics_v1_analytics_proto_rawDescGZIP(), []int{2}
+	return file_api_proto_analytics_v1_analytics_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *DateRange) GetDateFrom() string {
@@ -263,28 +279,29 @@ func (x *DateRange) GetDateTo() string {
 }
 
 type BarberStatsResponse struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	BarberId          string                 `protobuf:"bytes,1,opt,name=barber_id,json=barberId,proto3" json:"barber_id,omitempty"`
-	DateFrom          string                 `protobuf:"bytes,2,opt,name=date_from,json=dateFrom,proto3" json:"date_from,omitempty"` // YYYY-MM-DD (resolved)
-	DateTo            string                 `protobuf:"bytes,3,opt,name=date_to,json=dateTo,proto3" json:"date_to,omitempty"`       // YYYY-MM-DD (resolved)
-	ClientsServed     int64                  `protobuf:"varint,4,opt,name=clients_served,json=clientsServed,proto3" json:"clients_served,omitempty"`
-	TotalRevenue      int64                  `protobuf:"varint,5,opt,name=total_revenue,json=totalRevenue,proto3" json:"total_revenue,omitempty"` // руб.
-	HoursWorked       float64                `protobuf:"fixed64,6,opt,name=hours_worked,json=hoursWorked,proto3" json:"hours_worked,omitempty"`
-	AverageCheck      float64                `protobuf:"fixed64,7,opt,name=average_check,json=averageCheck,proto3" json:"average_check,omitempty"`
-	BookingsTotal     int64                  `protobuf:"varint,8,opt,name=bookings_total,json=bookingsTotal,proto3" json:"bookings_total,omitempty"`
-	BookingsCompleted int64                  `protobuf:"varint,9,opt,name=bookings_completed,json=bookingsCompleted,proto3" json:"bookings_completed,omitempty"`
-	BookingsCancelled int64                  `protobuf:"varint,10,opt,name=bookings_cancelled,json=bookingsCancelled,proto3" json:"bookings_cancelled,omitempty"`
-	BookingsNoShow    int64                  `protobuf:"varint,11,opt,name=bookings_no_show,json=bookingsNoShow,proto3" json:"bookings_no_show,omitempty"`
-	OccupancyRate     float64                `protobuf:"fixed64,12,opt,name=occupancy_rate,json=occupancyRate,proto3" json:"occupancy_rate,omitempty"` // 0.0–1.0
-	TopServices       []*TopService          `protobuf:"bytes,13,rep,name=top_services,json=topServices,proto3" json:"top_services,omitempty"`
-	DailyBreakdown    []*DayStat             `protobuf:"bytes,14,rep,name=daily_breakdown,json=dailyBreakdown,proto3" json:"daily_breakdown,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	BarberId            string                 `protobuf:"bytes,1,opt,name=barber_id,json=barberId,proto3" json:"barber_id,omitempty"`
+	DateFrom            string                 `protobuf:"bytes,2,opt,name=date_from,json=dateFrom,proto3" json:"date_from,omitempty"` // YYYY-MM-DD (resolved)
+	DateTo              string                 `protobuf:"bytes,3,opt,name=date_to,json=dateTo,proto3" json:"date_to,omitempty"`       // YYYY-MM-DD (resolved)
+	ClientsServed       int64                  `protobuf:"varint,4,opt,name=clients_served,json=clientsServed,proto3" json:"clients_served,omitempty"`
+	TotalRevenue        int64                  `protobuf:"varint,5,opt,name=total_revenue,json=totalRevenue,proto3" json:"total_revenue,omitempty"` // руб.
+	HoursWorked         float64                `protobuf:"fixed64,6,opt,name=hours_worked,json=hoursWorked,proto3" json:"hours_worked,omitempty"`
+	AverageCheck        float64                `protobuf:"fixed64,7,opt,name=average_check,json=averageCheck,proto3" json:"average_check,omitempty"`
+	BookingsTotal       int64                  `protobuf:"varint,8,opt,name=bookings_total,json=bookingsTotal,proto3" json:"bookings_total,omitempty"`
+	BookingsCompleted   int64                  `protobuf:"varint,9,opt,name=bookings_completed,json=bookingsCompleted,proto3" json:"bookings_completed,omitempty"`
+	BookingsCancelled   int64                  `protobuf:"varint,10,opt,name=bookings_cancelled,json=bookingsCancelled,proto3" json:"bookings_cancelled,omitempty"`
+	BookingsNoShow      int64                  `protobuf:"varint,11,opt,name=bookings_no_show,json=bookingsNoShow,proto3" json:"bookings_no_show,omitempty"`
+	OccupancyRate       float64                `protobuf:"fixed64,12,opt,name=occupancy_rate,json=occupancyRate,proto3" json:"occupancy_rate,omitempty"` // 0.0–1.0
+	TopServices         []*TopService          `protobuf:"bytes,13,rep,name=top_services,json=topServices,proto3" json:"top_services,omitempty"`
+	DailyBreakdown      []*DayStat             `protobuf:"bytes,14,rep,name=daily_breakdown,json=dailyBreakdown,proto3" json:"daily_breakdown,omitempty"`
+	DailyBreakdownTotal int32                  `protobuf:"varint,15,opt,name=daily_breakdown_total,json=dailyBreakdownTotal,proto3" json:"daily_breakdown_total,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *BarberStatsResponse) Reset() {
 	*x = BarberStatsResponse{}
-	mi := &file_analytics_v1_analytics_proto_msgTypes[3]
+	mi := &file_api_proto_analytics_v1_analytics_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -296,7 +313,7 @@ func (x *BarberStatsResponse) String() string {
 func (*BarberStatsResponse) ProtoMessage() {}
 
 func (x *BarberStatsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_analytics_v1_analytics_proto_msgTypes[3]
+	mi := &file_api_proto_analytics_v1_analytics_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -309,7 +326,7 @@ func (x *BarberStatsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BarberStatsResponse.ProtoReflect.Descriptor instead.
 func (*BarberStatsResponse) Descriptor() ([]byte, []int) {
-	return file_analytics_v1_analytics_proto_rawDescGZIP(), []int{3}
+	return file_api_proto_analytics_v1_analytics_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *BarberStatsResponse) GetBarberId() string {
@@ -410,6 +427,13 @@ func (x *BarberStatsResponse) GetDailyBreakdown() []*DayStat {
 	return nil
 }
 
+func (x *BarberStatsResponse) GetDailyBreakdownTotal() int32 {
+	if x != nil {
+		return x.DailyBreakdownTotal
+	}
+	return 0
+}
+
 type TopService struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ServiceId     string                 `protobuf:"bytes,1,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty"`
@@ -422,7 +446,7 @@ type TopService struct {
 
 func (x *TopService) Reset() {
 	*x = TopService{}
-	mi := &file_analytics_v1_analytics_proto_msgTypes[4]
+	mi := &file_api_proto_analytics_v1_analytics_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -434,7 +458,7 @@ func (x *TopService) String() string {
 func (*TopService) ProtoMessage() {}
 
 func (x *TopService) ProtoReflect() protoreflect.Message {
-	mi := &file_analytics_v1_analytics_proto_msgTypes[4]
+	mi := &file_api_proto_analytics_v1_analytics_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -447,7 +471,7 @@ func (x *TopService) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TopService.ProtoReflect.Descriptor instead.
 func (*TopService) Descriptor() ([]byte, []int) {
-	return file_analytics_v1_analytics_proto_rawDescGZIP(), []int{4}
+	return file_api_proto_analytics_v1_analytics_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *TopService) GetServiceId() string {
@@ -490,7 +514,7 @@ type DayStat struct {
 
 func (x *DayStat) Reset() {
 	*x = DayStat{}
-	mi := &file_analytics_v1_analytics_proto_msgTypes[5]
+	mi := &file_api_proto_analytics_v1_analytics_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -502,7 +526,7 @@ func (x *DayStat) String() string {
 func (*DayStat) ProtoMessage() {}
 
 func (x *DayStat) ProtoReflect() protoreflect.Message {
-	mi := &file_analytics_v1_analytics_proto_msgTypes[5]
+	mi := &file_api_proto_analytics_v1_analytics_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -515,7 +539,7 @@ func (x *DayStat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DayStat.ProtoReflect.Descriptor instead.
 func (*DayStat) Descriptor() ([]byte, []int) {
-	return file_analytics_v1_analytics_proto_rawDescGZIP(), []int{5}
+	return file_api_proto_analytics_v1_analytics_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *DayStat) GetDate() string {
@@ -546,21 +570,23 @@ func (x *DayStat) GetHoursWorked() float64 {
 	return 0
 }
 
-var File_analytics_v1_analytics_proto protoreflect.FileDescriptor
+var File_api_proto_analytics_v1_analytics_proto protoreflect.FileDescriptor
 
-const file_analytics_v1_analytics_proto_rawDesc = "" +
+const file_api_proto_analytics_v1_analytics_proto_rawDesc = "" +
 	"\n" +
-	"\x1canalytics/v1/analytics.proto\x12\fanalytics.v1\"b\n" +
+	"&api/proto/analytics/v1/analytics.proto\x12\fanalytics.v1\"\xcc\x01\n" +
 	"\x15GetBarberStatsRequest\x12\x1b\n" +
 	"\tbarber_id\x18\x01 \x01(\tR\bbarberId\x12,\n" +
-	"\x06period\x18\x02 \x01(\v2\x14.analytics.v1.PeriodR\x06period\"}\n" +
+	"\x06period\x18\x02 \x01(\v2\x14.analytics.v1.PeriodR\x06period\x122\n" +
+	"\x15daily_breakdown_limit\x18\x03 \x01(\x05R\x13dailyBreakdownLimit\x124\n" +
+	"\x16daily_breakdown_offset\x18\x04 \x01(\x05R\x14dailyBreakdownOffset\"}\n" +
 	"\x06Period\x128\n" +
 	"\x06preset\x18\x01 \x01(\x0e2\x1e.analytics.v1.PredefinedPeriodH\x00R\x06preset\x121\n" +
 	"\x06custom\x18\x02 \x01(\v2\x17.analytics.v1.DateRangeH\x00R\x06customB\x06\n" +
 	"\x04kind\"A\n" +
 	"\tDateRange\x12\x1b\n" +
 	"\tdate_from\x18\x01 \x01(\tR\bdateFrom\x12\x17\n" +
-	"\adate_to\x18\x02 \x01(\tR\x06dateTo\"\xcf\x04\n" +
+	"\adate_to\x18\x02 \x01(\tR\x06dateTo\"\x83\x05\n" +
 	"\x13BarberStatsResponse\x12\x1b\n" +
 	"\tbarber_id\x18\x01 \x01(\tR\bbarberId\x12\x1b\n" +
 	"\tdate_from\x18\x02 \x01(\tR\bdateFrom\x12\x17\n" +
@@ -576,7 +602,8 @@ const file_analytics_v1_analytics_proto_rawDesc = "" +
 	"\x10bookings_no_show\x18\v \x01(\x03R\x0ebookingsNoShow\x12%\n" +
 	"\x0eoccupancy_rate\x18\f \x01(\x01R\roccupancyRate\x12;\n" +
 	"\ftop_services\x18\r \x03(\v2\x18.analytics.v1.TopServiceR\vtopServices\x12>\n" +
-	"\x0fdaily_breakdown\x18\x0e \x03(\v2\x15.analytics.v1.DayStatR\x0edailyBreakdown\"~\n" +
+	"\x0fdaily_breakdown\x18\x0e \x03(\v2\x15.analytics.v1.DayStatR\x0edailyBreakdown\x122\n" +
+	"\x15daily_breakdown_total\x18\x0f \x01(\x05R\x13dailyBreakdownTotal\"~\n" +
 	"\n" +
 	"TopService\x12\x1d\n" +
 	"\n" +
@@ -601,20 +628,20 @@ const file_analytics_v1_analytics_proto_rawDesc = "" +
 	"\x0eGetBarberStats\x12#.analytics.v1.GetBarberStatsRequest\x1a!.analytics.v1.BarberStatsResponseBJZHgithub.com/RomanKovalev007/barber_crm/api/proto/analytics/v1;analyticsv1b\x06proto3"
 
 var (
-	file_analytics_v1_analytics_proto_rawDescOnce sync.Once
-	file_analytics_v1_analytics_proto_rawDescData []byte
+	file_api_proto_analytics_v1_analytics_proto_rawDescOnce sync.Once
+	file_api_proto_analytics_v1_analytics_proto_rawDescData []byte
 )
 
-func file_analytics_v1_analytics_proto_rawDescGZIP() []byte {
-	file_analytics_v1_analytics_proto_rawDescOnce.Do(func() {
-		file_analytics_v1_analytics_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_analytics_v1_analytics_proto_rawDesc), len(file_analytics_v1_analytics_proto_rawDesc)))
+func file_api_proto_analytics_v1_analytics_proto_rawDescGZIP() []byte {
+	file_api_proto_analytics_v1_analytics_proto_rawDescOnce.Do(func() {
+		file_api_proto_analytics_v1_analytics_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_api_proto_analytics_v1_analytics_proto_rawDesc), len(file_api_proto_analytics_v1_analytics_proto_rawDesc)))
 	})
-	return file_analytics_v1_analytics_proto_rawDescData
+	return file_api_proto_analytics_v1_analytics_proto_rawDescData
 }
 
-var file_analytics_v1_analytics_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_analytics_v1_analytics_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
-var file_analytics_v1_analytics_proto_goTypes = []any{
+var file_api_proto_analytics_v1_analytics_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_api_proto_analytics_v1_analytics_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_api_proto_analytics_v1_analytics_proto_goTypes = []any{
 	(PredefinedPeriod)(0),         // 0: analytics.v1.PredefinedPeriod
 	(*GetBarberStatsRequest)(nil), // 1: analytics.v1.GetBarberStatsRequest
 	(*Period)(nil),                // 2: analytics.v1.Period
@@ -623,7 +650,7 @@ var file_analytics_v1_analytics_proto_goTypes = []any{
 	(*TopService)(nil),            // 5: analytics.v1.TopService
 	(*DayStat)(nil),               // 6: analytics.v1.DayStat
 }
-var file_analytics_v1_analytics_proto_depIdxs = []int32{
+var file_api_proto_analytics_v1_analytics_proto_depIdxs = []int32{
 	2, // 0: analytics.v1.GetBarberStatsRequest.period:type_name -> analytics.v1.Period
 	0, // 1: analytics.v1.Period.preset:type_name -> analytics.v1.PredefinedPeriod
 	3, // 2: analytics.v1.Period.custom:type_name -> analytics.v1.DateRange
@@ -638,12 +665,12 @@ var file_analytics_v1_analytics_proto_depIdxs = []int32{
 	0, // [0:5] is the sub-list for field type_name
 }
 
-func init() { file_analytics_v1_analytics_proto_init() }
-func file_analytics_v1_analytics_proto_init() {
-	if File_analytics_v1_analytics_proto != nil {
+func init() { file_api_proto_analytics_v1_analytics_proto_init() }
+func file_api_proto_analytics_v1_analytics_proto_init() {
+	if File_api_proto_analytics_v1_analytics_proto != nil {
 		return
 	}
-	file_analytics_v1_analytics_proto_msgTypes[1].OneofWrappers = []any{
+	file_api_proto_analytics_v1_analytics_proto_msgTypes[1].OneofWrappers = []any{
 		(*Period_Preset)(nil),
 		(*Period_Custom)(nil),
 	}
@@ -651,18 +678,18 @@ func file_analytics_v1_analytics_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_analytics_v1_analytics_proto_rawDesc), len(file_analytics_v1_analytics_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_analytics_v1_analytics_proto_rawDesc), len(file_api_proto_analytics_v1_analytics_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_analytics_v1_analytics_proto_goTypes,
-		DependencyIndexes: file_analytics_v1_analytics_proto_depIdxs,
-		EnumInfos:         file_analytics_v1_analytics_proto_enumTypes,
-		MessageInfos:      file_analytics_v1_analytics_proto_msgTypes,
+		GoTypes:           file_api_proto_analytics_v1_analytics_proto_goTypes,
+		DependencyIndexes: file_api_proto_analytics_v1_analytics_proto_depIdxs,
+		EnumInfos:         file_api_proto_analytics_v1_analytics_proto_enumTypes,
+		MessageInfos:      file_api_proto_analytics_v1_analytics_proto_msgTypes,
 	}.Build()
-	File_analytics_v1_analytics_proto = out.File
-	file_analytics_v1_analytics_proto_goTypes = nil
-	file_analytics_v1_analytics_proto_depIdxs = nil
+	File_api_proto_analytics_v1_analytics_proto = out.File
+	file_api_proto_analytics_v1_analytics_proto_goTypes = nil
+	file_api_proto_analytics_v1_analytics_proto_depIdxs = nil
 }

@@ -34,9 +34,9 @@ func (m *MockRepo) GetBarberByLogin(ctx context.Context, login string) (*model.B
 	args := m.Called(ctx, login)
 	return args.Get(0).(*model.Barber), args.Error(1)
 }
-func (m *MockRepo) ListBarbers(ctx context.Context) ([]model.Barber, error) {
-	args := m.Called(ctx)
-	return args.Get(0).([]model.Barber), args.Error(1)
+func (m *MockRepo) ListBarbers(ctx context.Context, limit, offset int) ([]model.Barber, int, error) {
+	args := m.Called(ctx, limit, offset)
+	return args.Get(0).([]model.Barber), args.Int(1), args.Error(2)
 }
 func (m *MockRepo) UpsertSchedule(ctx context.Context, barberID string, day *model.ScheduleDay) (*model.ScheduleDay, error) {
 	args := m.Called(ctx, barberID, day)
@@ -63,9 +63,9 @@ func (m *MockRepo) UpdateService(ctx context.Context, s *model.Service) error {
 func (m *MockRepo) DeleteService(ctx context.Context, id, barberID string) error {
 	return m.Called(ctx, id, barberID).Error(0)
 }
-func (m *MockRepo) ListServices(ctx context.Context, barberID string, includeInactive bool) ([]model.Service, error) {
-	args := m.Called(ctx, barberID, includeInactive)
-	return args.Get(0).([]model.Service), args.Error(1)
+func (m *MockRepo) ListServices(ctx context.Context, barberID string, includeInactive bool, limit, offset int) ([]model.Service, int, error) {
+	args := m.Called(ctx, barberID, includeInactive, limit, offset)
+	return args.Get(0).([]model.Service), args.Int(1), args.Error(2)
 }
 
 type MockSessionStore struct {
@@ -353,14 +353,15 @@ func TestListBarbers_Success(t *testing.T) {
 	expected := []model.Barber{{ID: "b1"}, {ID: "b2"}}
 
 	repo := new(MockRepo)
-	repo.On("ListBarbers", ctx).Return(expected, nil)
+	repo.On("ListBarbers", ctx, 0, 0).Return(expected, 2, nil)
 
 	svc := newTestService(repo, new(MockSessionStore), new(MockProducer))
 
-	barbers, err := svc.ListBarbers(ctx)
+	barbers, total, err := svc.ListBarbers(ctx, 0, 0)
 
 	require.NoError(t, err)
 	assert.Equal(t, expected, barbers)
+	assert.Equal(t, 2, total)
 	repo.AssertExpectations(t)
 }
 
@@ -368,11 +369,11 @@ func TestListBarbers_RepoError(t *testing.T) {
 	ctx := context.Background()
 
 	repo := new(MockRepo)
-	repo.On("ListBarbers", ctx).Return([]model.Barber(nil), errors.New("db error"))
+	repo.On("ListBarbers", ctx, 0, 0).Return([]model.Barber(nil), 0, errors.New("db error"))
 
 	svc := newTestService(repo, new(MockSessionStore), new(MockProducer))
 
-	_, err := svc.ListBarbers(ctx)
+	_, _, err := svc.ListBarbers(ctx, 0, 0)
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
@@ -627,14 +628,15 @@ func TestListServices_Success(t *testing.T) {
 	expected := []model.Service{{ID: "s1"}, {ID: "s2"}}
 
 	repo := new(MockRepo)
-	repo.On("ListServices", ctx, "b1", false).Return(expected, nil)
+	repo.On("ListServices", ctx, "b1", false, 0, 0).Return(expected, 2, nil)
 
 	svc := newTestService(repo, new(MockSessionStore), new(MockProducer))
 
-	services, err := svc.ListServices(ctx, "b1", false)
+	services, total, err := svc.ListServices(ctx, "b1", false, 0, 0)
 
 	require.NoError(t, err)
 	assert.Equal(t, expected, services)
+	assert.Equal(t, 2, total)
 	repo.AssertExpectations(t)
 }
 
@@ -642,7 +644,7 @@ func TestListServices_EmptyBarberID(t *testing.T) {
 	ctx := context.Background()
 	svc := newTestService(new(MockRepo), new(MockSessionStore), new(MockProducer))
 
-	_, err := svc.ListServices(ctx, "", false)
+	_, _, err := svc.ListServices(ctx, "", false, 0, 0)
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
@@ -653,11 +655,11 @@ func TestListServices_RepoError(t *testing.T) {
 	ctx := context.Background()
 
 	repo := new(MockRepo)
-	repo.On("ListServices", ctx, "b1", false).Return([]model.Service(nil), errors.New("db error"))
+	repo.On("ListServices", ctx, "b1", false, 0, 0).Return([]model.Service(nil), 0, errors.New("db error"))
 
 	svc := newTestService(repo, new(MockSessionStore), new(MockProducer))
 
-	_, err := svc.ListServices(ctx, "b1", false)
+	_, _, err := svc.ListServices(ctx, "b1", false, 0, 0)
 
 	var appErr *apperr.AppError
 	require.ErrorAs(t, err, &appErr)
