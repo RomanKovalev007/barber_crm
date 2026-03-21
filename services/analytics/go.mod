@@ -4,7 +4,7 @@ go 1.24.3
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.30.0
-	github.com/RomanKovalev007/barber_crm/api v0.0.9
+	github.com/RomanKovalev007/barber_crm/api v0.0.11
 	github.com/RomanKovalev007/barber_crm/pkg v0.0.7
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/prometheus/client_golang v1.23.2
