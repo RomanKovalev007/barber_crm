@@ -21,6 +21,8 @@ tags:
     description: Управление записями
   - name: Staff — Clients
     description: Клиентская база
+  - name: Staff — Settings
+    description: Настройки записи
   - name: Staff — Analytics
     description: Аналитика
 
@@ -33,6 +35,22 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
+  parameters:
+    LimitParam:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+    OffsetParam:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
 
   schemas:
 
@@ -154,6 +172,10 @@ components:
         service_name:
           type: string
           example: "Стрижка"
+        price:
+          type: integer
+          description: Цена услуги в рублях
+          example: 1200
         client_name:
           type: string
           example: "Алексей"
@@ -212,9 +234,11 @@ components:
           format: date
         clients_served:
           type: integer
+          format: int64
           example: 42
         total_revenue:
           type: integer
+          format: int64
           description: Выручка в рублях
           example: 58000
         hours_worked:
@@ -227,15 +251,19 @@ components:
           example: 1380.95
         bookings_total:
           type: integer
+          format: int64
           example: 50
         bookings_completed:
           type: integer
+          format: int64
           example: 42
         bookings_cancelled:
           type: integer
+          format: int64
           example: 5
         bookings_no_show:
           type: integer
+          format: int64
           example: 3
         occupancy_rate:
           type: number
@@ -250,6 +278,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DayStat"
+        daily_breakdown_total:
+          type: integer
+          description: Общее количество дней в периоде (для пагинации daily_breakdown)
+          example: 30
+        daily_limit:
+          type: integer
+          example: 0
+        daily_offset:
+          type: integer
+          example: 0
 
     TopService:
       type: object
@@ -262,9 +300,11 @@ components:
           example: "Стрижка"
         count:
           type: integer
+          format: int64
           example: 28
         revenue:
           type: integer
+          format: int64
           example: 33600
 
     DayStat:
@@ -276,9 +316,11 @@ components:
           example: "2026-03-11"
         clients:
           type: integer
+          format: int64
           example: 6
         revenue:
           type: integer
+          format: int64
           example: 7200
         hours_worked:
           type: number
@@ -325,6 +367,9 @@ paths:
       tags: [Public]
       summary: Список всех барберов
       description: Возвращает всех активных барберов с их активными услугами.
+      parameters:
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/OffsetParam"
       responses:
         "200":
           description: OK
@@ -337,6 +382,12 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Barber"
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
 
   /barbers/{barber_id}/free-slots:
     get:
@@ -404,6 +455,8 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/OffsetParam"
       responses:
         "200":
           description: OK
@@ -416,6 +469,12 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Service"
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
         "404":
           description: Барбер не найден
           content:
@@ -617,6 +676,8 @@ paths:
           schema:
             type: boolean
             default: true
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/OffsetParam"
       responses:
         "200":
           description: OK
@@ -629,6 +690,12 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Service"
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
         "401":
           description: Не авторизован
           content:
@@ -778,6 +845,63 @@ paths:
                       $ref: "#/components/schemas/ScheduleDay"
         "400":
           description: Некорректный формат недели
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    put:
+      tags: [Staff — Schedule]
+      summary: Установить расписание на неделю (batch upsert)
+      description: |
+        Создаёт или обновляет рабочие часы барбера на несколько дней за один запрос.
+        Массив `days` может содержать от 1 до 7 записей.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [days]
+              properties:
+                days:
+                  type: array
+                  minItems: 1
+                  maxItems: 7
+                  items:
+                    type: object
+                    required: [date, start_time, end_time, part_of_day]
+                    properties:
+                      date:
+                        type: string
+                        format: date
+                        example: "2026-03-11"
+                      start_time:
+                        type: string
+                        example: "09:00"
+                      end_time:
+                        type: string
+                        example: "14:00"
+                      part_of_day:
+                        type: string
+                        enum: [am, pm]
+                        example: "am"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  days:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ScheduleDay"
+        "400":
+          description: Некорректные данные
           content:
             application/json:
               schema:
@@ -1129,6 +1253,48 @@ paths:
                     items:
                       $ref: "#/components/schemas/Client"
 
+  /staff/clients/bookings:
+    get:
+      tags: [Staff — Clients]
+      summary: История записей клиента
+      description: Возвращает записи клиента по номеру телефона с пагинацией.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: phone
+          in: query
+          required: true
+          description: Телефон клиента в формате +7XXXXXXXXXX
+          schema:
+            type: string
+            example: "+79161234567"
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/OffsetParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bookings:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Booking"
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        "400":
+          description: Некорректный формат телефона
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /staff/clients/{client_id}:
     get:
       tags: [Staff — Clients]
@@ -1198,6 +1364,56 @@ paths:
                 $ref: "#/components/schemas/Error"
 
   # ╔══════════════════════════════════════════╗
+  # ║  STAFF — SETTINGS                        ║
+  # ╚══════════════════════════════════════════╝
+
+  /staff/booking-settings:
+    get:
+      tags: [Staff — Settings]
+      summary: Настройки записи
+      description: Возвращает текущие настройки записи барбера.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  compact_slots_enabled:
+                    type: boolean
+
+  /staff/booking-settings/compact-slots:
+    patch:
+      tags: [Staff — Settings]
+      summary: Включить/выключить компактные слоты
+      description: Управляет режимом компактных слотов для барбера.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled:
+                  type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  compact_slots_enabled:
+                    type: boolean
+
+  # ╔══════════════════════════════════════════╗
   # ║  STAFF — ANALYTICS                       ║
   # ╚══════════════════════════════════════════╝
 
@@ -1210,6 +1426,8 @@ paths:
 
         Можно использовать предустановленный период (`period`) или произвольный диапазон дат (`date_from` + `date_to`).
         При наличии обоих — приоритет у `date_from`/`date_to`.
+
+        Параметры `limit`/`offset` управляют пагинацией `daily_breakdown`.
       security:
         - BearerAuth: []
       parameters:
@@ -1234,6 +1452,8 @@ paths:
             type: string
             format: date
             example: "2026-03-11"
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/OffsetParam"
       responses:
         "200":
           description: OK
