@@ -1,0 +1,3 @@
+[submodule "services/frontend/app"]
+	path = services/frontend/app
+	url = https://github.com/K4rens/Barber-CRM.git

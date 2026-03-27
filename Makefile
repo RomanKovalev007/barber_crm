@@ -1,4 +1,4 @@
-.PHONY: proto test lint build up down
+.PHONY: proto test lint build up down seed prod-up prod-down prod-pull prod-logs
 
 SERVICES := staff booking analytics client api-gateway
 
@@ -31,3 +31,8 @@ up:
 
 down:
 	docker-compose down
+
+seed:
+	docker compose exec -T postgres psql -U postgres -f /docker-entrypoint-initdb.d/seed.sql
+
+
