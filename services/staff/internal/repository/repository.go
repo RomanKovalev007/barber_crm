@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -265,13 +267,38 @@ func (r *Repository) DeleteService(ctx context.Context, id, barberID string) err
 	return nil
 }
 
+// isoWeekToDate converts "YYYY-Www" to the Monday of that ISO week.
+func isoWeekToDate(week string) (time.Time, error) {
+	// Expected format: "2026-W14"
+	if len(week) < 6 || week[4] != '-' || week[5] != 'W' {
+		return time.Time{}, fmt.Errorf("bad format")
+	}
+	year, err := strconv.Atoi(week[:4])
+	if err != nil {
+		return time.Time{}, err
+	}
+	weekNum, err := strconv.Atoi(week[6:])
+	if err != nil {
+		return time.Time{}, err
+	}
+	// Jan 4 is always in ISO week 1. Find Monday of week 1, then add weeks.
+	jan4 := time.Date(year, time.January, 4, 0, 0, 0, 0, time.UTC)
+	monday1 := jan4.AddDate(0, 0, -int(jan4.Weekday()-time.Monday+7)%7)
+	return monday1.AddDate(0, 0, (weekNum-1)*7), nil
+}
+
 func (r *Repository) GetSchedule(ctx context.Context, barberID, week string) ([]model.ScheduleDay, error) {
+	weekStart, err := isoWeekToDate(week)
+	if err != nil {
+		return nil, fmt.Errorf("invalid week %q: %w", week, err)
+	}
+	weekEnd := weekStart.AddDate(0, 0, 7)
+
 	rows, err := r.db.Query(ctx,
 		`SELECT id, barber_id, date::text, COALESCE(start_time::text,''), COALESCE(end_time::text,''), part_of_day
 		 FROM schedule
-		 WHERE barber_id = $1 AND date >= date_trunc('week', to_date($2 || '-1', 'IYYY-"W"IW-D'))
-		   AND date < date_trunc('week', to_date($2 || '-1', 'IYYY-"W"IW-D')) + interval '7 days'
-		 ORDER BY date`, barberID, week)
+		 WHERE barber_id = $1 AND date >= $2 AND date < $3
+		 ORDER BY date`, barberID, weekStart.Format("2006-01-02"), weekEnd.Format("2006-01-02"))
 	if err != nil {
 		return nil, err
 	}
