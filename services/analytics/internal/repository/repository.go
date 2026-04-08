@@ -59,13 +59,13 @@ func (r *Repository) GetBookingStats(ctx context.Context, barberID, from, to str
 
 	query := `
 		SELECT
-			countIf(status = 'completed')                                              AS clients_served,
+			toInt64(countIf(status = 'completed'))                                     AS clients_served,
 			sumIf(price, status = 'completed')                                         AS total_revenue,
-			count()                                                                    AS bookings_total,
-			countIf(status = 'completed')                                              AS bookings_completed,
-			countIf(status = 'cancelled')                                              AS bookings_cancelled,
-			countIf(status = 'no_show')                                                AS bookings_no_show,
-			sumIf(dateDiff('minute', start_time, end_time), status = 'completed')      AS booked_minutes
+			toInt64(count())                                                            AS bookings_total,
+			toInt64(countIf(status = 'completed'))                                     AS bookings_completed,
+			toInt64(countIf(status = 'cancelled'))                                     AS bookings_cancelled,
+			toInt64(countIf(status = 'no_show'))                                       AS bookings_no_show,
+			toFloat64(sumIf(dateDiff('minute', start_time, end_time), status = 'completed')) AS booked_minutes
 		FROM bookings FINAL
 		WHERE barber_id = ?` + dateClause
 
@@ -91,10 +91,10 @@ func (r *Repository) GetScheduleMinutes(ctx context.Context, barberID, from, to 
 	args := append([]any{barberID}, dateArgs...)
 
 	query := `
-		SELECT coalesce(sum(
+		SELECT toFloat64(coalesce(sum(
 			(toUInt32(substring(end_time, 1, 2)) * 60 + toUInt32(substring(end_time, 4, 2))) -
 			(toUInt32(substring(start_time, 1, 2)) * 60 + toUInt32(substring(start_time, 4, 2)))
-		), 0) AS total_minutes
+		), 0)) AS total_minutes
 		FROM schedule_hours FINAL
 		WHERE barber_id = ? AND is_deleted = 0` + dateClause
 
@@ -113,9 +113,9 @@ func (r *Repository) GetTopServices(ctx context.Context, barberID, from, to stri
 	query := `
 		SELECT
 			service_id,
-			any(service_name)                  AS service_name,
-			countIf(status = 'completed')      AS count,
-			sumIf(price, status = 'completed') AS revenue
+			any(service_name)                          AS service_name,
+			toInt64(countIf(status = 'completed'))     AS count,
+			sumIf(price, status = 'completed')         AS revenue
 		FROM bookings FINAL
 		WHERE barber_id = ?` + dateClause + `
 		GROUP BY service_id
@@ -146,9 +146,9 @@ func (r *Repository) GetDailyBreakdown(ctx context.Context, barberID, from, to s
 
 	bookingQuery := `
 		SELECT
-			toDate(start_time)                     AS date,
-			countIf(status = 'completed')          AS clients,
-			sumIf(price, status = 'completed')     AS revenue
+			toDate(start_time)                             AS date,
+			toInt64(countIf(status = 'completed'))         AS clients,
+			sumIf(price, status = 'completed')             AS revenue
 		FROM bookings FINAL
 		WHERE barber_id = ?` + dateClause + `
 		GROUP BY date
@@ -160,8 +160,10 @@ func (r *Repository) GetDailyBreakdown(ctx context.Context, barberID, from, to s
 	scheduleQuery := `
 		SELECT
 			date,
-			(toUInt32(substring(end_time, 1, 2)) * 60 + toUInt32(substring(end_time, 4, 2))) -
-			(toUInt32(substring(start_time, 1, 2)) * 60 + toUInt32(substring(start_time, 4, 2))) AS minutes
+			toFloat64(
+				(toUInt32(substring(end_time, 1, 2)) * 60 + toUInt32(substring(end_time, 4, 2))) -
+				(toUInt32(substring(start_time, 1, 2)) * 60 + toUInt32(substring(start_time, 4, 2)))
+			) AS minutes
 		FROM schedule_hours FINAL
 		WHERE barber_id = ? AND is_deleted = 0` + scheduleDateClause + `
 		ORDER BY date`
