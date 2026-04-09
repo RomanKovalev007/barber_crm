@@ -3,7 +3,7 @@ module github.com/RomanKovalev007/barber_crm/services/client
 go 1.24.3
 
 require (
-	github.com/RomanKovalev007/barber_crm/api v0.0.11
+	github.com/RomanKovalev007/barber_crm/api v0.0.14
 	github.com/RomanKovalev007/barber_crm/pkg v0.0.7
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/jackc/pgx/v5 v5.8.0
