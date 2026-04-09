@@ -91,24 +91,23 @@ func (s *bookingService) CreateBooking(ctx context.Context, b *model.Booking) (*
 		s.log.Error("create booking: failed to get services", "barber_id", b.BarberID, "error", err)
 		return nil, apperr.Internal("failed to get services")
 	}
-	var foundSvc bool
+	var foundSvc *staffv1.ServiceResponse
 	for _, svc := range svcResp.Services {
 		if svc.ServiceId == b.ServiceID {
-			b.ServiceName = svc.Name
-			b.Price = svc.Price
-			//b.TimeEnd = b.TimeStart.Add(time.Duration(svc.DurationMinutes))
-			foundSvc = true
+			foundSvc = svc
 			break
 		}
 	}
-	if !foundSvc {
+	if foundSvc == nil {
 		s.log.Warn("create booking: service not found", "service_id", b.ServiceID, "barber_id", b.BarberID)
 		return nil, apperr.NotFound("service not found")
 	}
 
+	b.ServiceName = foundSvc.Name
+	b.Price = foundSvc.Price
 	b.ID = uuid.New().String()
 	b.Status = model.StatusPending
-	b.TimeEnd = b.TimeStart.Add(slotDuration)
+	b.TimeEnd = b.TimeStart.Add(time.Duration(foundSvc.DurationMinutes) * time.Minute)
 	b.Date = b.TimeStart.UTC().Truncate(24 * time.Hour)
 
 	if err := s.repo.CreateBookingTx(ctx, b); err != nil {
@@ -165,23 +164,21 @@ func (s *bookingService) UpdateBookingDetails(ctx context.Context, bookingID, ba
 		s.log.Error("update booking: failed to get services", "barber_id", barberID, "error", err)
 		return nil, apperr.Internal("failed to get services")
 	}
-	var serviceName string
-	var price int32
-	var foundSvc bool
+	var foundSvc *staffv1.ServiceResponse
 	for _, svc := range svcResp.Services {
 		if svc.ServiceId == serviceID {
-			serviceName = svc.Name
-			price = svc.Price
-			foundSvc = true
+			foundSvc = svc
 			break
 		}
 	}
-	if !foundSvc {
+	if foundSvc == nil {
 		s.log.Warn("update booking: service not found", "service_id", serviceID, "barber_id", barberID)
 		return nil, apperr.NotFound("service not found")
 	}
 
-	timeEnd := timeStart.Add(slotDuration)
+	serviceName := foundSvc.Name
+	price := foundSvc.Price
+	timeEnd := timeStart.Add(time.Duration(foundSvc.DurationMinutes) * time.Minute)
 
 	if err := s.repo.UpdateBookingDetailsTx(ctx, bookingID, serviceID, serviceName, price, timeStart, timeEnd); err != nil {
 		switch {
@@ -198,14 +195,11 @@ func (s *bookingService) UpdateBookingDetails(ctx context.Context, bookingID, ba
 
 	s.log.Info("booking updated", "booking_id", bookingID, "barber_id", barberID, "service_id", serviceID)
 
-	// Не публикуем событие здесь: UpdateBookingStatus публикует его с актуальными
-	// данными из БД (включая обновлённые service_id/price) при смене статуса.
-	// Лишнее событие с тем же статусом перезаписало бы запись в ClickHouse и
-	// могло бы "откатить" статус, если бы оно пришло после события об изменении статуса.
 	updated, err := s.repo.GetBooking(ctx, bookingID)
 	if err != nil {
 		return nil, apperr.Internal("failed to get updated booking")
 	}
+	s.publishEvent(ctx, updated, bookingStatusToProto(updated.Status))
 	return updated, nil
 }
 
@@ -504,7 +498,7 @@ func (s *bookingService) buildCompactSlots(ctx context.Context, barberID string,
 		slots = append(slots, model.Slot{
 			Status:    model.SlotFree,
 			TimeStart: t,
-			TimeEnd:   t.Add(slotDuration),
+			TimeEnd:   t.Add(window),
 		})
 	}
 

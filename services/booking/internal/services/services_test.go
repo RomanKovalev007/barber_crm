@@ -117,7 +117,7 @@ func TestCreateBooking_Success(t *testing.T) {
 
 	sc.On("GetBarber", ctx, "b1").Return(&staffv1.BarberResponse{}, nil)
 	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{
-		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-1", Name: "Haircut"}},
+		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-1", Name: "Haircut", DurationMinutes: 45}},
 	}, nil)
 	r.On("CreateBookingTx", ctx, mock.AnythingOfType("*model.Booking")).Return(nil)
 
@@ -135,7 +135,7 @@ func TestCreateBooking_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, model.StatusPending, created.Status)
 	assert.Equal(t, "Haircut", created.ServiceName)
-	assert.Equal(t, timeStart.Add(slotDuration), created.TimeEnd)
+	assert.Equal(t, timeStart.Add(45*time.Minute), created.TimeEnd)
 	r.AssertExpectations(t)
 	sc.AssertExpectations(t)
 }
@@ -192,7 +192,7 @@ func TestCreateBooking_ClientAlreadyHasActiveBooking(t *testing.T) {
 	sc := new(MockStaffClient)
 	sc.On("GetBarber", ctx, "b1").Return(&staffv1.BarberResponse{}, nil)
 	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{
-		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-1", Name: "Haircut", Price: 500}},
+		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-1", Name: "Haircut", Price: 500, DurationMinutes: 45}},
 	}, nil)
 
 	r := new(MockRepo)
@@ -212,7 +212,7 @@ func TestCreateBooking_SlotConflict(t *testing.T) {
 	sc := new(MockStaffClient)
 	sc.On("GetBarber", ctx, "b1").Return(&staffv1.BarberResponse{}, nil)
 	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{
-		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-1", Name: "Haircut", Price: 500}},
+		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-1", Name: "Haircut", Price: 500, DurationMinutes: 45}},
 	}, nil)
 
 	r := new(MockRepo)
@@ -232,7 +232,7 @@ func TestCreateBooking_RepoCreateError(t *testing.T) {
 	sc := new(MockStaffClient)
 	sc.On("GetBarber", ctx, "b1").Return(&staffv1.BarberResponse{}, nil)
 	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{
-		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-1", Name: "Haircut", Price: 500}},
+		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-1", Name: "Haircut", Price: 500, DurationMinutes: 45}},
 	}, nil)
 
 	r := new(MockRepo)
@@ -315,14 +315,14 @@ func TestGetBooking_RepoError(t *testing.T) {
 func TestUpdateBookingDetails_Success(t *testing.T) {
 	ctx := context.Background()
 	timeStart := time.Date(2026, 3, 16, 14, 0, 0, 0, time.UTC)
-	timeEnd := timeStart.Add(slotDuration)
+	timeEnd := timeStart.Add(30 * time.Minute)
 
-	existing := &model.Booking{ID: "bk-1", BarberID: "b1", ServiceName: "OldCut"}
-	updated := &model.Booking{ID: "bk-1", BarberID: "b1", ServiceID: "svc-2", ServiceName: "NewCut", TimeStart: timeStart, TimeEnd: timeEnd}
+	existing := &model.Booking{ID: "bk-1", BarberID: "b1", ServiceName: "OldCut", Status: model.StatusPending}
+	updated := &model.Booking{ID: "bk-1", BarberID: "b1", ServiceID: "svc-2", ServiceName: "NewCut", Status: model.StatusPending, TimeStart: timeStart, TimeEnd: timeEnd}
 
 	sc := new(MockStaffClient)
 	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{
-		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-2", Name: "NewCut"}},
+		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-2", Name: "NewCut", DurationMinutes: 30}},
 	}, nil)
 
 	r := new(MockRepo)
@@ -393,11 +393,11 @@ func TestUpdateBookingDetails_ServiceNotFound(t *testing.T) {
 func TestUpdateBookingDetails_SlotConflict(t *testing.T) {
 	ctx := context.Background()
 	timeStart := time.Date(2026, 3, 16, 10, 0, 0, 0, time.UTC)
-	timeEnd := timeStart.Add(slotDuration)
+	timeEnd := timeStart.Add(45 * time.Minute)
 
 	sc := new(MockStaffClient)
 	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{
-		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-1", Name: "Haircut", Price: 500}},
+		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-1", Name: "Haircut", Price: 500, DurationMinutes: 45}},
 	}, nil)
 
 	r := new(MockRepo)
@@ -416,13 +416,13 @@ func TestUpdateBookingDetails_SlotConflict(t *testing.T) {
 func TestUpdateBookingDetails_NoConflictWithSelf(t *testing.T) {
 	ctx := context.Background()
 	timeStart := time.Date(2026, 3, 16, 10, 0, 0, 0, time.UTC)
-	timeEnd := timeStart.Add(slotDuration)
+	timeEnd := timeStart.Add(45 * time.Minute)
 
 	updated := &model.Booking{ID: "bk-1", BarberID: "b1"}
 
 	sc := new(MockStaffClient)
 	sc.On("ListServices", ctx, "b1", false).Return(&staffv1.ListServicesResponse{
-		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-1", Name: "Haircut", Price: 500}},
+		Services: []*staffv1.ServiceResponse{{ServiceId: "svc-1", Name: "Haircut", Price: 500, DurationMinutes: 45}},
 	}, nil)
 
 	r := new(MockRepo)
