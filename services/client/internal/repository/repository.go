@@ -21,6 +21,23 @@ func New(pool *pgxpool.Pool) *Repository {
 	return &Repository{pool: pool}
 }
 
+// EnsureClient creates a client record if it doesn't exist yet.
+// On conflict (same barber + phone) it only updates the name.
+func (r *Repository) EnsureClient(ctx context.Context, barberID, phone, name string) error {
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO clients (id, barber_id, phone, name, notes, visits_count, created_at, updated_at)
+		VALUES (gen_random_uuid(), $1, $2, $3, '', 0, NOW(), NOW())
+		ON CONFLICT (barber_id, phone) DO UPDATE
+		SET name       = EXCLUDED.name,
+		    updated_at = NOW()`,
+		barberID, phone, name,
+	)
+	if err != nil {
+		return fmt.Errorf("ensure client: %w", err)
+	}
+	return nil
+}
+
 // UpsertByBooking atomically deduplicates by booking_id and upserts the client record.
 // If the booking_id was already processed, it is a no-op.
 func (r *Repository) UpsertByBooking(ctx context.Context, barberID, phone, name, bookingID string, lastVisit time.Time) error {

@@ -32,6 +32,7 @@ func init() {
 }
 
 type clientRepo interface {
+	EnsureClient(ctx context.Context, barberID, phone, name string) error
 	UpsertByBooking(ctx context.Context, barberID, phone, name, bookingID string, lastVisit time.Time) error
 }
 
@@ -89,22 +90,28 @@ func (c *Consumer) consume(ctx context.Context) {
 			continue
 		}
 
-		// Обрабатываем только завершённые визиты
-		if event.Status != bookingpb.BookingStatus_BOOKING_STATUS_COMPLETED {
-			msgsProcessed.WithLabelValues("skipped").Inc()
-			c.commitOrLog(ctx, msg)
-			continue
-		}
-
+		// Для любого события — создаём клиента если не существует
 		ok := c.retryInsert(ctx, func() error {
-			return c.repo.UpsertByBooking(ctx,
+			return c.repo.EnsureClient(ctx,
 				event.BarberId,
 				event.ClientPhone,
 				event.ClientName,
-				event.BookingId,
-				event.OccurredAt.AsTime(),
 			)
-		}, event.BookingId)
+		}, event.BookingId+"-ensure")
+
+		// Для завершённых визитов — считаем визит
+		if ok && event.Status == bookingpb.BookingStatus_BOOKING_STATUS_COMPLETED {
+			ok = c.retryInsert(ctx, func() error {
+				return c.repo.UpsertByBooking(ctx,
+					event.BarberId,
+					event.ClientPhone,
+					event.ClientName,
+					event.BookingId,
+					event.OccurredAt.AsTime(),
+				)
+			}, event.BookingId)
+		}
+
 		if !ok {
 			msgsProcessed.WithLabelValues("error").Inc()
 		} else {
