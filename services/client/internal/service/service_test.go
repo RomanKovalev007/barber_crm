@@ -65,7 +65,7 @@ var (
 		Name:        "Ivan",
 		Notes:       "VIP",
 		VisitsCount: 3,
-		LastVisit:   now,
+		LastVisit:   &now,
 		CreatedAt:   now,
 	}
 )

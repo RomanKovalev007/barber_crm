@@ -92,8 +92,8 @@ func toProto(c *model.Client) *pb.Client {
 		VisitsCount: c.VisitsCount,
 		CreatedAt:   timestamppb.New(c.CreatedAt),
 	}
-	if !c.LastVisit.IsZero() {
-		p.LastVisit = timestamppb.New(c.LastVisit)
+	if c.LastVisit != nil {
+		p.LastVisit = timestamppb.New(*c.LastVisit)
 	}
 	return p
 }

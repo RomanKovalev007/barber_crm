@@ -9,7 +9,7 @@ type Client struct {
 	Name        string
 	Notes       string
 	VisitsCount int32
-	LastVisit   time.Time
+	LastVisit   *time.Time
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }

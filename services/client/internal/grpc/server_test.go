@@ -15,6 +15,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+func ptrTime(t time.Time) *time.Time { return &t }
+
 // ─── mock ─────────────────────────────────────────────────────────────────────
 
 type mockService struct{ mock.Mock }
@@ -67,7 +69,7 @@ var testClient = &model.Client{
 	Name:        "Ivan",
 	Notes:       "VIP",
 	VisitsCount: 3,
-	LastVisit:   time.Date(2026, 3, 16, 10, 0, 0, 0, time.UTC),
+	LastVisit:   ptrTime(time.Date(2026, 3, 16, 10, 0, 0, 0, time.UTC)),
 	CreatedAt:   time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
 }
 
