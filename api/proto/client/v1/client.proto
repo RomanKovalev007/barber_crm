@@ -5,12 +5,14 @@ package client.v1;
 option go_package = "github.com/RomanKovalev007/barber_crm/api/proto/client/v1;clientv1";
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
 
 service ClientService {
   rpc ListClients(ListClientsRequest) returns (ListClientsResponse);
   rpc GetClient(GetClientRequest) returns (ClientResponse);
   rpc GetClientByPhone(GetClientByPhoneRequest) returns (ClientResponse);
   rpc UpdateClient(UpdateClientRequest) returns (ClientResponse);
+  rpc DeleteClient(GetClientRequest) returns (google.protobuf.Empty);
 }
 
 message Client {

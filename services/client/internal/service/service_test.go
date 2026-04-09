@@ -48,7 +48,9 @@ func (m *MockRepo) Update(ctx context.Context, id, name, notes string) (*model.C
 	}
 	return args.Get(0).(*model.Client), args.Error(1)
 }
-
+func (m *MockRepo) Delete(ctx context.Context, id, barberID string) error {
+	return m.Called(ctx, id, barberID).Error(0)
+}
 // ─── helper ───────────────────────────────────────────────────────────────────
 
 func newSvc(r clientRepo) *Service {

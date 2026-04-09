@@ -17,6 +17,7 @@ type clientRepo interface {
 	GetByPhone(ctx context.Context, barberID, phone string) (*model.Client, error)
 	List(ctx context.Context, barberID, search string) ([]model.Client, error)
 	Update(ctx context.Context, id, name, notes string) (*model.Client, error)
+	Delete(ctx context.Context, id, barberID string) error
 }
 
 type Service struct {
@@ -112,4 +113,21 @@ func (s *Service) UpdateClient(ctx context.Context, id, barberID, name, notes st
 	}
 	s.logger.Info("client updated", "client_id", id, "barber_id", barberID)
 	return c, nil
+}
+
+func (s *Service) DeleteClient(ctx context.Context, id, barberID string) error {
+	if id == "" {
+		return apperr.InvalidArgument("client_id is required")
+	}
+	if barberID == "" {
+		return apperr.InvalidArgument("barber_id is required")
+	}
+	err := s.repo.Delete(ctx, id, barberID)
+	if err != nil {
+		s.logger.Error("delete client", "client_id", id, "barber_id", barberID, "error", err)
+		return apperr.Internal("failed to delete client")
+	}
+	s.logger.Info("client deleted", "client_id", id, "barber_id", barberID)
+	
+	return nil
 }

@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -23,6 +24,7 @@ const (
 	ClientService_GetClient_FullMethodName        = "/client.v1.ClientService/GetClient"
 	ClientService_GetClientByPhone_FullMethodName = "/client.v1.ClientService/GetClientByPhone"
 	ClientService_UpdateClient_FullMethodName     = "/client.v1.ClientService/UpdateClient"
+	ClientService_DeleteClient_FullMethodName     = "/client.v1.ClientService/DeleteClient"
 )
 
 // ClientServiceClient is the client API for ClientService service.
@@ -33,6 +35,7 @@ type ClientServiceClient interface {
 	GetClient(ctx context.Context, in *GetClientRequest, opts ...grpc.CallOption) (*ClientResponse, error)
 	GetClientByPhone(ctx context.Context, in *GetClientByPhoneRequest, opts ...grpc.CallOption) (*ClientResponse, error)
 	UpdateClient(ctx context.Context, in *UpdateClientRequest, opts ...grpc.CallOption) (*ClientResponse, error)
+	DeleteClient(ctx context.Context, in *GetClientRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type clientServiceClient struct {
@@ -83,6 +86,16 @@ func (c *clientServiceClient) UpdateClient(ctx context.Context, in *UpdateClient
 	return out, nil
 }
 
+func (c *clientServiceClient) DeleteClient(ctx context.Context, in *GetClientRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ClientService_DeleteClient_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ClientServiceServer is the server API for ClientService service.
 // All implementations must embed UnimplementedClientServiceServer
 // for forward compatibility.
@@ -91,6 +104,7 @@ type ClientServiceServer interface {
 	GetClient(context.Context, *GetClientRequest) (*ClientResponse, error)
 	GetClientByPhone(context.Context, *GetClientByPhoneRequest) (*ClientResponse, error)
 	UpdateClient(context.Context, *UpdateClientRequest) (*ClientResponse, error)
+	DeleteClient(context.Context, *GetClientRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedClientServiceServer()
 }
 
@@ -112,6 +126,9 @@ func (UnimplementedClientServiceServer) GetClientByPhone(context.Context, *GetCl
 }
 func (UnimplementedClientServiceServer) UpdateClient(context.Context, *UpdateClientRequest) (*ClientResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateClient not implemented")
+}
+func (UnimplementedClientServiceServer) DeleteClient(context.Context, *GetClientRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteClient not implemented")
 }
 func (UnimplementedClientServiceServer) mustEmbedUnimplementedClientServiceServer() {}
 func (UnimplementedClientServiceServer) testEmbeddedByValue()                       {}
@@ -206,6 +223,24 @@ func _ClientService_UpdateClient_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClientService_DeleteClient_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetClientRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientServiceServer).DeleteClient(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientService_DeleteClient_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientServiceServer).DeleteClient(ctx, req.(*GetClientRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ClientService_ServiceDesc is the grpc.ServiceDesc for ClientService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -228,6 +263,10 @@ var ClientService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateClient",
 			Handler:    _ClientService_UpdateClient_Handler,
+		},
+		{
+			MethodName: "DeleteClient",
+			Handler:    _ClientService_DeleteClient_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

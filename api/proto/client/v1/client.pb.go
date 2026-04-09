@@ -9,6 +9,7 @@ package clientv1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -438,7 +439,7 @@ var File_client_v1_client_proto protoreflect.FileDescriptor
 
 const file_client_v1_client_proto_rawDesc = "" +
 	"\n" +
-	"\x16client/v1/client.proto\x12\tclient.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x9b\x02\n" +
+	"\x16client/v1/client.proto\x12\tclient.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bgoogle/protobuf/empty.proto\"\x9b\x02\n" +
 	"\x06Client\x12\x1b\n" +
 	"\tclient_id\x18\x01 \x01(\tR\bclientId\x12\x1b\n" +
 	"\tbarber_id\x18\x02 \x01(\tR\bbarberId\x12\x12\n" +
@@ -467,12 +468,13 @@ const file_client_v1_client_proto_rawDesc = "" +
 	"\tclient_id\x18\x01 \x01(\tR\bclientId\x12\x1b\n" +
 	"\tbarber_id\x18\x02 \x01(\tR\bbarberId\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12\x14\n" +
-	"\x05notes\x18\x04 \x01(\tR\x05notes2\xc0\x02\n" +
+	"\x05notes\x18\x04 \x01(\tR\x05notes2\x85\x03\n" +
 	"\rClientService\x12L\n" +
 	"\vListClients\x12\x1d.client.v1.ListClientsRequest\x1a\x1e.client.v1.ListClientsResponse\x12C\n" +
 	"\tGetClient\x12\x1b.client.v1.GetClientRequest\x1a\x19.client.v1.ClientResponse\x12Q\n" +
 	"\x10GetClientByPhone\x12\".client.v1.GetClientByPhoneRequest\x1a\x19.client.v1.ClientResponse\x12I\n" +
-	"\fUpdateClient\x12\x1e.client.v1.UpdateClientRequest\x1a\x19.client.v1.ClientResponseBDZBgithub.com/RomanKovalev007/barber_crm/api/proto/client/v1;clientv1b\x06proto3"
+	"\fUpdateClient\x12\x1e.client.v1.UpdateClientRequest\x1a\x19.client.v1.ClientResponse\x12C\n" +
+	"\fDeleteClient\x12\x1b.client.v1.GetClientRequest\x1a\x16.google.protobuf.EmptyBDZBgithub.com/RomanKovalev007/barber_crm/api/proto/client/v1;clientv1b\x06proto3"
 
 var (
 	file_client_v1_client_proto_rawDescOnce sync.Once
@@ -496,6 +498,7 @@ var file_client_v1_client_proto_goTypes = []any{
 	(*ClientResponse)(nil),          // 5: client.v1.ClientResponse
 	(*UpdateClientRequest)(nil),     // 6: client.v1.UpdateClientRequest
 	(*timestamppb.Timestamp)(nil),   // 7: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),           // 8: google.protobuf.Empty
 }
 var file_client_v1_client_proto_depIdxs = []int32{
 	7, // 0: client.v1.Client.last_visit:type_name -> google.protobuf.Timestamp
@@ -506,12 +509,14 @@ var file_client_v1_client_proto_depIdxs = []int32{
 	3, // 5: client.v1.ClientService.GetClient:input_type -> client.v1.GetClientRequest
 	4, // 6: client.v1.ClientService.GetClientByPhone:input_type -> client.v1.GetClientByPhoneRequest
 	6, // 7: client.v1.ClientService.UpdateClient:input_type -> client.v1.UpdateClientRequest
-	2, // 8: client.v1.ClientService.ListClients:output_type -> client.v1.ListClientsResponse
-	5, // 9: client.v1.ClientService.GetClient:output_type -> client.v1.ClientResponse
-	5, // 10: client.v1.ClientService.GetClientByPhone:output_type -> client.v1.ClientResponse
-	5, // 11: client.v1.ClientService.UpdateClient:output_type -> client.v1.ClientResponse
-	8, // [8:12] is the sub-list for method output_type
-	4, // [4:8] is the sub-list for method input_type
+	3, // 8: client.v1.ClientService.DeleteClient:input_type -> client.v1.GetClientRequest
+	2, // 9: client.v1.ClientService.ListClients:output_type -> client.v1.ListClientsResponse
+	5, // 10: client.v1.ClientService.GetClient:output_type -> client.v1.ClientResponse
+	5, // 11: client.v1.ClientService.GetClientByPhone:output_type -> client.v1.ClientResponse
+	5, // 12: client.v1.ClientService.UpdateClient:output_type -> client.v1.ClientResponse
+	8, // 13: client.v1.ClientService.DeleteClient:output_type -> google.protobuf.Empty
+	9, // [9:14] is the sub-list for method output_type
+	4, // [4:9] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name
 	4, // [4:4] is the sub-list for extension extendee
 	0, // [0:4] is the sub-list for field type_name

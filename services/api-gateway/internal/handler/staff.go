@@ -584,6 +584,22 @@ func (h *StaffHandler) UpdateClient(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, clientToModel(resp.Client))
 }
 
+func (h *StaffHandler) DeleteClient(w http.ResponseWriter, r *http.Request) {
+	barberID := middleware.BarberIDFromCtx(r.Context())
+	clientID := chi.URLParam(r, "client_id")
+	if err := validateClientID(clientID); err != nil {
+		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "invalid client_id")
+		return
+	}
+	_, err := h.client.DeleteClient(r.Context(), &clientv1.GetClientRequest{ClientId: clientID, BarberId: barberID})
+	if err != nil {
+		response.GrpcErrorToHttp(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // ─── Client Booking History ───────────────────────────────────────────────────
 
 func (h *StaffHandler) GetClientBookings(w http.ResponseWriter, r *http.Request) {

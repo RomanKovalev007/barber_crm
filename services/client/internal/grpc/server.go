@@ -6,6 +6,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pb "github.com/RomanKovalev007/barber_crm/api/proto/client/v1"
@@ -18,6 +19,7 @@ type clientService interface {
 	GetClient(ctx context.Context, id, barberID string) (*model.Client, error)
 	GetClientByPhone(ctx context.Context, barberID, phone string) (*model.Client, error)
 	UpdateClient(ctx context.Context, id, barberID, name, notes string) (*model.Client, error)
+	DeleteClient(ctx context.Context, id, barberID string) error
 }
 
 type Server struct {
@@ -78,6 +80,16 @@ func (s *Server) UpdateClient(ctx context.Context, req *pb.UpdateClientRequest) 
 		return nil, toGRPCError(err)
 	}
 	return &pb.ClientResponse{Client: toProto(c)}, nil
+}
+
+func (s *Server) DeleteClient(ctx context.Context, req *pb.GetClientRequest) (*emptypb.Empty, error) {
+	if req.ClientId == "" || req.BarberId == "" {
+		return nil, status.Error(codes.InvalidArgument, "client_id and barber_id are required")
+	}
+	if err := s.svc.DeleteClient(ctx, req.ClientId, req.BarberId); err != nil {
+		return nil, toGRPCError(err)
+	}
+	return &emptypb.Empty{}, nil
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────

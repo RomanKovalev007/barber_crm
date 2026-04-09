@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.0
 // - protoc             v3.21.12
-// source: proto/staff/v1/staff.proto
+// source: staff/v1/staff.proto
 
 package staffv1
 
@@ -620,5 +620,5 @@ var StaffService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/staff/v1/staff.proto",
+	Metadata: "staff/v1/staff.proto",
 }

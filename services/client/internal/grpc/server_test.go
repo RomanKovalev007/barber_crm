@@ -46,7 +46,9 @@ func (m *mockService) UpdateClient(ctx context.Context, id, barberID, name, note
 	}
 	return args.Get(0).(*model.Client), args.Error(1)
 }
-
+func (m *mockService) DeleteClient(ctx context.Context, id, barberID string) error {
+	return m.Called(ctx, id, barberID).Error(0)
+}
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
 func newServer() (*Server, *mockService) {

@@ -161,3 +161,16 @@ func (r *Repository) Update(ctx context.Context, id, name, notes string) (*model
 	}
 	return r.GetByID(ctx, id)
 }
+
+func (r *Repository) Delete(ctx context.Context, id, barberID string) error {
+	tag, err := r.pool.Exec(ctx, `
+		DELETE FROM clients WHERE id = $1 AND barber_id = $2`, id, barberID,
+	)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
