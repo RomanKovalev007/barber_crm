@@ -149,6 +149,7 @@ func main() {
 				r.Get("/clients/bookings", staffHandler.GetClientBookings)
 				r.Get("/clients/{client_id}", staffHandler.GetClient)
 				r.Put("/clients/{client_id}", staffHandler.UpdateClient)
+				r.Delete("/clients/{client_id}", staffHandler.DeleteClient)
 
 				r.Get("/booking-settings", staffHandler.GetBookingSettings)
 				r.Patch("/booking-settings/compact-slots", staffHandler.SetCompactSlots)
