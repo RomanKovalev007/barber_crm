@@ -446,10 +446,10 @@ func (s *bookingService) buildCompactSlots(ctx context.Context, barberID string,
 		return nil, apperr.Internal("failed to get bookings")
 	}
 
-	// Нет броней → полная сетка с шагом window.
+	// Нет броней → полная сетка с шагом barberSlotStep (15 мин).
 	if len(bookings) == 0 {
 		var slots []model.Slot
-		for t := workStart; !t.Add(window).After(workEnd); t = t.Add(window) {
+		for t := workStart; !t.Add(window).After(workEnd); t = t.Add(barberSlotStep) {
 			slots = append(slots, model.Slot{
 				Status:    model.SlotFree,
 				TimeStart: t,
@@ -465,7 +465,7 @@ func (s *bookingService) buildCompactSlots(ctx context.Context, barberID string,
 	for _, b := range bookings {
 		for _, candidate := range []time.Time{
 			b.TimeStart.Add(-window),
-			b.TimeStart.Add(window),
+			b.TimeEnd,
 		} {
 			if seen[candidate] {
 				continue
