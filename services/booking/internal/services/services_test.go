@@ -45,6 +45,12 @@ func (m *MockRepo) GetBookingsByBarberAndDate(ctx context.Context, barberID stri
 	args := m.Called(ctx, barberID, date)
 	return args.Get(0).([]model.Booking), args.Error(1)
 }
+
+func (m *MockRepo) GetPendingBookingsByBarberAndDate(ctx context.Context, barberID string, date time.Time) ([]model.Booking, error) {
+	args := m.Called(ctx, barberID, date)
+	return args.Get(0).([]model.Booking), args.Error(1)
+}
+
 func (m *MockRepo) GetClientBookings(ctx context.Context, barberID, clientPhone string, limit, offset int) ([]model.Booking, int, error) {
 	args := m.Called(ctx, barberID, clientPhone, limit, offset)
 	return args.Get(0).([]model.Booking), args.Int(1), args.Error(2)

@@ -276,7 +276,7 @@ func (r *BookingRepo) GetBookingsByBarberAndDate(ctx context.Context, barberID s
 		FROM bookings
 		WHERE barber_id=$1 AND date=$2 AND status NOT IN ($3,$4)
 		ORDER BY time_start`,
-		barberID, date, model.StatusCancelled, model.StatusNoShow,
+		barberID, date, model.StatusCancelled, model.StatusNoShow, 
 	)
 	if err != nil {
 		return nil, err
@@ -289,6 +289,32 @@ func (r *BookingRepo) GetBookingsByBarberAndDate(ctx context.Context, barberID s
 		if err := rows.Scan(
 			&b.ID, &b.ClientName, &b.ClientPhone, &b.BarberID, &b.ServiceID, &b.ServiceName, &b.Price,
 			&b.Date, &b.TimeStart, &b.TimeEnd, &b.Status, &b.CreatedAt, &b.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan booking: %w", err)
+		}
+		bookings = append(bookings, b)
+	}
+	return bookings, rows.Err()
+}
+
+func (r *BookingRepo) GetPendingBookingsByBarberAndDate(ctx context.Context, barberID string, date time.Time) ([]model.Booking, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT barber_id, date, time_start, time_end, status, price
+		FROM bookings
+		WHERE barber_id=$1 AND date=$2 AND status = $3
+		ORDER BY time_start`,
+		barberID, date, model.StatusPending,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var bookings []model.Booking
+	for rows.Next() {
+		var b model.Booking
+		if err := rows.Scan(
+			&b.BarberID, &b.Date, &b.TimeStart, &b.TimeEnd, &b.Status, &b.Price,
 		); err != nil {
 			return nil, fmt.Errorf("scan booking: %w", err)
 		}

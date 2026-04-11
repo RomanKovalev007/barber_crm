@@ -28,6 +28,7 @@ type bookingRepo interface {
 	UpdateBookingStatus(ctx context.Context, id, status string) error
 	DeleteBooking(ctx context.Context, id string) error
 	GetBookingsByBarberAndDate(ctx context.Context, barberID string, date time.Time) ([]model.Booking, error)
+	GetPendingBookingsByBarberAndDate(ctx context.Context, barberID string, date time.Time) ([]model.Booking, error)
 	GetClientBookings(ctx context.Context, barberID, clientPhone string, limit, offset int) ([]model.Booking, int, error)
 	GetCompactSlotsEnabled(ctx context.Context, barberID string) (bool, error)
 	SetCompactSlotsEnabled(ctx context.Context, barberID string, enabled bool) error
@@ -350,7 +351,7 @@ func (s *bookingService) buildSlots(ctx context.Context, barberID string, date t
 		}
 	}
 	nowStr := time.Now().Format("2006-01-02")
-	if dateStr == nowStr {
+	if dateStr == nowStr && onlyFree{
 		workStart = roundUp(time.Now().Add(3 * time.Hour), step)
 	}
 
@@ -359,12 +360,21 @@ func (s *bookingService) buildSlots(ctx context.Context, barberID string, date t
 		return &model.SlotsResult{BarberID: barberID, Date: dateStr}, nil
 	}
 
-	bookings, err := s.repo.GetBookingsByBarberAndDate(ctx, barberID, date.UTC().Truncate(24*time.Hour))
-	if err != nil {
-		s.log.Error("build slots: failed to get bookings", "barber_id", barberID, "date", dateStr, "error", err)
-		return nil, apperr.Internal("failed to get bookings")
+	var bookings []model.Booking
+	if onlyFree {
+		bookings, err = s.repo.GetPendingBookingsByBarberAndDate(ctx, barberID, date.UTC().Truncate(24*time.Hour))
+		if err != nil {
+			s.log.Error("build slots: failed to get bookings", "barber_id", barberID, "date", dateStr, "error", err)
+			return nil, apperr.Internal("failed to get bookings")
+		}
+	} else{
+		bookings, err = s.repo.GetBookingsByBarberAndDate(ctx, barberID, date.UTC().Truncate(24*time.Hour))
+		if err != nil {
+			s.log.Error("build slots: failed to get bookings", "barber_id", barberID, "date", dateStr, "error", err)
+			return nil, apperr.Internal("failed to get bookings")
+		}
 	}
-
+	
 	var slots []model.Slot
 	t := workStart
 	for t.Before(workEnd) {
@@ -384,6 +394,8 @@ func (s *bookingService) buildSlots(ctx context.Context, barberID string, date t
 					ClientName:  b.ClientName,
 					ClientPhone: b.ClientPhone,
 					ServiceName: b.ServiceName,
+					//Status: b.Status,
+					//Price: b.Price,
 				}
 				break
 			}
