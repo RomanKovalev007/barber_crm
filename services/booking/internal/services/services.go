@@ -349,6 +349,10 @@ func (s *bookingService) buildSlots(ctx context.Context, barberID string, date t
 			break
 		}
 	}
+	nowStr := time.Now().Format("2006-01-02")
+	if dateStr == nowStr {
+		workStart = roundUp(time.Now().Add(3 * time.Hour), step)
+	}
 
 	if !hasWork {
 		s.log.Info("build slots: no working day found", "barber_id", barberID, "date", dateStr)
@@ -434,6 +438,11 @@ func (s *bookingService) buildCompactSlots(ctx context.Context, barberID string,
 			break
 		}
 	}
+	nowStr := time.Now().Format("2006-01-02")
+	if dateStr == nowStr {
+		workStart = roundUp(time.Now().Add(3 * time.Hour), barberSlotStep)
+	}
+
 
 	if !hasWork {
 		s.log.Info("build compact slots: no working day found", "barber_id", barberID, "date", dateStr)
@@ -447,7 +456,7 @@ func (s *bookingService) buildCompactSlots(ctx context.Context, barberID string,
 	}
 
 	// Нет броней → полная сетка с шагом barberSlotStep (15 мин).
-	if len(bookings) == 0 {
+	if len(bookings) == 0 || (dateStr == nowStr && bookings[len(bookings)-1].TimeEnd.Before(workStart)){
 		var slots []model.Slot
 		for t := workStart; !t.Add(window).After(workEnd); t = t.Add(barberSlotStep) {
 			slots = append(slots, model.Slot{
@@ -582,4 +591,12 @@ func parseTimeOnDate(date time.Time, timeStr string) (time.Time, error) {
 		return time.Time{}, err
 	}
 	return time.Date(date.Year(), date.Month(), date.Day(), h, m, 0, 0, date.Location()), nil
+}
+
+func roundUp(t time.Time, d time.Duration) time.Time {
+	rem := t.UnixNano() % int64(d)
+	if rem == 0 {
+		return t
+	}
+	return t.Add(d).Truncate(d)
 }
