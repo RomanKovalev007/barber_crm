@@ -403,6 +403,13 @@ func (s *bookingService) buildSlots(ctx context.Context, barberID string, date t
 			return nil, apperr.Internal("failed to get bookings")
 		}
 	}
+	var currStep time.Duration
+
+	if onlyFree{
+		currStep = step*2
+	} else{
+		currStep = step
+	}
 	
 	var slots []model.Slot
 	t := workStart
@@ -437,9 +444,8 @@ func (s *bookingService) buildSlots(ctx context.Context, barberID string, date t
 				Booking:   slotBooking,
 			})
 		}
-		t = t.Add(step)
+		t = t.Add(currStep)
 	}
-
 	return &model.SlotsResult{
 		BarberID: barberID,
 		Date:     dateStr,
@@ -497,7 +503,7 @@ func (s *bookingService) buildCompactSlots(ctx context.Context, barberID string,
 
 	if len(bookings) == 0 || (dateStr == nowStr && bookings[len(bookings)-1].TimeEnd.Before(workStart)){
 		var slots []model.Slot
-		for t := workStart; !t.Add(window).After(workEnd); t = t.Add(step) {
+		for t := workStart; !t.Add(window).After(workEnd); t = t.Add(step*2) {
 			slots = append(slots, model.Slot{
 				Status:    model.SlotFree,
 				TimeStart: t,
