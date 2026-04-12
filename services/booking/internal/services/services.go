@@ -497,7 +497,8 @@ func (s *bookingService) buildCompactSlots(ctx context.Context, barberID string,
 
 	if len(bookings) == 0 || (dateStr == nowStr && bookings[len(bookings)-1].TimeEnd.Before(workStart)){
 		var slots []model.Slot
-		for t := workStart; !t.Add(window).After(workEnd); t = t.Add(step) {
+		//for t := workStart; !t.Add(window).After(workEnd); t = t.Add(step) {
+		for t := workStart; !t.Add(window).After(workEnd); t = t.Add(barberSlotStep*2) {
 			slots = append(slots, model.Slot{
 				Status:    model.SlotFree,
 				TimeStart: t,
