@@ -42,6 +42,8 @@ func bookingStatusToModel(s bookingv1.BookingStatus) string {
 
 func bookingStatusToProto(s string) bookingv1.BookingStatus {
 	switch s {
+	case "pending":
+		return bookingv1.BookingStatus_BOOKING_STATUS_PENDING
 	case "cancelled":
 		return bookingv1.BookingStatus_BOOKING_STATUS_CANCELLED
 	case "completed":
@@ -69,6 +71,7 @@ func slotsToModel(pbSlots []*bookingv1.Slot) []model.Slot {
 				ClientName:  s.Booking.ClientName,
 				ClientPhone: s.Booking.ClientPhone,
 				ServiceName: s.Booking.ServiceName,
+				Status:      bookingStatusToModel(s.Booking.Status),
 			}
 		}
 		slots = append(slots, slot)

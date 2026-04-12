@@ -35,6 +35,7 @@ type SlotBooking struct {
 	ClientName  string `json:"client_name"`
 	ClientPhone string `json:"client_phone"`
 	ServiceName string `json:"service_name"`
+	Status      string `json:"status"`
 }
 
 type Slot struct {
