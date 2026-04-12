@@ -35,4 +35,16 @@ down:
 seed:
 	docker compose exec -T postgres psql -U postgres -f /docker-entrypoint-initdb.d/seed.sql
 
+# ── Production ─────────────────────────────────────────────────────
 
+prod-pull:
+	docker compose -f docker-compose.prod.yml pull
+
+prod-up:
+	docker compose -f docker-compose.prod.yml up -d
+
+prod-down:
+	docker compose -f docker-compose.prod.yml down
+
+prod-logs:
+	docker compose -f docker-compose.prod.yml logs -f

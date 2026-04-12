@@ -1,0 +1,291 @@
+services:
+
+  # ─── Reverse proxy (HTTPS) ──────────────────────────────────────────────────
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      DOMAIN: ${DOMAIN}
+    depends_on:
+      - api-gateway
+      - frontend
+
+  # ─── Frontend ────────────────────────────────────────────────────────────────
+
+  frontend:
+    image: ${IMAGE_PREFIX}/frontend:${IMAGE_TAG}
+    restart: unless-stopped
+
+  # ─── Infrastructure ──────────────────────────────────────────────────────────
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    restart: unless-stopped
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qg"
+      KAFKA_LOG4J_LOGGERS: "org.apache.kafka.image.loader.MetadataLoader=WARN,org.apache.kafka.controller=WARN"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3-alpine
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: analytics
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD-SHELL", "clickhouse-client --query 'SELECT 1'"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # ─── Migrations ──────────────────────────────────────────────────────────────
+
+  staff-migrate:
+    image: ${IMAGE_PREFIX}/staff:${IMAGE_TAG}
+    entrypoint: ["/migrate"]
+    command: ["-direction", "up"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: staff_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  booking-migrate:
+    image: ${IMAGE_PREFIX}/booking:${IMAGE_TAG}
+    entrypoint: ["/migrate"]
+    command: ["up"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: booking_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  client-migrate:
+    image: ${IMAGE_PREFIX}/client:${IMAGE_TAG}
+    entrypoint: ["/migrate"]
+    command: ["up"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: client_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  analytics-migrate:
+    image: ${IMAGE_PREFIX}/analytics:${IMAGE_TAG}
+    entrypoint: ["/migrate"]
+    command: ["-direction", "up"]
+    environment:
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_DATABASE: analytics
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    restart: "no"
+
+  # ─── Application services ───────────────────────────────────────────────────
+
+  staff:
+    image: ${IMAGE_PREFIX}/staff:${IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      GRPC_PORT: ":50051"
+      JWT_SECRET: ${JWT_SECRET}
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: staff_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      KAFKA_BROKERS: kafka:9092
+      METRICS_PORT: ":9091"
+    depends_on:
+      staff-migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  booking:
+    image: ${IMAGE_PREFIX}/booking:${IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      GRPC_PORT: ":50051"
+      JWT_SECRET: ${JWT_SECRET}
+      STAFF_GRPC_ADDR: staff:50051
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: booking_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      KAFKA_BROKERS: kafka:9092
+      METRICS_PORT: ":9092"
+    depends_on:
+      booking-migrate:
+        condition: service_completed_successfully
+      staff:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  analytics:
+    image: ${IMAGE_PREFIX}/analytics:${IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      GRPC_PORT: ":50051"
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_DATABASE: analytics
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      KAFKA_BROKERS: kafka:9092
+      METRICS_PORT: ":9093"
+    depends_on:
+      analytics-migrate:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_healthy
+
+  client:
+    image: ${IMAGE_PREFIX}/client:${IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      GRPC_PORT: ":50051"
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: client_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      KAFKA_BROKERS: kafka:9092
+      METRICS_PORT: ":9094"
+    depends_on:
+      client-migrate:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_healthy
+
+  api-gateway:
+    image: ${IMAGE_PREFIX}/api-gateway:${IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      HTTP_PORT: ":8080"
+      METRICS_PORT: ":9095"
+      JWT_SECRET: ${JWT_SECRET}
+      STAFF_ADDR: staff:50051
+      BOOKING_ADDR: booking:50051
+      ANALYTICS_ADDR: analytics:50051
+      CLIENT_ADDR: client:50051
+    depends_on:
+      - staff
+      - booking
+      - analytics
+      - client
+
+  # ─── Observability ──────────────────────────────────────────────────────────
+
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    restart: unless-stopped
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    depends_on:
+      - api-gateway
+      - staff
+      - booking
+      - analytics
+      - client
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD}
+      GF_PROVISIONING_PATH: /etc/grafana/provisioning
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+
+volumes:
+  caddy_data:
+  caddy_config:
+  postgres_data:
+  kafka_data:
+  clickhouse_data:
+  prometheus_data:
+  grafana_data:
