@@ -29,6 +29,7 @@ const (
 	BookingService_GetFreeSlots_FullMethodName        = "/booking.v1.BookingService/GetFreeSlots"
 	BookingService_GetBarberSettings_FullMethodName   = "/booking.v1.BookingService/GetBarberSettings"
 	BookingService_SetCompactSlots_FullMethodName     = "/booking.v1.BookingService/SetCompactSlots"
+	BookingService_SetClientSlotStep_FullMethodName   = "/booking.v1.BookingService/SetClientSlotStep"
 	BookingService_GetClientBookings_FullMethodName   = "/booking.v1.BookingService/GetClientBookings"
 )
 
@@ -45,6 +46,7 @@ type BookingServiceClient interface {
 	GetFreeSlots(ctx context.Context, in *FreeSlotsRequest, opts ...grpc.CallOption) (*FreeSlotsResponse, error)
 	GetBarberSettings(ctx context.Context, in *BarberSettingsRequest, opts ...grpc.CallOption) (*BarberSettingsResponse, error)
 	SetCompactSlots(ctx context.Context, in *SetCompactSlotsRequest, opts ...grpc.CallOption) (*BarberSettingsResponse, error)
+	SetClientSlotStep(ctx context.Context, in *SetClientSlotStepRequest, opts ...grpc.CallOption) (*BarberSettingsResponse, error)
 	GetClientBookings(ctx context.Context, in *GetClientBookingsRequest, opts ...grpc.CallOption) (*GetClientBookingsResponse, error)
 }
 
@@ -146,6 +148,16 @@ func (c *bookingServiceClient) SetCompactSlots(ctx context.Context, in *SetCompa
 	return out, nil
 }
 
+func (c *bookingServiceClient) SetClientSlotStep(ctx context.Context, in *SetClientSlotStepRequest, opts ...grpc.CallOption) (*BarberSettingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BarberSettingsResponse)
+	err := c.cc.Invoke(ctx, BookingService_SetClientSlotStep_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *bookingServiceClient) GetClientBookings(ctx context.Context, in *GetClientBookingsRequest, opts ...grpc.CallOption) (*GetClientBookingsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetClientBookingsResponse)
@@ -169,6 +181,7 @@ type BookingServiceServer interface {
 	GetFreeSlots(context.Context, *FreeSlotsRequest) (*FreeSlotsResponse, error)
 	GetBarberSettings(context.Context, *BarberSettingsRequest) (*BarberSettingsResponse, error)
 	SetCompactSlots(context.Context, *SetCompactSlotsRequest) (*BarberSettingsResponse, error)
+	SetClientSlotStep(context.Context, *SetClientSlotStepRequest) (*BarberSettingsResponse, error)
 	GetClientBookings(context.Context, *GetClientBookingsRequest) (*GetClientBookingsResponse, error)
 	mustEmbedUnimplementedBookingServiceServer()
 }
@@ -206,6 +219,9 @@ func (UnimplementedBookingServiceServer) GetBarberSettings(context.Context, *Bar
 }
 func (UnimplementedBookingServiceServer) SetCompactSlots(context.Context, *SetCompactSlotsRequest) (*BarberSettingsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetCompactSlots not implemented")
+}
+func (UnimplementedBookingServiceServer) SetClientSlotStep(context.Context, *SetClientSlotStepRequest) (*BarberSettingsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetClientSlotStep not implemented")
 }
 func (UnimplementedBookingServiceServer) GetClientBookings(context.Context, *GetClientBookingsRequest) (*GetClientBookingsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetClientBookings not implemented")
@@ -393,6 +409,24 @@ func _BookingService_SetCompactSlots_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BookingService_SetClientSlotStep_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetClientSlotStepRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BookingServiceServer).SetClientSlotStep(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BookingService_SetClientSlotStep_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BookingServiceServer).SetClientSlotStep(ctx, req.(*SetClientSlotStepRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _BookingService_GetClientBookings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetClientBookingsRequest)
 	if err := dec(in); err != nil {
@@ -453,6 +487,10 @@ var BookingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetCompactSlots",
 			Handler:    _BookingService_SetCompactSlots_Handler,
+		},
+		{
+			MethodName: "SetClientSlotStep",
+			Handler:    _BookingService_SetClientSlotStep_Handler,
 		},
 		{
 			MethodName: "GetClientBookings",

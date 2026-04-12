@@ -17,6 +17,7 @@ service BookingService {
   rpc GetFreeSlots(FreeSlotsRequest) returns (FreeSlotsResponse);
   rpc GetBarberSettings(BarberSettingsRequest) returns (BarberSettingsResponse);
   rpc SetCompactSlots(SetCompactSlotsRequest) returns (BarberSettingsResponse);
+  rpc SetClientSlotStep(SetClientSlotStepRequest) returns (BarberSettingsResponse);
   rpc GetClientBookings(GetClientBookingsRequest) returns (GetClientBookingsResponse);
 }
 
@@ -125,13 +126,19 @@ message BarberSettingsRequest {
 }
 
 message BarberSettingsResponse {
-  string barber_id             = 1;
-  bool   compact_slots_enabled = 2;
+  string barber_id                = 1;
+  bool   compact_slots_enabled    = 2;
+  int32  client_slot_step_minutes = 3;
 }
 
 message SetCompactSlotsRequest {
   string barber_id = 1;
   bool   enabled   = 2;
+}
+
+message SetClientSlotStepRequest {
+  string barber_id    = 1;
+  int32  step_minutes = 2;
 }
 
 // ─── Client Bookings ──────────────────────────────────────────────────────────
