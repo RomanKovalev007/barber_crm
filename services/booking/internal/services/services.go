@@ -288,17 +288,17 @@ func (s *bookingService) GetFreeSlots(ctx context.Context, barberID, serviceID s
 		return nil, apperr.Internal("failed to get barber settings")
 	}
 
-	stepMinutes, err := s.repo.GetClientSlotStep(ctx, barberID)
-	if err != nil {
-		s.log.Error("get free slots: failed to get client slot step", "barber_id", barberID, "error", err)
-		return nil, apperr.Internal("failed to get barber settings")
-	}
-	step := time.Duration(stepMinutes) * time.Minute
+	//stepMinutes, err := s.repo.GetClientSlotStep(ctx, barberID)
+	//if err != nil {
+	//	s.log.Error("get free slots: failed to get client slot step", "barber_id", barberID, "error", err)
+	//	return nil, apperr.Internal("failed to get barber settings")
+	//}
+	//step := time.Duration(stepMinutes) * time.Minute
 
 	if enabled {
-		return s.buildCompactSlots(ctx, barberID, date, step, window)
+		return s.buildCompactSlots(ctx, barberID, date, barberSlotStep, window)
 	}
-	return s.buildSlots(ctx, barberID, date, true, step, window)
+	return s.buildSlots(ctx, barberID, date, true, barberSlotStep, window)
 }
 
 func (s *bookingService) GetBarberSettings(ctx context.Context, barberID string) (*model.BarberSettings, error) {
@@ -480,7 +480,7 @@ func (s *bookingService) buildCompactSlots(ctx context.Context, barberID string,
 	}
 	nowStr := time.Now().Format("2006-01-02")
 	if dateStr == nowStr {
-		workStart = roundUp(time.Now().Add(3 * time.Hour), step*2)
+		workStart = roundUp(time.Now().Add(3 * time.Hour), step)
 	}
 
 
@@ -497,8 +497,7 @@ func (s *bookingService) buildCompactSlots(ctx context.Context, barberID string,
 
 	if len(bookings) == 0 || (dateStr == nowStr && bookings[len(bookings)-1].TimeEnd.Before(workStart)){
 		var slots []model.Slot
-		//for t := workStart; !t.Add(window).After(workEnd); t = t.Add(step) {
-		for t := workStart; !t.Add(window).After(workEnd); t = t.Add(barberSlotStep*2) {
+		for t := workStart; !t.Add(window).After(workEnd); t = t.Add(step) {
 			slots = append(slots, model.Slot{
 				Status:    model.SlotFree,
 				TimeStart: t,
