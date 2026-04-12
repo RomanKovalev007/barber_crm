@@ -283,6 +283,8 @@ func bookingStatusToProto(s string) pb.BookingStatus {
 
 func bookingStatusFromProto(s pb.BookingStatus) (string, error) {
 	switch s {
+	case pb.BookingStatus_BOOKING_STATUS_PENDING:
+		return model.StatusPending, nil
 	case pb.BookingStatus_BOOKING_STATUS_CANCELLED:
 		return model.StatusCancelled, nil
 	case pb.BookingStatus_BOOKING_STATUS_COMPLETED:
@@ -290,7 +292,7 @@ func bookingStatusFromProto(s pb.BookingStatus) (string, error) {
 	case pb.BookingStatus_BOOKING_STATUS_NO_SHOW:
 		return model.StatusNoShow, nil
 	default:
-		return "", errors.New("status must be CANCELLED, COMPLETED or NO_SHOW")
+		return "", errors.New("status must be PENDING, CANCELLED, COMPLETED or NO_SHOW")
 	}
 }
 

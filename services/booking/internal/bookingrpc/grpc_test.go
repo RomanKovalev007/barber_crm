@@ -252,7 +252,7 @@ func TestUpdateBookingStatus_InvalidStatus(t *testing.T) {
 	_, err := srv.UpdateBookingStatus(context.Background(), &pb.UpdateBookingStatusRequest{
 		BookingId: "bk-1",
 		BarberId:  "barber-1",
-		Status:    pb.BookingStatus_BOOKING_STATUS_PENDING,
+		Status:    pb.BookingStatus_BOOKING_STATUS_UNSPECIFIED,
 	})
 	assert.Equal(t, codes.InvalidArgument, grpcCode(err))
 }
