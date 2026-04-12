@@ -451,7 +451,7 @@ func (s *bookingService) buildCompactSlots(ctx context.Context, barberID string,
 	}
 	nowStr := time.Now().Format("2006-01-02")
 	if dateStr == nowStr {
-		workStart = roundUp(time.Now().Add(3 * time.Hour), barberSlotStep)
+		workStart = roundUp(time.Now().Add(3 * time.Hour), barberSlotStep*2)
 	}
 
 
@@ -469,7 +469,7 @@ func (s *bookingService) buildCompactSlots(ctx context.Context, barberID string,
 	// Нет броней → полная сетка с шагом barberSlotStep (15 мин).
 	if len(bookings) == 0 || (dateStr == nowStr && bookings[len(bookings)-1].TimeEnd.Before(workStart)){
 		var slots []model.Slot
-		for t := workStart; !t.Add(window).After(workEnd); t = t.Add(barberSlotStep) {
+		for t := workStart; !t.Add(window).After(workEnd); t = t.Add(barberSlotStep*2) {
 			slots = append(slots, model.Slot{
 				Status:    model.SlotFree,
 				TimeStart: t,
