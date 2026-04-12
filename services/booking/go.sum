@@ -1,7 +1,7 @@
 github.com/BurntSushi/toml v1.2.1 h1:9F2/+DoOYIOksmaJFPw1tGFy1eDnIJXg+UHjuD8lTak=
 github.com/BurntSushi/toml v1.2.1/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
-github.com/RomanKovalev007/barber_crm/api v0.0.15 h1:avc7eVycUSBbJu09uYgOQRWqnywK5TqXNBgdXnR49R8=
-github.com/RomanKovalev007/barber_crm/api v0.0.15/go.mod h1:aDSgv/5cbNHq3HP3Yx6aXb73XY++I2WWQdoyAIymS6I=
+github.com/RomanKovalev007/barber_crm/api v0.0.16 h1:GuaxrRpZWtJS/epxUiqDHKVZ1JAddD8qEILI3OKeOXA=
+github.com/RomanKovalev007/barber_crm/api v0.0.16/go.mod h1:aDSgv/5cbNHq3HP3Yx6aXb73XY++I2WWQdoyAIymS6I=
 github.com/RomanKovalev007/barber_crm/pkg v0.0.7 h1:4+U8b6TKdUrKcbOHMtCntPHBxUiJhYxAa/6UjyP55GY=
 github.com/RomanKovalev007/barber_crm/pkg v0.0.7/go.mod h1:j/T5a/hUHYK311hD97gcCcaigc8kw9bTZcsXQcw8h4o=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=

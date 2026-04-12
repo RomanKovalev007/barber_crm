@@ -650,7 +650,8 @@ func (h *StaffHandler) GetBookingSettings(w http.ResponseWriter, r *http.Request
 	}
 
 	response.WriteJSON(w, http.StatusOK, map[string]any{
-		"compact_slots_enabled": resp.CompactSlotsEnabled,
+		"compact_slots_enabled":    resp.CompactSlotsEnabled,
+		"client_slot_step_minutes": resp.ClientSlotStepMinutes,
 	})
 }
 
@@ -674,7 +675,37 @@ func (h *StaffHandler) SetCompactSlots(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.WriteJSON(w, http.StatusOK, map[string]any{
-		"compact_slots_enabled": resp.CompactSlotsEnabled,
+		"compact_slots_enabled":    resp.CompactSlotsEnabled,
+		"client_slot_step_minutes": resp.ClientSlotStepMinutes,
+	})
+}
+
+func (h *StaffHandler) SetClientSlotStep(w http.ResponseWriter, r *http.Request) {
+	barberID := middleware.BarberIDFromCtx(r.Context())
+
+	var req struct {
+		StepMinutes int32 `json:"step_minutes"`
+	}
+	if !decodeBody(w, r, &req) {
+		return
+	}
+	if req.StepMinutes != 15 && req.StepMinutes != 30 && req.StepMinutes != 60 {
+		response.ErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "step_minutes must be 15, 30 or 60")
+		return
+	}
+
+	resp, err := h.booking.SetClientSlotStep(r.Context(), &bookingv1.SetClientSlotStepRequest{
+		BarberId:    barberID,
+		StepMinutes: req.StepMinutes,
+	})
+	if err != nil {
+		response.GrpcErrorToHttp(w, err)
+		return
+	}
+
+	response.WriteJSON(w, http.StatusOK, map[string]any{
+		"compact_slots_enabled":    resp.CompactSlotsEnabled,
+		"client_slot_step_minutes": resp.ClientSlotStepMinutes,
 	})
 }
 

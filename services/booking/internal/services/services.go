@@ -32,6 +32,8 @@ type bookingRepo interface {
 	GetClientBookings(ctx context.Context, barberID, clientPhone string, limit, offset int) ([]model.Booking, int, error)
 	GetCompactSlotsEnabled(ctx context.Context, barberID string) (bool, error)
 	SetCompactSlotsEnabled(ctx context.Context, barberID string, enabled bool) error
+	GetClientSlotStep(ctx context.Context, barberID string) (int32, error)
+	SetClientSlotStep(ctx context.Context, barberID string, stepMinutes int32) error
 }
 
 type staffClientIntr interface {
@@ -60,6 +62,7 @@ type BookingIntr interface {
 	GetFreeSlots(ctx context.Context, barberID, serviceID string, date time.Time) (*model.SlotsResult, error)
 	GetBarberSettings(ctx context.Context, barberID string) (*model.BarberSettings, error)
 	SetCompactSlots(ctx context.Context, barberID string, enabled bool) (*model.BarberSettings, error)
+	SetClientSlotStep(ctx context.Context, barberID string, stepMinutes int32) (*model.BarberSettings, error)
 	GetClientBookings(ctx context.Context, barberID, clientPhone string, limit, offset int) ([]model.Booking, int, error)
 }
 
@@ -284,10 +287,18 @@ func (s *bookingService) GetFreeSlots(ctx context.Context, barberID, serviceID s
 		s.log.Error("get free slots: failed to get barber settings", "barber_id", barberID, "error", err)
 		return nil, apperr.Internal("failed to get barber settings")
 	}
-	if enabled {
-		return s.buildCompactSlots(ctx, barberID, date, window)
+
+	stepMinutes, err := s.repo.GetClientSlotStep(ctx, barberID)
+	if err != nil {
+		s.log.Error("get free slots: failed to get client slot step", "barber_id", barberID, "error", err)
+		return nil, apperr.Internal("failed to get barber settings")
 	}
-	return s.buildSlots(ctx, barberID, date, true, barberSlotStep, window)
+	step := time.Duration(stepMinutes) * time.Minute
+
+	if enabled {
+		return s.buildCompactSlots(ctx, barberID, date, step, window)
+	}
+	return s.buildSlots(ctx, barberID, date, true, step, window)
 }
 
 func (s *bookingService) GetBarberSettings(ctx context.Context, barberID string) (*model.BarberSettings, error) {
@@ -296,7 +307,25 @@ func (s *bookingService) GetBarberSettings(ctx context.Context, barberID string)
 		s.log.Error("get barber settings: failed", "barber_id", barberID, "error", err)
 		return nil, apperr.Internal("failed to get barber settings")
 	}
-	return &model.BarberSettings{BarberID: barberID, CompactSlotsEnabled: enabled}, nil
+	stepMinutes, err := s.repo.GetClientSlotStep(ctx, barberID)
+	if err != nil {
+		s.log.Error("get barber settings: failed to get client slot step", "barber_id", barberID, "error", err)
+		return nil, apperr.Internal("failed to get barber settings")
+	}
+	return &model.BarberSettings{
+		BarberID:              barberID,
+		CompactSlotsEnabled:   enabled,
+		ClientSlotStepMinutes: stepMinutes,
+	}, nil
+}
+
+func (s *bookingService) SetClientSlotStep(ctx context.Context, barberID string, stepMinutes int32) (*model.BarberSettings, error) {
+	if err := s.repo.SetClientSlotStep(ctx, barberID, stepMinutes); err != nil {
+		s.log.Error("set client slot step: failed", "barber_id", barberID, "error", err)
+		return nil, apperr.Internal("failed to update barber settings")
+	}
+	s.log.Info("client slot step updated", "barber_id", barberID, "step_minutes", stepMinutes)
+	return s.GetBarberSettings(ctx, barberID)
 }
 
 func (s *bookingService) GetClientBookings(ctx context.Context, barberID, clientPhone string, limit, offset int) ([]model.Booking, int, error) {
@@ -422,7 +451,7 @@ func (s *bookingService) buildSlots(ctx context.Context, barberID string, date t
 // - если броней нет → полная сетка с шагом window в рабочем окне
 // - если брони есть → только слоты, примыкающие к существующим (±window от каждой брони),
 //   в пределах рабочего окна и без пересечений с уже занятыми слотами.
-func (s *bookingService) buildCompactSlots(ctx context.Context, barberID string, date time.Time, window time.Duration) (*model.SlotsResult, error) {
+func (s *bookingService) buildCompactSlots(ctx context.Context, barberID string, date time.Time, step, window time.Duration) (*model.SlotsResult, error) {
 	year, week := date.ISOWeek()
 	isoWeek := fmt.Sprintf("%d-W%02d", year, week)
 
@@ -451,7 +480,7 @@ func (s *bookingService) buildCompactSlots(ctx context.Context, barberID string,
 	}
 	nowStr := time.Now().Format("2006-01-02")
 	if dateStr == nowStr {
-		workStart = roundUp(time.Now().Add(3 * time.Hour), barberSlotStep*2)
+		workStart = roundUp(time.Now().Add(3 * time.Hour), step*2)
 	}
 
 
@@ -466,10 +495,9 @@ func (s *bookingService) buildCompactSlots(ctx context.Context, barberID string,
 		return nil, apperr.Internal("failed to get bookings")
 	}
 
-	// Нет броней → полная сетка с шагом barberSlotStep (15 мин).
 	if len(bookings) == 0 || (dateStr == nowStr && bookings[len(bookings)-1].TimeEnd.Before(workStart)){
 		var slots []model.Slot
-		for t := workStart; !t.Add(window).After(workEnd); t = t.Add(barberSlotStep*2) {
+		for t := workStart; !t.Add(window).After(workEnd); t = t.Add(step) {
 			slots = append(slots, model.Slot{
 				Status:    model.SlotFree,
 				TimeStart: t,

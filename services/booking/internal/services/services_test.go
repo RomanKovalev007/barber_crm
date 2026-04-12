@@ -62,6 +62,13 @@ func (m *MockRepo) GetCompactSlotsEnabled(ctx context.Context, barberID string) 
 func (m *MockRepo) SetCompactSlotsEnabled(ctx context.Context, barberID string, enabled bool) error {
 	return m.Called(ctx, barberID, enabled).Error(0)
 }
+func (m *MockRepo) GetClientSlotStep(ctx context.Context, barberID string) (int32, error) {
+	args := m.Called(ctx, barberID)
+	return args.Get(0).(int32), args.Error(1)
+}
+func (m *MockRepo) SetClientSlotStep(ctx context.Context, barberID string, stepMinutes int32) error {
+	return m.Called(ctx, barberID, stepMinutes).Error(0)
+}
 
 type MockStaffClient struct {
 	mock.Mock
@@ -744,6 +751,7 @@ func TestGetFreeSlots_ReturnsOnlyFreeSlots(t *testing.T) {
 
 	r := new(MockRepo)
 	r.On("GetCompactSlotsEnabled", ctx, "b1").Return(false, nil)
+	r.On("GetClientSlotStep", ctx, "b1").Return(int32(15), nil)
 	r.On("GetPendingBookingsByBarberAndDate", ctx, "b1", dateTrunc).Return([]model.Booking{booking}, nil)
 
 	svc := newTestService(r, sc)

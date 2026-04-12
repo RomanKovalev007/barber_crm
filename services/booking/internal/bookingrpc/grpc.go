@@ -161,10 +161,7 @@ func (s *bookingServer) GetBarberSettings(ctx context.Context, req *pb.BarberSet
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
-	return &pb.BarberSettingsResponse{
-		BarberId:            settings.BarberID,
-		CompactSlotsEnabled: settings.CompactSlotsEnabled,
-	}, nil
+	return settingsToProto(settings), nil
 }
 
 func (s *bookingServer) SetCompactSlots(ctx context.Context, req *pb.SetCompactSlotsRequest) (*pb.BarberSettingsResponse, error) {
@@ -175,10 +172,29 @@ func (s *bookingServer) SetCompactSlots(ctx context.Context, req *pb.SetCompactS
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
+	return settingsToProto(settings), nil
+}
+
+func (s *bookingServer) SetClientSlotStep(ctx context.Context, req *pb.SetClientSlotStepRequest) (*pb.BarberSettingsResponse, error) {
+	if req.BarberId == "" {
+		return nil, status.Error(codes.InvalidArgument, "barber_id is required")
+	}
+	if req.StepMinutes != 15 && req.StepMinutes != 30 && req.StepMinutes != 60 {
+		return nil, status.Error(codes.InvalidArgument, "step_minutes must be 15, 30 or 60")
+	}
+	settings, err := s.svc.SetClientSlotStep(ctx, req.BarberId, req.StepMinutes)
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+	return settingsToProto(settings), nil
+}
+
+func settingsToProto(s *model.BarberSettings) *pb.BarberSettingsResponse {
 	return &pb.BarberSettingsResponse{
-		BarberId:            settings.BarberID,
-		CompactSlotsEnabled: settings.CompactSlotsEnabled,
-	}, nil
+		BarberId:              s.BarberID,
+		CompactSlotsEnabled:   s.CompactSlotsEnabled,
+		ClientSlotStepMinutes: s.ClientSlotStepMinutes,
+	}
 }
 
 func (s *bookingServer) GetClientBookings(ctx context.Context, req *pb.GetClientBookingsRequest) (*pb.GetClientBookingsResponse, error) {

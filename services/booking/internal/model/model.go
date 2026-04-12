@@ -63,6 +63,7 @@ type SlotsResult struct {
 }
 
 type BarberSettings struct {
-	BarberID            string
-	CompactSlotsEnabled bool
+	BarberID              string
+	CompactSlotsEnabled   bool
+	ClientSlotStepMinutes int32
 }

@@ -3,7 +3,7 @@ module github.com/RomanKovalev007/barber_crm/services/api-gateway
 go 1.24.3
 
 require (
-	github.com/RomanKovalev007/barber_crm/api v0.0.15
+	github.com/RomanKovalev007/barber_crm/api v0.0.16
 	github.com/RomanKovalev007/barber_crm/pkg v0.0.8
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-chi/cors v1.2.2

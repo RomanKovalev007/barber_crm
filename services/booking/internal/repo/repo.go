@@ -230,9 +230,34 @@ func (r *BookingRepo) SetCompactSlotsEnabled(ctx context.Context, barberID strin
 	return err
 }
 
-// GetClientBookings возвращает записи клиента в финальных статусах (completed, cancelled, no_show)
-// для конкретного барбера, отсортированные по дате убывания, с пагинацией.
-// Второе возвращаемое значение — общее число записей (без учёта лимита/оффсета).
+func (r *BookingRepo) GetClientSlotStep(ctx context.Context, barberID string) (int32, error) {
+	var step int32
+	err := r.pool.QueryRow(ctx,
+		`SELECT client_slot_step_minutes FROM barber_settings WHERE barber_id=$1`, barberID,
+	).Scan(&step)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 15, nil
+		}
+		return 0, err
+	}
+	if step <= 0 {
+		return 15, nil
+	}
+	return step, nil
+}
+
+func (r *BookingRepo) SetClientSlotStep(ctx context.Context, barberID string, stepMinutes int32) error {
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO barber_settings (barber_id, client_slot_step_minutes, updated_at)
+		VALUES ($1, $2, NOW())
+		ON CONFLICT (barber_id) DO UPDATE
+		SET client_slot_step_minutes=$2, updated_at=NOW()`,
+		barberID, stepMinutes,
+	)
+	return err
+}
+
 func (r *BookingRepo) GetClientBookings(ctx context.Context, barberID, clientPhone string, limit, offset int) ([]model.Booking, int, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT id, client_name, client_phone, barber_id, service_id, service_name, price,

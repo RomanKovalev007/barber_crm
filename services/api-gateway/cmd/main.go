@@ -153,6 +153,7 @@ func main() {
 
 				r.Get("/booking-settings", staffHandler.GetBookingSettings)
 				r.Patch("/booking-settings/compact-slots", staffHandler.SetCompactSlots)
+				r.Patch("/booking-settings/client-slot-step", staffHandler.SetClientSlotStep)
 			})
 
 			// Аналитика — 30s (тяжёлые запросы к ClickHouse)
