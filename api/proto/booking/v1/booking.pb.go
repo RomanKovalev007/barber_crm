@@ -786,6 +786,7 @@ type SlotBooking struct {
 	ClientName    string                 `protobuf:"bytes,2,opt,name=client_name,json=clientName,proto3" json:"client_name,omitempty"`
 	ClientPhone   string                 `protobuf:"bytes,3,opt,name=client_phone,json=clientPhone,proto3" json:"client_phone,omitempty"`
 	ServiceName   string                 `protobuf:"bytes,4,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
+	Status        BookingStatus          `protobuf:"varint,5,opt,name=status,proto3,enum=booking.v1.BookingStatus" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -846,6 +847,13 @@ func (x *SlotBooking) GetServiceName() string {
 		return x.ServiceName
 	}
 	return ""
+}
+
+func (x *SlotBooking) GetStatus() BookingStatus {
+	if x != nil {
+		return x.Status
+	}
+	return BookingStatus_BOOKING_STATUS_UNSPECIFIED
 }
 
 type Slot struct {
@@ -1373,14 +1381,15 @@ const file_booking_v1_booking_proto_rawDesc = "" +
 	"\x11FreeSlotsResponse\x12\x1b\n" +
 	"\tbarber_id\x18\x01 \x01(\tR\bbarberId\x12\x12\n" +
 	"\x04date\x18\x02 \x01(\tR\x04date\x12&\n" +
-	"\x05slots\x18\x03 \x03(\v2\x10.booking.v1.SlotR\x05slots\"\x93\x01\n" +
+	"\x05slots\x18\x03 \x03(\v2\x10.booking.v1.SlotR\x05slots\"\xc6\x01\n" +
 	"\vSlotBooking\x12\x1d\n" +
 	"\n" +
 	"booking_id\x18\x01 \x01(\tR\tbookingId\x12\x1f\n" +
 	"\vclient_name\x18\x02 \x01(\tR\n" +
 	"clientName\x12!\n" +
 	"\fclient_phone\x18\x03 \x01(\tR\vclientPhone\x12!\n" +
-	"\fservice_name\x18\x04 \x01(\tR\vserviceName\"\xdb\x01\n" +
+	"\fservice_name\x18\x04 \x01(\tR\vserviceName\x121\n" +
+	"\x06status\x18\x05 \x01(\x0e2\x19.booking.v1.BookingStatusR\x06status\"\xdb\x01\n" +
 	"\x04Slot\x12.\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x16.booking.v1.SlotStatusR\x06status\x129\n" +
 	"\n" +
@@ -1494,40 +1503,41 @@ var file_booking_v1_booking_proto_depIdxs = []int32{
 	6,  // 6: booking.v1.BookingResponse.booking:type_name -> booking.v1.Booking
 	13, // 7: booking.v1.SlotsResponse.slots:type_name -> booking.v1.Slot
 	13, // 8: booking.v1.FreeSlotsResponse.slots:type_name -> booking.v1.Slot
-	0,  // 9: booking.v1.Slot.status:type_name -> booking.v1.SlotStatus
-	20, // 10: booking.v1.Slot.time_start:type_name -> google.protobuf.Timestamp
-	20, // 11: booking.v1.Slot.time_end:type_name -> google.protobuf.Timestamp
-	12, // 12: booking.v1.Slot.booking:type_name -> booking.v1.SlotBooking
-	6,  // 13: booking.v1.GetClientBookingsResponse.bookings:type_name -> booking.v1.Booking
-	20, // 14: booking.v1.BookingEvent.time_start:type_name -> google.protobuf.Timestamp
-	20, // 15: booking.v1.BookingEvent.time_end:type_name -> google.protobuf.Timestamp
-	1,  // 16: booking.v1.BookingEvent.status:type_name -> booking.v1.BookingStatus
-	20, // 17: booking.v1.BookingEvent.occurred_at:type_name -> google.protobuf.Timestamp
-	2,  // 18: booking.v1.BookingService.CreateBooking:input_type -> booking.v1.CreateBookingRequest
-	5,  // 19: booking.v1.BookingService.GetBooking:input_type -> booking.v1.BookingIdRequest
-	3,  // 20: booking.v1.BookingService.UpdateBooking:input_type -> booking.v1.UpdateBookingRequest
-	4,  // 21: booking.v1.BookingService.UpdateBookingStatus:input_type -> booking.v1.UpdateBookingStatusRequest
-	5,  // 22: booking.v1.BookingService.DeleteBooking:input_type -> booking.v1.BookingIdRequest
-	8,  // 23: booking.v1.BookingService.GetSlots:input_type -> booking.v1.SlotsRequest
-	10, // 24: booking.v1.BookingService.GetFreeSlots:input_type -> booking.v1.FreeSlotsRequest
-	14, // 25: booking.v1.BookingService.GetBarberSettings:input_type -> booking.v1.BarberSettingsRequest
-	16, // 26: booking.v1.BookingService.SetCompactSlots:input_type -> booking.v1.SetCompactSlotsRequest
-	17, // 27: booking.v1.BookingService.GetClientBookings:input_type -> booking.v1.GetClientBookingsRequest
-	7,  // 28: booking.v1.BookingService.CreateBooking:output_type -> booking.v1.BookingResponse
-	7,  // 29: booking.v1.BookingService.GetBooking:output_type -> booking.v1.BookingResponse
-	7,  // 30: booking.v1.BookingService.UpdateBooking:output_type -> booking.v1.BookingResponse
-	7,  // 31: booking.v1.BookingService.UpdateBookingStatus:output_type -> booking.v1.BookingResponse
-	21, // 32: booking.v1.BookingService.DeleteBooking:output_type -> google.protobuf.Empty
-	9,  // 33: booking.v1.BookingService.GetSlots:output_type -> booking.v1.SlotsResponse
-	11, // 34: booking.v1.BookingService.GetFreeSlots:output_type -> booking.v1.FreeSlotsResponse
-	15, // 35: booking.v1.BookingService.GetBarberSettings:output_type -> booking.v1.BarberSettingsResponse
-	15, // 36: booking.v1.BookingService.SetCompactSlots:output_type -> booking.v1.BarberSettingsResponse
-	18, // 37: booking.v1.BookingService.GetClientBookings:output_type -> booking.v1.GetClientBookingsResponse
-	28, // [28:38] is the sub-list for method output_type
-	18, // [18:28] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	1,  // 9: booking.v1.SlotBooking.status:type_name -> booking.v1.BookingStatus
+	0,  // 10: booking.v1.Slot.status:type_name -> booking.v1.SlotStatus
+	20, // 11: booking.v1.Slot.time_start:type_name -> google.protobuf.Timestamp
+	20, // 12: booking.v1.Slot.time_end:type_name -> google.protobuf.Timestamp
+	12, // 13: booking.v1.Slot.booking:type_name -> booking.v1.SlotBooking
+	6,  // 14: booking.v1.GetClientBookingsResponse.bookings:type_name -> booking.v1.Booking
+	20, // 15: booking.v1.BookingEvent.time_start:type_name -> google.protobuf.Timestamp
+	20, // 16: booking.v1.BookingEvent.time_end:type_name -> google.protobuf.Timestamp
+	1,  // 17: booking.v1.BookingEvent.status:type_name -> booking.v1.BookingStatus
+	20, // 18: booking.v1.BookingEvent.occurred_at:type_name -> google.protobuf.Timestamp
+	2,  // 19: booking.v1.BookingService.CreateBooking:input_type -> booking.v1.CreateBookingRequest
+	5,  // 20: booking.v1.BookingService.GetBooking:input_type -> booking.v1.BookingIdRequest
+	3,  // 21: booking.v1.BookingService.UpdateBooking:input_type -> booking.v1.UpdateBookingRequest
+	4,  // 22: booking.v1.BookingService.UpdateBookingStatus:input_type -> booking.v1.UpdateBookingStatusRequest
+	5,  // 23: booking.v1.BookingService.DeleteBooking:input_type -> booking.v1.BookingIdRequest
+	8,  // 24: booking.v1.BookingService.GetSlots:input_type -> booking.v1.SlotsRequest
+	10, // 25: booking.v1.BookingService.GetFreeSlots:input_type -> booking.v1.FreeSlotsRequest
+	14, // 26: booking.v1.BookingService.GetBarberSettings:input_type -> booking.v1.BarberSettingsRequest
+	16, // 27: booking.v1.BookingService.SetCompactSlots:input_type -> booking.v1.SetCompactSlotsRequest
+	17, // 28: booking.v1.BookingService.GetClientBookings:input_type -> booking.v1.GetClientBookingsRequest
+	7,  // 29: booking.v1.BookingService.CreateBooking:output_type -> booking.v1.BookingResponse
+	7,  // 30: booking.v1.BookingService.GetBooking:output_type -> booking.v1.BookingResponse
+	7,  // 31: booking.v1.BookingService.UpdateBooking:output_type -> booking.v1.BookingResponse
+	7,  // 32: booking.v1.BookingService.UpdateBookingStatus:output_type -> booking.v1.BookingResponse
+	21, // 33: booking.v1.BookingService.DeleteBooking:output_type -> google.protobuf.Empty
+	9,  // 34: booking.v1.BookingService.GetSlots:output_type -> booking.v1.SlotsResponse
+	11, // 35: booking.v1.BookingService.GetFreeSlots:output_type -> booking.v1.FreeSlotsResponse
+	15, // 36: booking.v1.BookingService.GetBarberSettings:output_type -> booking.v1.BarberSettingsResponse
+	15, // 37: booking.v1.BookingService.SetCompactSlots:output_type -> booking.v1.BarberSettingsResponse
+	18, // 38: booking.v1.BookingService.GetClientBookings:output_type -> booking.v1.GetClientBookingsResponse
+	29, // [29:39] is the sub-list for method output_type
+	19, // [19:29] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_booking_v1_booking_proto_init() }

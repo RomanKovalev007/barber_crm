@@ -394,8 +394,7 @@ func (s *bookingService) buildSlots(ctx context.Context, barberID string, date t
 					ClientName:  b.ClientName,
 					ClientPhone: b.ClientPhone,
 					ServiceName: b.ServiceName,
-					//Status: b.Status,
-					//Price: b.Price,
+					Status:      b.Status,
 				}
 				break
 			}

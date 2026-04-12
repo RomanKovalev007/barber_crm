@@ -46,6 +46,7 @@ type SlotBooking struct {
 	ClientName  string
 	ClientPhone string
 	ServiceName string
+	Status      string
 }
 
 type Slot struct {

@@ -236,6 +236,7 @@ func slotToProto(s model.Slot) *pb.Slot {
 			ClientName:  s.Booking.ClientName,
 			ClientPhone: s.Booking.ClientPhone,
 			ServiceName: s.Booking.ServiceName,
+			Status:      bookingStatusToProto(s.Booking.Status),
 		}
 	}
 	return slot

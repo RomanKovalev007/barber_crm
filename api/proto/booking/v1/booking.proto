@@ -104,10 +104,11 @@ enum SlotStatus {
 }
 
 message SlotBooking {
-  string booking_id   = 1;
-  string client_name  = 2;
-  string client_phone = 3;
-  string service_name = 4;
+  string        booking_id   = 1;
+  string        client_name  = 2;
+  string        client_phone = 3;
+  string        service_name = 4;
+  BookingStatus status       = 5;
 }
 
 message Slot {

@@ -744,7 +744,7 @@ func TestGetFreeSlots_ReturnsOnlyFreeSlots(t *testing.T) {
 
 	r := new(MockRepo)
 	r.On("GetCompactSlotsEnabled", ctx, "b1").Return(false, nil)
-	r.On("GetBookingsByBarberAndDate", ctx, "b1", dateTrunc).Return([]model.Booking{booking}, nil)
+	r.On("GetPendingBookingsByBarberAndDate", ctx, "b1", dateTrunc).Return([]model.Booking{booking}, nil)
 
 	svc := newTestService(r, sc)
 
