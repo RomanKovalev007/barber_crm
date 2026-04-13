@@ -281,6 +281,18 @@ services:
     depends_on:
       - prometheus
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"     # Публикуем порт pgAdmin на сервере
+    depends_on:
+      - postgres
+
 volumes:
   caddy_data:
   caddy_config:
